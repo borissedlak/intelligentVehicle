@@ -7,6 +7,7 @@ import psutil
 import pymongo
 
 from consumption.ConsRegression import ConsRegression
+from jtop.jtop import jtop
 
 DEVICE_NAME = os.environ.get('DEVICE_NAME')
 if DEVICE_NAME:
@@ -29,17 +30,24 @@ class DeviceMetricReporter:
         self.consumption_regression = ConsRegression(self.target)
         self.mongo_client = pymongo.MongoClient(MONGO_HOST)["metrics"]
         self.gpu_available = gpu_available
+        self.jetson_metrics = jtop()
+        self.jetson_metrics.start()
 
     def create_metrics(self, source_fps):
         mem_buffer = psutil.virtual_memory()
         mem = (mem_buffer.total - mem_buffer.available) / mem_buffer.total * 100
         cpu = psutil.cpu_percent()
-        cons = self.consumption_regression.predict(cpu, self.gpu_available)
+        cons = self.consumption_regression.predict(cpu, self.gpu_available) # Override for Jetson
 
         gpu = 0
         if self.gpu_available:
-            if len(GPUtil.getGPUs()) > 0:
-                gpu = int(GPUtil.getGPUs()[0].load * 100)
+            if len(GPUtil.getGPUs()) > 0 and DEVICE_NAME not in ["Orin", "Xavier"]:
+                gpu = int(GPUtil.getGPUs()[0].load * 100) # Only works on regular Nvidia GPU outside Jetsons
+            elif self.jetson_metrics is not None and DEVICE_NAME in ["Orin", "Xavier"]:
+                #print(self.jetson_metrics.stats)
+                gpu = self.jetson_metrics.stats['GPU']
+                cons = self.jetson_metrics.stats['Power TOT']
+                mode = self.jetson_metrics.stats['nvp model']
             else:
                 # frame_gpu_translation = {15: 30, 20: 40, 25: 65, 30: 75, 35: 80}  # Orin
                 frame_gpu_translation = {15: 35, 20: 50, 25: 70, 30: 80, 35: 85}  # Xavier
