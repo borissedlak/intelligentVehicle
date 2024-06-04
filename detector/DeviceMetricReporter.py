@@ -7,7 +7,6 @@ import psutil
 import pymongo
 
 from consumption.ConsRegression import ConsRegression
-from jtop.jtop import jtop
 
 DEVICE_NAME = os.environ.get('DEVICE_NAME')
 if DEVICE_NAME:
@@ -30,8 +29,11 @@ class DeviceMetricReporter:
         self.consumption_regression = ConsRegression(self.target)
         self.mongo_client = pymongo.MongoClient(MONGO_HOST)["metrics"]
         self.gpu_available = gpu_available
-        self.jetson_metrics = jtop()
-        self.jetson_metrics.start()
+
+        if DEVICE_NAME in ["Orin", "Xavier"]:
+            from jtop.jtop import jtop
+            self.jetson_metrics = jtop()
+            self.jetson_metrics.start()
 
     def create_metrics(self, source_fps):
         mem_buffer = psutil.virtual_memory()
