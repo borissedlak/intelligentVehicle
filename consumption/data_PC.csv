@@ -1,0 +1,16 @@
+cpu_utilization,consumption,device_type,GPU
+70,125,PC,False
+68,124,PC,False
+45,111,PC,False
+35,100,PC,False
+35,102,PC,False
+30,96,PC,False
+28,97,PC,False
+18,86,PC,False
+17,85,PC,False
+10,73,PC,False
+1,68,PC,False
+10,107,PC,True
+7,86,PC,True
+1,68,PC,True
+6,88,PC,True
