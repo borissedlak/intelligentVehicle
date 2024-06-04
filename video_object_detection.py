@@ -88,7 +88,7 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
                 pixel = combined_img.shape[0]
 
                 service_blanket = provider_metric_reporter.create_metrics(processing_time, source_fps, pixel)
-                device_blanket = device_metric_reporter.create_metrics(source_fps)
+                device_blanket = device_metric_reporter.create_metrics()
 
                 intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
                 merged_metrics = utils.merge_single_dicts(service_blanket["metrics"], device_blanket["metrics"])
@@ -110,7 +110,7 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
 if __name__ == "__main__":
     write_csv = True
     # process_video(video_info=itertools.product([480, 720, 1080], [15, 20, 25, 30, 35]),
-    process_video(video_info=itertools.product([480, 1080], [25]),
+    process_video(video_info=itertools.product([100, 1080], [45]),
                   show_result=False,
                   write_csv=write_csv,
                   repeat=5)
