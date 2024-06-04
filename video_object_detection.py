@@ -109,8 +109,9 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
 
 if __name__ == "__main__":
     write_csv = True
-    process_video(video_info=itertools.product([480, 720, 1080], [25, 20, 25, 30, 35]),
-                  show_result=True,
+    # process_video(video_info=itertools.product([480, 720, 1080], [15, 20, 25, 30, 35]),
+    process_video(video_info=itertools.product([480, 1080], [25]),
+                  show_result=False,
                   write_csv=write_csv,
                   repeat=5)
 
