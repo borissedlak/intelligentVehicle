@@ -35,34 +35,29 @@ class DeviceMetricReporter:
             self.jetson_metrics = jtop()
             self.jetson_metrics.start()
 
-    def create_metrics(self, source_fps):
+    def create_metrics(self):
         mem_buffer = psutil.virtual_memory()
         mem = (mem_buffer.total - mem_buffer.available) / mem_buffer.total * 100
         cpu = psutil.cpu_percent()
-        cons = self.consumption_regression.predict(cpu, self.gpu_available) # Override for Jetson
+        cons = self.consumption_regression.predict(cpu, self.gpu_available)
 
         gpu = 0
-        if self.gpu_available:
-            if len(GPUtil.getGPUs()) > 0 and DEVICE_NAME not in ["Orin", "Xavier"]:
-                gpu = int(GPUtil.getGPUs()[0].load * 100) # Only works on regular Nvidia GPU outside Jetsons
-            elif self.jetson_metrics is not None and DEVICE_NAME in ["Orin", "Xavier"]:
+        if self.jetson_metrics is not None and DEVICE_NAME in ["Orin", "Xavier", "Nano"]: # Has Jetson lib defined
                 #print(self.jetson_metrics.stats)
                 gpu = self.jetson_metrics.stats['GPU']
-                cons = self.jetson_metrics.stats['Power TOT']
+                cons = self.jetson_metrics.stats['Power TOT'] / 1000
                 mode = self.jetson_metrics.stats['nvp model']
-            else:
+        elif self.gpu_available:
+            if len(GPUtil.getGPUs()) > 0 and DEVICE_NAME not in ["Orin", "Xavier"]: # Has Nvidia GPU but is no Jetson
+                gpu = int(GPUtil.getGPUs()[0].load * 100)
+            else: # Old workaround
                 # frame_gpu_translation = {15: 30, 20: 40, 25: 65, 30: 75, 35: 80}  # Orin
-                frame_gpu_translation = {15: 35, 20: 50, 25: 70, 30: 80, 35: 85}  # Xavier
-                gpu = frame_gpu_translation[source_fps]
-                # Limitation: Initializing jtop takes way too long
-                # from jtop.jtop import jtop
-                # with jtop() as jetson:
-                #     jetson_dict = jetson.stats
-                #     gpu = jetson_dict['GPU']
-                #     print(gpu)
-
+                #frame_gpu_translation = {15: 35, 20: 50, 25: 70, 30: 80, 35: 85}  # Xavier
+                #gpu = frame_gpu_translation[source_fps]   
+                raise RuntimeError("How come?")     
+        
         return {"target": self.target,
-                "metrics": {"device_type": self.target, "cpu": int(cpu), "memory": int(mem), "consumption": cons,
+                "metrics": {"device_type": self.target, "cpu": cpu, "memory": mem, "consumption": cons,
                             "timestamp": datetime.now(), "gpu": gpu}}
 
     # @utils.print_execution_time
