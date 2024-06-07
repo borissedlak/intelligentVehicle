@@ -1,102 +1,4 @@
-ffplay -vf eq=brightness=-0.25:saturation=1.5 original.mp4
-ffmpeg -y -i original.mp4 -vf "boxblur=4:1" abcd.mp4
-ffmpeg -y -ss 00:00:00 -to 00:00:10 -i original.mp4 -vf "boxblur=4:1" -c:a copy original_cut.mp4
-ffmpeg -y -ss 00:00:00 -to 00:00:10 -i original.mp4 -vf eq=brightness=-0.25:saturation=1.5 -c:a copy original_cut.mp4
-
 ffmpeg -y -ss 00:00:00 -to 00:00:10 -i original.mp4 -c copy original_cut.mp4
-
-ffmpeg -y -i original_cut.mp4 -filter:v scale=748:420 -c:a copy 420p_30.mp4
-ffmpeg -y -i original_cut.mp4 -filter:v scale=-1:360 -c:a copy 360p_30.mp4
-ffmpeg -y -i original_cut.mp4 -filter:v scale=532:300 -c:a copy 300p_30.mp4
-ffmpeg -y -i original_cut.mp4 -filter:v scale=426:240 -c:a copy 240p_30.mp4
-ffmpeg -y -i original_cut.mp4 -filter:v scale=-1:180 -c:a copy 180p_30.mp4
-ffmpeg -y -i original_cut.mp4 -filter:v scale=212:120 -c:a copy 120p_30.mp4
-
-ffmpeg -y -i 420p_30.mp4 -vf "setpts=PTS" -r 26 420p_26.mp4
-ffmpeg -y -i 420p_30.mp4 -vf "setpts=PTS" -r 22 420p_22.mp4
-ffmpeg -y -i 420p_30.mp4 -vf "setpts=PTS" -r 18 420p_18.mp4
-ffmpeg -y -i 420p_30.mp4 -vf "setpts=PTS" -r 14 420p_14.mp4
-
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 26 360p_26.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 22 360p_22.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 18 360p_18.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 14 360p_14.mp4
-
-ffmpeg -y -i 300p_30.mp4 -vf "setpts=PTS" -r 26 300p_26.mp4
-ffmpeg -y -i 300p_30.mp4 -vf "setpts=PTS" -r 22 300p_22.mp4
-ffmpeg -y -i 300p_30.mp4 -vf "setpts=PTS" -r 18 300p_18.mp4
-ffmpeg -y -i 300p_30.mp4 -vf "setpts=PTS" -r 14 300p_14.mp4
-
-ffmpeg -y -i 240p_30.mp4 -vf "setpts=PTS" -r 26 240p_26.mp4
-ffmpeg -y -i 240p_30.mp4 -vf "setpts=PTS" -r 22 240p_22.mp4
-ffmpeg -y -i 240p_30.mp4 -vf "setpts=PTS" -r 18 240p_18.mp4
-ffmpeg -y -i 240p_30.mp4 -vf "setpts=PTS" -r 14 240p_14.mp4
-
-ffmpeg -y -i 180p_30.mp4 -vf "setpts=PTS" -r 26 180p_26.mp4
-ffmpeg -y -i 180p_30.mp4 -vf "setpts=PTS" -r 22 180p_22.mp4
-ffmpeg -y -i 180p_30.mp4 -vf "setpts=PTS" -r 18 180p_18.mp4
-ffmpeg -y -i 180p_30.mp4 -vf "setpts=PTS" -r 14 180p_14.mp4
-
-ffmpeg -y -i 120p_30.mp4 -vf "setpts=PTS" -r 26 120p_26.mp4
-ffmpeg -y -i 120p_30.mp4 -vf "setpts=PTS" -r 22 120p_22.mp4
-ffmpeg -y -i 120p_30.mp4 -vf "setpts=PTS" -r 18 120p_18.mp4
-ffmpeg -y -i 120p_30.mp4 -vf "setpts=PTS" -r 14 120p_14.mp4
-
-ffmpeg -y -i original_cut.mp4 -filter:v scale=-1:720 -c:a copy 720p_30.mp4
-ffmpeg -y -i original_cut.mp4 -filter:v scale=854:480 -c:a copy 480p_30.mp4
-
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 26 720p_26.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 22 720p_22.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 18 720p_18.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 14 720p_14.mp4
-
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 26 480p_26.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 22 480p_22.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 18 480p_18.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 14 480p_14.mp4
-
-
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 30 720p_30.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 27 720p_27.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 24 720p_24.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 21 720p_21.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 18 720p_18.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 15 720p_15.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 12 720p_12.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 9 720p_9.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 6 720p_6.mp4
-ffmpeg -y -i 720p_30.mp4 -vf "setpts=PTS" -r 3 720p_3.mp4
-
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 30 480p_30.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 29 480p_29.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 28 480p_28.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 27 480p_27.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 26 480p_26.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 25 480p_25.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 24 480p_24.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 23 480p_23.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 22 480p_22.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 21 480p_21.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 20 480p_20.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 19 480p_19.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 18 480p_18.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 17 480p_17.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 16 480p_16.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 15 480p_15.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 14 480p_14.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 13 480p_13.mp4
-ffmpeg -y -i 480p_30.mp4 -vf "setpts=PTS" -r 12 480p_12.mp4
-
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 30 360p_30.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 27 360p_27.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 24 360p_24.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 21 360p_21.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 18 360p_18.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 15 360p_15.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 12 360p_12.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 9 360p_9.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 6 360p_6.mp4
-ffmpeg -y -i 360p_30.mp4 -vf "setpts=PTS" -r 3 360p_3.mp4
 
 sudo service mosquitto stop
 mosquitto -c mosquitto.conf
@@ -121,3 +23,38 @@ sudo nano /etc/environment
 source /etc/environment
 
 mongodb+srv://<user>:<pw>@cluster0.rqaj0m9.mongodb.net/
+
+-------------------------------------------------------------
+
+#Set network up/down
+sudo ip link set wlan0_ibss up
+
+#Connect or create to a p2p network with frequency 2462 = channel 11, 2472 = 13
+sudo iw dev wlan0 ibss join JetsonAdhocNetwork 2462
+sudo ifconfig wlan0 192.168.1.1 netmask 255.255.255.0 up
+sudo ip addr add 192.168.1.1/24 dev wlan0
+
+#Show current configuration of a network
+ip link show wlan0_ibss
+sudo iw dev wlan0_ibss info
+
+#Connect to a wifi through NetworkManager
+sudo nmcli device wifi connect "AD222-global" password "xiaoboqu"
+
+#Start NetworkManager, set network unmanaged for NetworkManager
+sudo systemctl start NetworkManager
+sudo nmcli dev set wlan0 managed no
+
+#remove and add wlan in ibss mode, set for existing (down!)
+sudo iw dev wlan0_ibss del
+sudo iw dev wlan0 interface add wlan0_ibss type ibss
+sudo iw dev wlan0 set type ibss
+
+#Flush routes and add new for local network
+sudo ip addr flush dev wlan0
+sudo ip route add 192.168.1.0/24 dev wlan0
+ip route show
+
+#Check network throughput
+iperf3 -s
+iperf3 -c ip.address
