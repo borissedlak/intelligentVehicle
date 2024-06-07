@@ -233,33 +233,33 @@ def get_true(param):
     if len(param.variables) > 2:
         raise Exception("How come?")
     if len(param.variables) == 2:
-        if param.values.shape == (1, 1):
+        if param.slo_values.shape == (1, 1):
             if (param.__getattribute__("state_names")[param.variables[0]][0] == 'True' and
                     param.__getattribute__("state_names")[param.variables[1]][0] == 'True'):
                 return 1
             else:
                 return 0
-        elif param.values.shape == (2, 1):
+        elif param.slo_values.shape == (2, 1):
             if (param.__getattribute__("state_names")[param.variables[0]][0] == 'True' or
                     param.__getattribute__("state_names")[param.variables[1]][0] == 'True'):
-                return param.values[1][0]
+                return param.slo_values[1][0]
             else:
                 return 0
-        elif param.values.shape == (1, 2):
+        elif param.slo_values.shape == (1, 2):
             if (param.__getattribute__("state_names")[param.variables[0]][0] == 'True' or
                     param.__getattribute__("state_names")[param.variables[1]][0] == 'True'):
-                return param.values[0][1]
+                return param.slo_values[0][1]
             else:
                 return 0
-        elif param.values.shape == (2, 2):
-            return param.values[1][1]
+        elif param.slo_values.shape == (2, 2):
+            return param.slo_values[1][1]
         else:
-            return param.values[1]
+            return param.slo_values[1]
     elif len(param.variables) == 1:
-        if param.values.shape == (2,):
-            return param.values[1]
+        if param.slo_values.shape == (2,):
+            return param.slo_values[1]
         elif param.__getattribute__("state_names")[param.variables[0]][0] == 'True':
-            return param.values[0]
+            return param.slo_values[0]
         elif param.__getattribute__("state_names")[param.variables[0]][0] == 'False':
             return 0
         else:
@@ -494,8 +494,8 @@ def log_dict(service, device, variable_dict, Consumer_to_Worker_constraints, mos
     with open("../analysis/inference/n_n_assignments.csv", 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file)
         csv_writer.writerow(
-            [service] + [device] + list(Consumer_to_Worker_constraints.values()) + [most_restrictive_consumer_latency]
-            + list(variable_dict.values()))
+            [service] + [device] + list(Consumer_to_Worker_constraints.slo_values()) + [most_restrictive_consumer_latency]
+            + list(variable_dict.slo_values()))
 
 
 def print_in_red(text):
