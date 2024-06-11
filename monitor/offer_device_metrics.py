@@ -21,7 +21,8 @@ device_metric_reporter = DeviceMetricReporter(gpu_available=False)
 # registry = CollectorRegistry()
 cpu_load = Gauge('cpu_load', 'Current CPU load', ['device_name'])
 gpu_load = Gauge('gpu_load', 'Current GPU load', ['device_name'])
-memory_load = Gauge('memory_load', 'Current Memory load', ['device_name'])
+memory_load = Gauge('memory_load', 'Current memory load', ['device_name'])
+consumption = Gauge('consumption', 'Current energy consumption', ['device_name'])
 
 if __name__ == '__main__':
     print(f"Started server on port {PORT}...")
@@ -32,4 +33,5 @@ if __name__ == '__main__':
         cpu_load.labels(device_name=DEVICE_NAME).set(device_metrics["metrics"]["cpu"])
         gpu_load.labels(device_name=DEVICE_NAME).set(device_metrics["metrics"]["gpu"])
         memory_load.labels(device_name=DEVICE_NAME).set(device_metrics["metrics"]["memory"])
+        consumption.labels(device_name=DEVICE_NAME).set(device_metrics["metrics"]["consumption"])
         time.sleep(1)

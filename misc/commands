@@ -41,6 +41,13 @@ docker run -d \
   -p 9100:9100 \
   prom/node-exporter
 
+docker run -d \
+  --name=mongoDB \
+  -p 27017:27017 \
+  -v /home/boris/development/intelligentVehicle/misc/mongod.conf:/etc/mongod.conf \
+  mongo \
+  --config=/etc/mongod.conf
+
 -------------------------------------------------------------
 
 #Set network up/down

@@ -31,7 +31,7 @@ detector = YOLOv8ObjectDetector(model_path, conf_threshold=0.5, iou_threshold=0.
 simulate_fps = True
 
 device_metric_reporter = DeviceMetricReporter(detector.gpu_available())
-service_metric_reporter = ServiceMetricReporter("Video")
+service_metric_reporter = ServiceMetricReporter("CV")
 
 # cv2.namedWindow("Detected Objects", cv2.WINDOW_AUTOSIZE)
 
@@ -90,14 +90,14 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
                 service_blanket = service_metric_reporter.create_metrics(processing_time, source_fps, pixel)
                 device_blanket = device_metric_reporter.create_metrics()
 
-                # intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
+                intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
                 merged_metrics = utils.merge_single_dicts(service_blanket["metrics"], device_blanket["metrics"])
 
                 if write_csv:
                     csv_headers = merged_metrics.keys()
                     csv_values.append(merged_metrics)
                 else:
-                    device_metric_reporter.report_metrics(device_blanket["target"], merged_metrics)
+                    device_metric_reporter.report_metrics(intersection_name, merged_metrics)
 
                 if simulate_fps:
                     if processing_time < available_time_frame:

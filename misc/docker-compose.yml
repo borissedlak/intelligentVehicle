@@ -1,0 +1,47 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - /home/boris/development/intelligentVehicle/misc/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-admin-api
+    networks:
+      - my_network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=adminadmin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - my_network
+
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - /home/boris/development/intelligentVehicle/misc/mongod.conf:/etc/mongo/mongod.conf
+#      - mongo-data:/data/lib/db
+    command: ["mongod", "--config", "/etc/mongo/mongod.conf"]
+    networks:
+      - my_network
+
+volumes:
+  grafana-storage:
+#  mongo-data:
+
+# TODO: There is some issue with the network, even without the latter lines
+networks:
+  my_network:
+    driver: bridge

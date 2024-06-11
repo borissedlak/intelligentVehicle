@@ -503,4 +503,4 @@ def print_in_red(text):
 
 
 def is_jetson_host(host_name):
-    return host_name in ["OrinNano", "Xavier", "OrinNano"]
+    return host_name in ["OrinNano", "Xavier", "OrinNano", "Orin"]

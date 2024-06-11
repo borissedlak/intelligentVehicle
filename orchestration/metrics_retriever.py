@@ -27,8 +27,9 @@ def get_full_data(latency_slo=None):
 
     # TODO: Must filter according to IDs
     laptop = pd.DataFrame(list(mongo_client['Laptop'].find()))
-    merged_list = pd.concat([laptop])
-
+    orin = pd.DataFrame(list(mongo_client['Orin'].find()))
+    merged_list = pd.concat([laptop, orin])
+    print(merged_list.size)
 
 def get_latest_load(latency_slo=None):
     mongo_client = pymongo.MongoClient(MONGO_HOST)["metrics"]
@@ -44,5 +45,5 @@ if __name__ == "__main__":
     # Utilizes 30% CPU, 15% Memory, No GPU, Consumption depending on fps
 
     # 2) Processor
-    # get_full_data()
-    get_latest_load()
+    get_full_data()
+    # get_latest_load()
