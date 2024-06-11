@@ -24,6 +24,7 @@ else:
     print(f"Didn't find ENV value for MONGO_HOST, default to: {MONGO_HOST}")
 
 
+# TODO: Needs a device ID additionally if we have multiple devices with the same type
 class DeviceMetricReporter:
     def __init__(self, gpu_available=0):
         self.host = DEVICE_NAME

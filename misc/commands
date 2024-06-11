@@ -25,6 +25,22 @@ source /etc/environment
 mongodb+srv://test:<pw>@cluster0.rqaj0m9.mongodb.net/
 mongodb://localhost:27017/
 
+/home/boris/development/intelligentVehicle/misc/prometheus.yml
+/etc/prometheus/prometheus.yml
+
+docker run -d \
+  --name=prometheus \
+  -p 9090:9090 \
+  -v /home/boris/development/intelligentVehicle/misc/prometheus.yml:/etc/prometheus/prometheus.yml \
+  prom/prometheus \
+  --config.file=/etc/prometheus/prometheus.yml \
+  --web.enable-admin-api
+
+docker run -d \
+  --name=node-exporter \
+  -p 9100:9100 \
+  prom/node-exporter
+
 -------------------------------------------------------------
 
 #Set network up/down

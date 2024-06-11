@@ -8,7 +8,7 @@ from detector.utils import xywh2xyxy, multiclass_nms
 
 
 class YOLOv8ObjectDetector:
-    def __init__(self, path, conf_threshold=0.7, iou_threshold=0.5):
+    def __init__(self, path="models/yolov8n.onnx", conf_threshold=0.7, iou_threshold=0.5):
         # Can be assumed to stay constant for simplicity
         self.img_width = None
         self.img_height = None

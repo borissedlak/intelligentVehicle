@@ -31,7 +31,7 @@ detector = YOLOv8ObjectDetector(model_path, conf_threshold=0.5, iou_threshold=0.
 simulate_fps = True
 
 device_metric_reporter = DeviceMetricReporter(detector.gpu_available())
-provider_metric_reporter = ServiceMetricReporter("Processor")
+service_metric_reporter = ServiceMetricReporter("Video")
 
 # cv2.namedWindow("Detected Objects", cv2.WINDOW_AUTOSIZE)
 
@@ -77,7 +77,7 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
                 boxes, scores, class_ids = detector.detect_objects(frame)
                 combined_img = utils.merge_image_with_overlay(frame, boxes, scores, class_ids)
 
-                # output_video.write(combined_img)
+                # output_video.writ(combined_img)
 
                 if show_result:
                     cv2.imshow("Detected Objects", combined_img)
@@ -87,17 +87,17 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
 
                 pixel = combined_img.shape[0]
 
-                service_blanket = provider_metric_reporter.create_metrics(processing_time, source_fps, pixel)
+                service_blanket = service_metric_reporter.create_metrics(processing_time, source_fps, pixel)
                 device_blanket = device_metric_reporter.create_metrics()
 
-                intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
+                # intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
                 merged_metrics = utils.merge_single_dicts(service_blanket["metrics"], device_blanket["metrics"])
 
                 if write_csv:
                     csv_headers = merged_metrics.keys()
                     csv_values.append(merged_metrics)
                 else:
-                    device_metric_reporter.report_metrics(intersection_name, merged_metrics)
+                    device_metric_reporter.report_metrics(device_blanket["target"], merged_metrics)
 
                 if simulate_fps:
                     if processing_time < available_time_frame:
@@ -110,7 +110,7 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
 if __name__ == "__main__":
     write_csv = False
     process_video(video_info=itertools.product([480, 720, 1080], [15, 20, 25, 30, 35]),
-    # process_video(video_info=itertools.product([100, 1080], [45]),
+                  # process_video(video_info=itertools.product([100, 1080], [45]),
                   show_result=False,
                   write_csv=write_csv,
                   repeat=5)
