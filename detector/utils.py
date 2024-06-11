@@ -500,3 +500,7 @@ def log_dict(service, device, variable_dict, Consumer_to_Worker_constraints, mos
 
 def print_in_red(text):
     print("\x1b[31m" + text + "\x1b[0m")
+
+
+def is_jetson_host(host_name):
+    return host_name in ["OrinNano", "Xavier", "OrinNano"]

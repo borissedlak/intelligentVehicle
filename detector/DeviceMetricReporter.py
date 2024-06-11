@@ -7,6 +7,7 @@ import psutil
 import pymongo
 
 from consumption.ConsRegression import ConsRegression
+from detector import utils
 
 DEVICE_NAME = os.environ.get('DEVICE_NAME')
 if DEVICE_NAME:
@@ -25,12 +26,12 @@ else:
 
 class DeviceMetricReporter:
     def __init__(self, gpu_available=0):
-        self.target = DEVICE_NAME
-        self.consumption_regression = ConsRegression(self.target)
+        self.host = DEVICE_NAME
+        self.consumption_regression = ConsRegression(self.host)
         self.mongo_client = pymongo.MongoClient(MONGO_HOST)["metrics"]
         self.gpu_available = gpu_available
 
-        if DEVICE_NAME in ["Orin", "Xavier"]:
+        if utils.is_jetson_host(self.host):
             from jtop.jtop import jtop
             self.jetson_metrics = jtop()
             self.jetson_metrics.start()
@@ -42,22 +43,22 @@ class DeviceMetricReporter:
         cons = self.consumption_regression.predict(cpu, self.gpu_available)
 
         gpu = 0
-        if self.jetson_metrics is not None and DEVICE_NAME in ["Orin", "Xavier", "Nano"]: # Has Jetson lib defined
-                #print(self.jetson_metrics.stats)
-                gpu = self.jetson_metrics.stats['GPU']
-                cons = self.jetson_metrics.stats['Power TOT'] / 1000
-                mode = self.jetson_metrics.stats['nvp model']
+        if utils.is_jetson_host(self.host):  # Has Jetson lib defined
+            # print(self.jetson_metrics.stats)
+            gpu = self.jetson_metrics.stats['GPU']
+            cons = self.jetson_metrics.stats['Power TOT'] / 1000
+            mode = self.jetson_metrics.stats['nvp model']
         elif self.gpu_available:
-            if len(GPUtil.getGPUs()) > 0 and DEVICE_NAME not in ["Orin", "Xavier"]: # Has Nvidia GPU but is no Jetson
+            if len(GPUtil.getGPUs()) > 0:  # Has Nvidia GPU but is no Jetson
                 gpu = int(GPUtil.getGPUs()[0].load * 100)
-            else: # Old workaround
+            else:  # Old workaround
                 # frame_gpu_translation = {15: 30, 20: 40, 25: 65, 30: 75, 35: 80}  # Orin
-                #frame_gpu_translation = {15: 35, 20: 50, 25: 70, 30: 80, 35: 85}  # Xavier
-                #gpu = frame_gpu_translation[source_fps]   
-                raise RuntimeError("How come?")     
-        
-        return {"target": self.target,
-                "metrics": {"device_type": self.target, "cpu": cpu, "memory": mem, "consumption": cons,
+                # frame_gpu_translation = {15: 35, 20: 50, 25: 70, 30: 80, 35: 85}  # Xavier
+                # gpu = frame_gpu_translation[source_fps]
+                raise RuntimeError("How come?")
+
+        return {"target": self.host,
+                "metrics": {"device_type": self.host, "cpu": cpu, "memory": mem, "consumption": cons,
                             "timestamp": datetime.now(), "gpu": gpu}}
 
     # @utils.print_execution_time

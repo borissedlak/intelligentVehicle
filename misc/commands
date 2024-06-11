@@ -1,0 +1,61 @@
+ffmpeg -y -ss 00:00:00 -to 00:00:10 -i original.mp4 -c copy original_cut.mp4
+
+sudo service mosquitto stop
+mosquitto -c mosquitto.conf
+http://delock-3259.local/
+
+
+docker buildx build -t basta55/workload --platform linux/arm64 --load .
+docker buildx build -t basta55/workload-gpu:latest -f ./DockerfileGPU --platform linux/arm64 --load .
+docker cp eloquent_davinci:/data/ $HOME/
+
+120p = 25440
+180p = 57600
+240p = 102240
+360p = 230400
+480p = 409920
+720p = 921600
+
+
+export VARNAME="my value"
+sudo nano /etc/environment
+# Add at the end of the file without export
+source /etc/environment
+
+mongodb+srv://test:<pw>@cluster0.rqaj0m9.mongodb.net/
+mongodb://localhost:27017/
+
+-------------------------------------------------------------
+
+#Set network up/down
+sudo ip link set wlan0_ibss up
+
+#Connect or create to a p2p network with frequency 2462 = channel 11, 2472 = 13
+sudo iw dev wlan0 ibss join JetsonAdhocNetwork 2462
+sudo ifconfig wlan0 192.168.1.1 netmask 255.255.255.0 up
+sudo ip addr add 192.168.1.1/24 dev wlan0
+
+#Show current configuration of a network
+ip link show wlan0_ibss
+sudo iw dev wlan0_ibss info
+
+#Connect to a wifi through NetworkManager
+sudo nmcli device wifi connect "AD222-global" password "xiaoboqu"
+
+#Start NetworkManager, set network unmanaged for NetworkManager
+sudo systemctl start NetworkManager
+sudo nmcli dev set wlan0 managed no
+
+#remove and add wlan in ibss mode, set for existing (down!)
+sudo iw dev wlan0_ibss del
+sudo iw dev wlan0 interface add wlan0_ibss type ibss
+sudo iw dev wlan0 set type ibss
+
+#Flush routes and add new for local network
+sudo ip addr flush dev wlan0
+sudo ip route add 192.168.1.0/24 dev wlan0
+ip route show
+
+#Check network throughput
+iperf3 -s
+iperf3 -c ip.address
