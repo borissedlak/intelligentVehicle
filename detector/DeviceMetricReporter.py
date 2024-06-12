@@ -8,6 +8,7 @@ import pymongo
 
 from consumption.ConsRegression import ConsRegression
 from detector import utils
+from detector.utils import DB_NAME
 
 DEVICE_NAME = os.environ.get('DEVICE_NAME')
 if DEVICE_NAME:
@@ -29,7 +30,7 @@ class DeviceMetricReporter:
     def __init__(self, gpu_available=0):
         self.host = DEVICE_NAME
         self.consumption_regression = ConsRegression(self.host)
-        self.mongo_client = pymongo.MongoClient(MONGO_HOST)["metrics"]
+        self.mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
         self.gpu_available = gpu_available
 
         if utils.is_jetson_host(self.host):

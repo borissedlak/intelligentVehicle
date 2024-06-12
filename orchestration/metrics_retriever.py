@@ -3,6 +3,8 @@ import os
 import pandas as pd
 import pymongo
 
+from detector.utils import DB_NAME, COLLECTION_NAME
+
 sample_file = "samples.csv"
 cpd_max_sum = 0.95
 
@@ -23,16 +25,14 @@ else:
 
 # @utils.print_execution_time
 def get_full_data(latency_slo=None):
-    mongo_client = pymongo.MongoClient(MONGO_HOST)["metrics"]
+    mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
 
     # TODO: Must filter according to IDs
-    laptop = pd.DataFrame(list(mongo_client['Laptop'].find()))
-    orin = pd.DataFrame(list(mongo_client['Orin'].find()))
-    merged_list = pd.concat([laptop, orin])
-    print(merged_list.size)
+    metrics = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
+    print(metrics.size)
 
 def get_latest_load(latency_slo=None):
-    mongo_client = pymongo.MongoClient(MONGO_HOST)["metrics"]
+    mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
 
     # TODO: Must filter according to IDs
     laptop = mongo_client['Laptop'].find_one()

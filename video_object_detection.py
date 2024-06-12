@@ -9,6 +9,7 @@ from detector import utils
 from detector.DeviceMetricReporter import DeviceMetricReporter
 from detector.ServiceMetricReporter import ServiceMetricReporter
 from detector.YOLOv8ObjectDetector import YOLOv8ObjectDetector
+from detector.utils import COLLECTION_NAME
 
 # Benchmark for road race with 'video.mp4'
 # PC CPU --> XX FPS
@@ -90,14 +91,14 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
                 service_blanket = service_metric_reporter.create_metrics(processing_time, source_fps, pixel)
                 device_blanket = device_metric_reporter.create_metrics()
 
-                intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
+                # intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
                 merged_metrics = utils.merge_single_dicts(service_blanket["metrics"], device_blanket["metrics"])
 
                 if write_csv:
                     csv_headers = merged_metrics.keys()
                     csv_values.append(merged_metrics)
                 else:
-                    device_metric_reporter.report_metrics(intersection_name, merged_metrics)
+                    device_metric_reporter.report_metrics(COLLECTION_NAME, merged_metrics)
 
                 if simulate_fps:
                     if processing_time < available_time_frame:
