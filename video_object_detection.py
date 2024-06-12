@@ -27,7 +27,7 @@ else:
     DEVICE_NAME = "Unknown"
     print(f"Didn't find ENV value for DEVICE_NAME, default to: {DEVICE_NAME}")
 
-model_path = "models/yolov8n.onnx"  # _n is default
+model_path = "models/yolov8n.onnx"
 detector = YOLOv8ObjectDetector(model_path, conf_threshold=0.5, iou_threshold=0.5)
 simulate_fps = True
 
@@ -110,8 +110,8 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
 
 if __name__ == "__main__":
     write_csv = False
-    process_video(video_info=itertools.product([480, 720, 1080], [15, 20, 25, 30, 35]),
-                  # process_video(video_info=itertools.product([100, 1080], [45]),
+    # process_video(video_info=itertools.product([480, 720, 1080], [15, 20, 25, 30, 35]),
+    process_video(video_info=itertools.product([480], [45]),
                   show_result=False,
                   write_csv=write_csv,
                   repeat=5)

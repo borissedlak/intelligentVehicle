@@ -1,5 +1,8 @@
 import pulp
 
+# TODO: I can define two items, one if the service is executed on CPU, another on GPU, and make them mutually exclusive
+#  If I would then orchestrate this, the service would only have to choose between the CUDA/CPU provider
+
 # Define the number of items and knapsacks
 n_items = 6
 n_knapsacks = 3

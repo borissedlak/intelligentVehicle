@@ -47,6 +47,7 @@ class DeviceMetricReporter:
         gpu = 0
         if utils.is_jetson_host(self.host):  # Has Jetson lib defined
             # print(self.jetson_metrics.stats)
+            # TODO: The GPU values are way too unstable, I must fix this somehow, or make an average over the last 5 values
             gpu = self.jetson_metrics.stats['GPU']
             cons = self.jetson_metrics.stats['Power TOT'] / 1000
             mode = self.jetson_metrics.stats['nvp model']

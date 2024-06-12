@@ -3,7 +3,8 @@ import os
 import pandas as pd
 import pymongo
 
-from detector.utils import DB_NAME, COLLECTION_NAME
+from detector import utils
+from detector.utils import DB_NAME, COLLECTION_NAME, export_samples
 
 sample_file = "samples.csv"
 cpd_max_sum = 0.95
@@ -23,13 +24,25 @@ else:
     print(f"Didn't find ENV value for MONGO_HOST, default to: {MONGO_HOST}")
 
 
-# @utils.print_execution_time
-def get_full_data(latency_slo=None):
+@utils.print_execution_time
+def retrieve_full_data():
     mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
 
     # TODO: Must filter according to IDs
-    metrics = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
-    print(metrics.size)
+    df = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
+    # export_samples(metrics, sample_file)
+
+    # distinct_services = df['service'].unique()
+    # distinct_device_types = df['device_type'].unique()
+    #
+    # print("Distinct services:", distinct_services)
+    # print("Distinct device types:", distinct_device_types)
+
+    unique_pairs_df = df[['service', 'device_type']].drop_duplicates()
+    unique_pairs = list(unique_pairs_df.itertuples(index=False, name=None))
+
+    print(unique_pairs)
+    print(df.size)
 
 def get_latest_load(latency_slo=None):
     mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
@@ -45,5 +58,5 @@ if __name__ == "__main__":
     # Utilizes 30% CPU, 15% Memory, No GPU, Consumption depending on fps
 
     # 2) Processor
-    get_full_data()
+    retrieve_full_data()
     # get_latest_load()
