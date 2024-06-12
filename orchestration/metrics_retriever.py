@@ -1,9 +1,9 @@
 import os
+from datetime import datetime, timedelta
 
 import pandas as pd
 import pymongo
 from prometheus_api_client import PrometheusConnect
-from datetime import datetime, timedelta
 
 from detector import utils
 from detector.utils import DB_NAME, COLLECTION_NAME, export_samples
@@ -36,6 +36,30 @@ def retrieve_full_data():
 
     unique_pairs = utils.get_service_host_pairs(df)
     print(f"Contains pairs for {unique_pairs}")
+
+
+def transform_metrics_for_MKP():
+    df = pd.read_csv(sample_file)
+    unique_pairs = utils.get_service_host_pairs(df)
+
+    for (service, device_type) in unique_pairs:
+        filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
+        print(f"{(service, device_type)} with {filtered.shape[0]} samples")
+
+        conditions = {'pixel': 480, 'fps': 45}
+
+        mask = pd.Series([True] * len(df))
+        for column, value in conditions.items():
+            mask = mask & (df[column] == value)
+
+        filtered_df = df[mask]
+        print(filtered_df)
+
+        infer_slo_fulfillment(filtered, conditions)
+
+
+def infer_slo_fulfillment(df, conditions):
+    pass
 
 
 def get_latest_load(device_name="Laptop"):
@@ -73,4 +97,5 @@ if __name__ == "__main__":
 
     # 2) Processor
     # retrieve_full_data()
-    get_latest_load()
+    transform_metrics_for_MKP()
+    # get_latest_load()
