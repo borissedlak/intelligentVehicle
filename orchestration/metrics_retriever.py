@@ -2,6 +2,8 @@ import os
 
 import pandas as pd
 import pymongo
+from prometheus_api_client import PrometheusConnect
+from datetime import datetime, timedelta
 
 from detector import utils
 from detector.utils import DB_NAME, COLLECTION_NAME, export_samples
@@ -24,32 +26,44 @@ else:
     print(f"Didn't find ENV value for MONGO_HOST, default to: {MONGO_HOST}")
 
 
-@utils.print_execution_time
+# @utils.print_execution_time
 def retrieve_full_data():
     mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
-
-    # TODO: Must filter according to IDs
     df = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
-    # export_samples(metrics, sample_file)
 
-    # distinct_services = df['service'].unique()
-    # distinct_device_types = df['device_type'].unique()
-    #
-    # print("Distinct services:", distinct_services)
-    # print("Distinct device types:", distinct_device_types)
+    export_samples(df, sample_file)
+    print(f"Reading {df.shape[0]} samples from mongoDB")
 
-    unique_pairs_df = df[['service', 'device_type']].drop_duplicates()
-    unique_pairs = list(unique_pairs_df.itertuples(index=False, name=None))
+    unique_pairs = utils.get_service_host_pairs(df)
+    print(f"Contains pairs for {unique_pairs}")
 
-    print(unique_pairs)
-    print(df.size)
 
-def get_latest_load(latency_slo=None):
-    mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
+def get_latest_load(device_name="Laptop"):
+    # Connect to Prometheus
+    prom = PrometheusConnect(url="http://localhost:9090", disable_ssl=True)
 
-    # TODO: Must filter according to IDs
-    laptop = mongo_client['Laptop'].find_one()
-    print(laptop)
+    # Define the query
+    query = 'cpu_load{device_name="' + device_name + '"}'
+
+    # Query the latest value
+    end_time = datetime.now()
+    start_time = end_time - timedelta(minutes=10)  # Query the last 5 minutes for safety
+
+    # Get the metric data
+    metric_data = prom.get_metric_range_data(
+        metric_name=query,
+        start_time=start_time,
+        end_time=end_time
+    )
+
+    # Check if data is present
+    if metric_data:
+        # Get the latest value
+        latest_value = metric_data[0]['values'][-1]
+        timestamp, cpu_load = latest_value
+        print(f"Timestamp: {timestamp}, CPU Load: {cpu_load}")
+    else:
+        print("No data found for the given query.")
 
 
 if __name__ == "__main__":
@@ -58,5 +72,5 @@ if __name__ == "__main__":
     # Utilizes 30% CPU, 15% Memory, No GPU, Consumption depending on fps
 
     # 2) Processor
-    retrieve_full_data()
-    # get_latest_load()
+    # retrieve_full_data()
+    get_latest_load()
