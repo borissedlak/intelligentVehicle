@@ -46,16 +46,19 @@ def transform_metrics_for_MKP():
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
 
-        conditions = {'pixel': 480, 'fps': 45}
+        # conditions = {'pixel': 480, 'fps': 25}
+        #
+        # mask = pd.Series([True] * len(filtered))
+        # for column, value in conditions.items():
+        #     mask = mask & (df[column] == value)
+        #
+        # filtered = filtered[mask]
 
-        mask = pd.Series([True] * len(df))
-        for column, value in conditions.items():
-            mask = mask & (df[column] == value)
+        condition = filtered['delta'] < 1000 / filtered['fps']
+        percentage = (condition.sum() / len(filtered)) * 100
+        print(f"In_time fulfilled for {int(percentage)} %")
 
-        filtered_df = df[mask]
-        print(filtered_df)
-
-        infer_slo_fulfillment(filtered, conditions)
+        # infer_slo_fulfillment(filtered, conditions)
 
 
 def infer_slo_fulfillment(df, conditions):
