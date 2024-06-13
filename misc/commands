@@ -21,9 +21,11 @@ export VARNAME="my value"
 sudo nano /etc/environment
 # Add at the end of the file without export
 source /etc/environment
+export PYTHONPATH=/home/orinagx/development/intelligentVehicle
 
 mongodb+srv://test:<pw>@cluster0.rqaj0m9.mongodb.net/
 mongodb://localhost:27017/
+mongodb://192.168.31.19:27017/
 
 /home/boris/development/intelligentVehicle/misc/prometheus.yml
 /etc/prometheus/prometheus.yml
