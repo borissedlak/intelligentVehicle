@@ -45,6 +45,7 @@ def transform_metrics_for_MKP():
     for (service, device_type) in unique_pairs:
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
+        utils.train_to_BN(filtered, service_name=service)
 
         # conditions = {'pixel': 480, 'fps': 25}
         #
@@ -54,7 +55,7 @@ def transform_metrics_for_MKP():
         #
         # filtered = filtered[mask]
 
-        condition = filtered['delta'] < 1000 / filtered['fps']
+        condition = filtered['delta'] < 1000 / 20 #filtered['fps']
         percentage = (condition.sum() / len(filtered)) * 100
         print(f"In_time fulfilled for {int(percentage)} %")
 
@@ -99,6 +100,6 @@ if __name__ == "__main__":
     # Utilizes 30% CPU, 15% Memory, No GPU, Consumption depending on fps
 
     # 2) Processor
-    # retrieve_full_data()
+    retrieve_full_data()
     transform_metrics_for_MKP()
     # get_latest_load()

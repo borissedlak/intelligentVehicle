@@ -111,10 +111,10 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
 if __name__ == "__main__":
     write_csv = False
     # process_video(video_info=itertools.product([480, 720, 1080], [15, 20, 25, 30, 35]),
-    process_video(video_info=itertools.product([480], [25]),
+    process_video(video_info=itertools.product([480, 720, 1080], [25]),
                   show_result=False,
                   write_csv=write_csv,
-                  repeat=50)
+                  repeat=5)
 
     if write_csv:
         with open(f"./analysis/performance/{DEVICE_NAME}.csv", 'w', newline='') as csv_file:
