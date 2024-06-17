@@ -5,8 +5,8 @@ import pandas as pd
 import pymongo
 from prometheus_api_client import PrometheusConnect
 
-from detector import utils
-from detector.utils import DB_NAME, COLLECTION_NAME, export_samples
+import utils
+from utils import DB_NAME, COLLECTION_NAME, export_samples
 
 sample_file = "samples.csv"
 cpd_max_sum = 0.95

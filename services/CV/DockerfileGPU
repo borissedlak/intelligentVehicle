@@ -1,0 +1,32 @@
+# set base image (host OS)
+FROM python:3.10-slim-buster
+ENV HTTP_SERVER=""
+ENV DEVICE_NAME=""
+ENV CLEAN_RESTART=""
+ENV DISABLE_ACI=""
+ENV SEND_SYSTEM_STATS=""
+
+#Local dependencies for cv2
+RUN apt-get update
+RUN apt-get install ffmpeg libsm6 libxext6 wget -y
+RUN apt-get install gcc python3-dev graphviz -y
+RUN wget https://nvidia.box.com/shared/static/6pt8royppnkhx4us806s1f02n2kbk4po.whl -O onnxruntime_gpu-1.12.1-cp310-cp310-linux_aarch64.whl
+
+# set the working directory in the container
+WORKDIR /src/
+
+# copy the content of the local directory to the working directory
+COPY requirementsGPU.txt /src/
+COPY FGCS /src/
+COPY model /src/
+COPY detector /src/
+COPY video_data /video_data/
+COPY data /data/
+
+# install dependencies
+# RUN pip install --upgrade pip setuptools wheel
+RUN pip install ../onnxruntime_gpu-1.12.1-cp310-cp310-linux_aarch64.whl
+RUN pip install -r requirementsGPU.txt --verbose
+
+# command to run on container start
+CMD [ "python", "./agent.py" ]

@@ -6,8 +6,6 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-from detector.utils import print_execution_time
-
 warnings.filterwarnings("ignore", category=UserWarning)
 ROOT = os.path.dirname(__file__)
 
@@ -30,7 +28,7 @@ class ConsRegression:
             trained_model = self.train_model()
             self.model = trained_model
 
-    @print_execution_time
+    # @print_execution_time
     def train_model(self):
         model = LinearRegression()
         df = pd.read_csv(self.source_data_file_name)

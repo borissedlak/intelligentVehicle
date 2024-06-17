@@ -7,8 +7,7 @@ import psutil
 import pymongo
 
 from consumption.ConsRegression import ConsRegression
-from detector import utils
-from detector.utils import DB_NAME
+from services.CV.cv_utils import is_jetson_host, DB_NAME
 
 DEVICE_NAME = os.environ.get('DEVICE_NAME')
 if DEVICE_NAME:
@@ -33,7 +32,7 @@ class DeviceMetricReporter:
         self.mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
         self.gpu_available = gpu_available
 
-        if utils.is_jetson_host(self.host):
+        if is_jetson_host(self.host):
             from jtop.jtop import jtop
             self.jetson_metrics = jtop()
             self.jetson_metrics.start()
@@ -45,7 +44,7 @@ class DeviceMetricReporter:
         cons = self.consumption_regression.predict(cpu, self.gpu_available)
 
         gpu = 0
-        if utils.is_jetson_host(self.host):  # Has Jetson lib defined
+        if is_jetson_host(self.host):  # Has Jetson lib defined
             # print(self.jetson_metrics.stats)
             # TODO: The GPU values are way too unstable, I must fix this somehow, or make an average over the last 5 values
             gpu = self.jetson_metrics.stats['GPU']

@@ -2,3 +2,4 @@ data/pamela_reif.mp4
 __pycache__/
 model_*.sav
 *.pt
+venv/
