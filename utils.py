@@ -2,6 +2,7 @@ import copy
 import csv
 import fnmatch
 import os
+import threading
 import time
 from itertools import combinations
 
@@ -353,11 +354,13 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
 
     return samples
 
+
 def export_samples(samples: pd.DataFrame, export_path):
     samples.to_csv(export_path, index=False)
     print(f"Loaded {export_path} from MongoDB")
 
     return samples
+
 
 def train_to_BN(samples, service_name, export_file=None, samples_path=None, dag=None):
     if samples_path is not None:
@@ -515,6 +518,11 @@ def get_service_host_pairs(df):
     unique_pairs_df = df[['service', 'device_type']].drop_duplicates()
     unique_pairs = list(unique_pairs_df.itertuples(index=False, name=None))
     return unique_pairs
+
+
+def print_current_services(thread_lib: [threading.Thread]):
+    for t in thread_lib:
+        pass
 
 
 COLLECTION_NAME = "metrics"

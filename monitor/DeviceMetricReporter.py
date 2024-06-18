@@ -16,12 +16,12 @@ else:
     DEVICE_NAME = "Unknown"
     print(f"Didn't find ENV value for DEVICE_NAME, default to: {DEVICE_NAME}")
 
-MONGO_HOST = os.environ.get('MONGO_HOST')
-if MONGO_HOST:
-    print(f'Found ENV value for MONGO_HOST: {MONGO_HOST}')
+LEADER_HOST = os.environ.get('LEADER_HOST')
+if LEADER_HOST:
+    print(f'Found ENV value for LEADER_HOST: {LEADER_HOST}')
 else:
-    MONGO_HOST = "localhost"
-    print(f"Didn't find ENV value for MONGO_HOST, default to: {MONGO_HOST}")
+    LEADER_HOST = "localhost"
+    print(f"Didn't find ENV value for LEADER_HOST, default to: {LEADER_HOST}")
 
 
 # TODO: Needs a device ID additionally if we have multiple devices with the same type
@@ -29,7 +29,7 @@ class DeviceMetricReporter:
     def __init__(self, gpu_available=0):
         self.host = DEVICE_NAME
         self.consumption_regression = ConsRegression(self.host)
-        self.mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
+        self.mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
         self.gpu_available = gpu_available
 
         if is_jetson_host(self.host):
@@ -69,5 +69,4 @@ class DeviceMetricReporter:
         insert_thread.start()
 
     def run_detached(self, target, record):
-        # mongo_client = pymongo.MongoClient(MONGO_HOST)["metrics"]
         self.mongo_client[target].insert_one(record)

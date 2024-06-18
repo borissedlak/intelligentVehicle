@@ -39,16 +39,28 @@ def infer_slo_fulfillment(bn_model, slo_variables, constraints=None):
     return result
 
 
-def processing_loop(inf_service: VehicleService, constraints):
-    while True:
-        inf_service.process_one_iteration(constraints)
+# def processing_loop(inf_service: VehicleService, constraints):
+class ServiceWrapper:
+    def __init__(self, inf_service: VehicleService, constraints):
+        self._running = True
+        self.inf_service = inf_service
+        self.constraints = constraints
+
+    def terminate(self):
+        self._running = False
+
+    def run(self):
+        while self._running:
+            self.inf_service.process_one_iteration(self.constraints)
+        print(f"Thread {self.inf_service} exited gracefully")
 
 
 def start_service(s):
     if s['name'] == "XYZ":
-        service: VehicleService = VideoDetector()  # Other services
+        service_wrapper = None  # Other services
     else:
-        service: VehicleService = VideoDetector()
+        # service: VehicleService = VideoDetector()
+        service_wrapper = ServiceWrapper(VideoDetector(), s['constraints'])
 
     model_path = f"CV_{DEVICE_NAME}_model.xml"
     model = XMLBIFReader(model_path).get_model()
@@ -59,24 +71,25 @@ def start_service(s):
     # Case 1.1: Same if not known, we'll find out during operation
 
     if slo >= 0.80:
-        background_thread = threading.Thread(target=processing_loop, args=(service, s['constraints']))
+        background_thread = threading.Thread(target=service_wrapper.run, name=s['name'])
         background_thread.daemon = True  # Set the thread as a daemon, so it exits when the main program exits
         background_thread.start()
+        # background_thread.__getattribute__('_args')
+
         print(f"{s['name']} started detached for expected SLO fulfillment {slo}")
-        thread_lib.append(background_thread)
+        thread_lib.append((background_thread, service_wrapper))
+        utils.print_current_services(thread_lib)
     else:
         print(f"Skipping service due tu low expected SLO fulfillment {slo}")
 
     # Case 2: However, if it is below the thresh, try to offload
 
 
-services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}},
-            {"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '10'}}]
+services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:
     print(f"Starting {service_description['name']} by default")
-    # start_service(service_description)
-
+    start_service(service_description)
 app = Flask(__name__)
 
 
@@ -85,6 +98,19 @@ def start():
     service_d = ast.literal_eval(request.args.get('service_description'))
     start_service(service_d)
     return "success"
+
+
+@app.route("/stop_all_services", methods=['POST'])
+def stop_all():
+    global thread_lib
+    print(f"Going to stop {len(thread_lib)} threads")
+
+    for bg_thread, task_object in thread_lib:
+        task_object.terminate()
+    # service_d = ast.literal_eval(request.args.get('service_description'))
+    # start_service(service_d)
+    thread_lib = []
+    return "Stopped all threads"
 
 
 def run_server():

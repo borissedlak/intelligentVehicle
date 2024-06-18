@@ -18,17 +18,17 @@ else:
     DEVICE_NAME = "Unknown"
     print(f"Didn't find ENV value for DEVICE_NAME, default to: {DEVICE_NAME}")
 
-MONGO_HOST = os.environ.get('MONGO_HOST')
-if MONGO_HOST:
-    print(f'Found ENV value for MONGO_HOST: {MONGO_HOST}')
+LEADER_HOST = os.environ.get('LEADER_HOST')
+if LEADER_HOST:
+    print(f'Found ENV value for LEADER_HOST: {LEADER_HOST}')
 else:
-    MONGO_HOST = "localhost"
-    print(f"Didn't find ENV value for MONGO_HOST, default to: {MONGO_HOST}")
+    LEADER_HOST = "localhost"
+    print(f"Didn't find ENV value for LEADER_HOST, default to: {LEADER_HOST}")
 
 
 # @utils.print_execution_time
 def retrieve_full_data():
-    mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
+    mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
     df = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
 
     utils.export_samples(df, sample_file)
