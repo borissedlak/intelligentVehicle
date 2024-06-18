@@ -3,11 +3,12 @@ import time
 
 import cv2
 
-import cv_utils
 from detector.DeviceMetricReporter import DeviceMetricReporter
 from detector.ServiceMetricReporter import ServiceMetricReporter
-from detector.YOLOv8ObjectDetector import YOLOv8ObjectDetector
-from cv_utils import COLLECTION_NAME
+from services.CV import cv_utils
+from services.CV.cv_utils import COLLECTION_NAME
+from services.VehicleService import VehicleService
+from services.YOLOv8ObjectDetector import YOLOv8ObjectDetector
 
 # Benchmark for road race with 'video.mp4'
 # PC CPU --> XX FPS
@@ -26,16 +27,17 @@ else:
     print(f"Didn't find ENV value for DEVICE_NAME, default to: {DEVICE_NAME}")
 
 
-class VideoDetector:
-    class VideoDetectorParameters:
+class VideoDetector(VehicleService):
+    class Parameters:
         def __init__(self, source_pixel, source_fps):
             self.source_pixel = source_pixel
             self.source_fps = source_fps
 
-    def __init__(self, model_path, video_path):
-        self.model_path = model_path
-        self.video_path = video_path
-        self.detector = YOLOv8ObjectDetector(model_path, conf_threshold=0.5, iou_threshold=0.5)
+    def __init__(self):
+        ROOT = os.path.dirname(__file__)
+        self.model_path = ROOT + "/models/yolov8n.onnx"
+        self.video_path = ROOT + "/data/pamela_reif_cut.mp4"
+        self.detector = YOLOv8ObjectDetector(self.model_path, conf_threshold=0.5, iou_threshold=0.5)
         self.simulate_fps = True
 
         self.device_metric_reporter = DeviceMetricReporter(self.detector.gpu_available())
@@ -51,12 +53,13 @@ class VideoDetector:
             print("Error opening video ...")
             return
 
-    def process_one_iteration(self, params: VideoDetectorParameters):
+    def process_one_iteration(self, params):
+        (source_pixel, source_fps) = params
 
         global csv_values, csv_headers
 
         # print(f"Now processing: {params.source_pixel} p, {params.source_fps} FPS")
-        available_time_frame = (1000 / params.source_fps)
+        available_time_frame = (1000 / source_fps)
 
         ret, original_frame = self.cap.read()
         if not ret:
@@ -64,7 +67,7 @@ class VideoDetector:
             ret, original_frame = self.cap.read()
 
         original_width, original_height = original_frame.shape[1], original_frame.shape[0]
-        ratio = original_height / params.source_pixel
+        ratio = original_height / source_pixel
 
         frame = cv2.resize(original_frame, (int(original_width / ratio), int(original_height / ratio)))
 
@@ -80,7 +83,7 @@ class VideoDetector:
 
         pixel = combined_img.shape[0]
 
-        service_blanket = self.service_metric_reporter.create_metrics(processing_time, params.source_fps, pixel)
+        service_blanket = self.service_metric_reporter.create_metrics(processing_time, source_fps, pixel)
         device_blanket = self.device_metric_reporter.create_metrics()
 
         # intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
@@ -98,4 +101,3 @@ class VideoDetector:
 
     def initialize_video(self):
         self.cap = cv2.VideoCapture(self.video_path)
-

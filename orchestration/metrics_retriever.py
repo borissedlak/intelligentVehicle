@@ -5,8 +5,8 @@ import pandas as pd
 import pymongo
 from prometheus_api_client import PrometheusConnect
 
-import utils
-from utils import DB_NAME, COLLECTION_NAME, export_samples
+import global_utils
+from global_utils import DB_NAME, COLLECTION_NAME, export_samples
 
 sample_file = "samples.csv"
 cpd_max_sum = 0.95
@@ -34,18 +34,18 @@ def retrieve_full_data():
     export_samples(df, sample_file)
     print(f"Reading {df.shape[0]} samples from mongoDB")
 
-    unique_pairs = utils.get_service_host_pairs(df)
+    unique_pairs = global_utils.get_service_host_pairs(df)
     print(f"Contains pairs for {unique_pairs}")
 
 
 def transform_metrics_for_MKP():
     df = pd.read_csv(sample_file)
-    unique_pairs = utils.get_service_host_pairs(df)
+    unique_pairs = global_utils.get_service_host_pairs(df)
 
     for (service, device_type) in unique_pairs:
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
-        utils.train_to_BN(filtered, service_name=service)
+        global_utils.train_to_BN(filtered, service_name=service, export_file=f"{service}_{device_type}_model.xml")
 
         # conditions = {'pixel': 480, 'fps': 25}
         #
@@ -55,7 +55,7 @@ def transform_metrics_for_MKP():
         #
         # filtered = filtered[mask]
 
-        condition = filtered['delta'] < 1000 / 20 #filtered['fps']
+        condition = filtered['delta'] < 1000 / filtered['fps']
         percentage = (condition.sum() / len(filtered)) * 100
         print(f"In_time fulfilled for {int(percentage)} %")
 

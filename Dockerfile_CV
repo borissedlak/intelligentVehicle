@@ -7,9 +7,11 @@ ENV DISABLE_ACI=""
 ENV SEND_SYSTEM_STATS=""
 
 #Local dependencies for cv2
+RUN #curl --silent --location https://deb.nodesource.com/setup_0.10 | bash -
 RUN apt-get update
-RUN apt-get install ffmpeg libsm6 libxext6  -y
+RUN #apt-get upgrade
 RUN apt-get install gcc python3-dev graphviz -y
+RUN apt-get install ffmpeg libsm6 libxext6  -y
 #
 
 # set the working directory in the container
