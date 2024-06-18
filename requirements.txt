@@ -1,4 +1,4 @@
-opencv-python~=4.9.0.80
+opencv-python~=4.8.1.78
 numpy==1.26.4
 psutil~=5.9.8
 pymongo~=4.6.1
@@ -10,3 +10,5 @@ joblib~=1.3.2
 scikit-learn~=1.4.0
 scipy~=1.12.0
 GPUtil~=1.4.0
+requests~=2.31.0
+Flask~=3.0.0

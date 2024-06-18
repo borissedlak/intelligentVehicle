@@ -3,7 +3,7 @@ import time
 
 from prometheus_client import start_http_server, Gauge
 
-from metricReporter.DeviceMetricReporter import DeviceMetricReporter
+from DeviceMetricReporter import DeviceMetricReporter
 
 DEVICE_NAME = os.environ.get('DEVICE_NAME')
 if DEVICE_NAME:
@@ -25,7 +25,7 @@ memory_load = Gauge('memory_load', 'Current memory load', ['device_name'])
 consumption = Gauge('consumption', 'Current energy consumption', ['device_name'])
 
 if __name__ == '__main__':
-    print(f"Started server on port {PORT}...")
+    print(f"Started offering metrics on port {PORT}...")
     while True:
         device_metrics = device_metric_reporter.create_metrics()
         print(device_metrics)

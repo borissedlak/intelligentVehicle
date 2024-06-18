@@ -11,7 +11,7 @@ RUN apt-get update
 RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.tuna.tsinghua.edu.cn/ubuntu/|g' /etc/apt/sources.list
 RUN sed -i 's|http://security.ubuntu.com/ubuntu/|http://mirrors.tuna.tsinghua.edu.cn/ubuntu/|g' /etc/apt/sources.list
 RUN apt-get install ffmpeg libsm6 libxext6  -y
-RUN apt-get install gcc python3-dev graphviz -y
+RUN apt-get install gcc python3-dev graphviz -y # python3-pydot inside python3-dev?
 #
 
 # set the working directory in the container

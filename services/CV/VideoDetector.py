@@ -4,8 +4,8 @@ import time
 import cv2
 
 import utils
-from metricReporter.DeviceMetricReporter import DeviceMetricReporter
-from metricReporter.ServiceMetricReporter import ServiceMetricReporter
+from monitor.DeviceMetricReporter import DeviceMetricReporter
+from monitor.ServiceMetricReporter import ServiceMetricReporter
 from services.VehicleService import VehicleService
 from services.YOLOv8ObjectDetector import YOLOv8ObjectDetector
 
@@ -78,7 +78,7 @@ class VideoDetector(VehicleService):
             cv2.imshow("Detected Objects", combined_img)
 
         processing_time = (time.time() - start_time) * 1000.0
-        print(f"Inference time: {processing_time:.2f} ms")
+        #print(f"Inference time: {processing_time:.2f} ms")
 
         pixel = combined_img.shape[0]
 
