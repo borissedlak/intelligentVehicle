@@ -3,10 +3,9 @@ import time
 
 import cv2
 
-from detector.DeviceMetricReporter import DeviceMetricReporter
-from detector.ServiceMetricReporter import ServiceMetricReporter
-from services.CV import cv_utils
-from services.CV.cv_utils import COLLECTION_NAME
+import utils
+from metricReporter.DeviceMetricReporter import DeviceMetricReporter
+from metricReporter.ServiceMetricReporter import ServiceMetricReporter
 from services.VehicleService import VehicleService
 from services.YOLOv8ObjectDetector import YOLOv8ObjectDetector
 
@@ -73,7 +72,7 @@ class VideoDetector(VehicleService):
 
         start_time = time.time()
         boxes, scores, class_ids = self.detector.detect_objects(frame)
-        combined_img = cv_utils.merge_image_with_overlay(frame, boxes, scores, class_ids)
+        combined_img = utils.merge_image_with_overlay(frame, boxes, scores, class_ids)
 
         if self.show_result:
             cv2.imshow("Detected Objects", combined_img)
@@ -87,13 +86,13 @@ class VideoDetector(VehicleService):
         device_blanket = self.device_metric_reporter.create_metrics()
 
         # intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
-        merged_metrics = cv_utils.merge_single_dicts(service_blanket["metrics"], device_blanket["metrics"])
+        merged_metrics = utils.merge_single_dicts(service_blanket["metrics"], device_blanket["metrics"])
 
         if self.write_csv:
             csv_headers = merged_metrics.keys()
             csv_values.append(merged_metrics)
         else:
-            self.device_metric_reporter.report_metrics(COLLECTION_NAME, merged_metrics)
+            self.device_metric_reporter.report_metrics(utils.COLLECTION_NAME, merged_metrics)
 
         if self.simulate_fps:
             if processing_time < available_time_frame:

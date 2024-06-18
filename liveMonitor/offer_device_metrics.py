@@ -3,7 +3,7 @@ import time
 
 from prometheus_client import start_http_server, Gauge
 
-from detector.DeviceMetricReporter import DeviceMetricReporter
+from metricReporter.DeviceMetricReporter import DeviceMetricReporter
 
 DEVICE_NAME = os.environ.get('DEVICE_NAME')
 if DEVICE_NAME:

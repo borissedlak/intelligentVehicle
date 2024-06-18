@@ -15,10 +15,8 @@ from networkx.drawing.nx_pydot import graphviz_layout
 from pgmpy.base import DAG
 from pgmpy.estimators import AICScore, HillClimbSearch, MaximumLikelihoodEstimator
 from pgmpy.factors.discrete import DiscreteFactor
-from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 from pgmpy.readwrite import XMLBIFWriter, XMLBIFReader
-from scipy.interpolate import griddata
 
 class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
                'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
@@ -235,33 +233,33 @@ def get_true(param):
     if len(param.variables) > 2:
         raise Exception("How come?")
     if len(param.variables) == 2:
-        if param.slo_values.shape == (1, 1):
+        if param.values.shape == (1, 1):
             if (param.__getattribute__("state_names")[param.variables[0]][0] == 'True' and
                     param.__getattribute__("state_names")[param.variables[1]][0] == 'True'):
                 return 1
             else:
                 return 0
-        elif param.slo_values.shape == (2, 1):
+        elif param.values.shape == (2, 1):
             if (param.__getattribute__("state_names")[param.variables[0]][0] == 'True' or
                     param.__getattribute__("state_names")[param.variables[1]][0] == 'True'):
-                return param.slo_values[1][0]
+                return param.values[1][0]
             else:
                 return 0
-        elif param.slo_values.shape == (1, 2):
+        elif param.values.shape == (1, 2):
             if (param.__getattribute__("state_names")[param.variables[0]][0] == 'True' or
                     param.__getattribute__("state_names")[param.variables[1]][0] == 'True'):
-                return param.slo_values[0][1]
+                return param.values[0][1]
             else:
                 return 0
-        elif param.slo_values.shape == (2, 2):
-            return param.slo_values[1][1]
+        elif param.values.shape == (2, 2):
+            return param.values[1][1]
         else:
-            return param.slo_values[1]
+            return param.values[1]
     elif len(param.variables) == 1:
-        if param.slo_values.shape == (2,):
-            return param.slo_values[1]
+        if param.values.shape == (2,):
+            return param.values[1]
         elif param.__getattribute__("state_names")[param.variables[0]][0] == 'True':
-            return param.slo_values[0]
+            return param.values[0]
         elif param.__getattribute__("state_names")[param.variables[0]][0] == 'False':
             return 0
         else:
@@ -355,13 +353,11 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
 
     return samples
 
-
 def export_samples(samples: pd.DataFrame, export_path):
     samples.to_csv(export_path, index=False)
     print(f"Loaded {export_path} from MongoDB")
 
     return samples
-
 
 def train_to_BN(samples, service_name, export_file=None, samples_path=None, dag=None):
     if samples_path is not None:
@@ -503,8 +499,8 @@ def log_dict(service, device, variable_dict, Consumer_to_Worker_constraints, mos
     with open("../analysis/inference/n_n_assignments.csv", 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file)
         csv_writer.writerow(
-            [service] + [device] + list(Consumer_to_Worker_constraints.slo_values()) + [most_restrictive_consumer_latency]
-            + list(variable_dict.slo_values()))
+            [service] + [device] + list(Consumer_to_Worker_constraints.values()) + [most_restrictive_consumer_latency]
+            + list(variable_dict.values()))
 
 
 def print_in_red(text):
@@ -519,101 +515,6 @@ def get_service_host_pairs(df):
     unique_pairs_df = df[['service', 'device_type']].drop_duplicates()
     unique_pairs = list(unique_pairs_df.itertuples(index=False, name=None))
     return unique_pairs
-
-
-# @print_execution_time
-def get_surprise_for_data(model: BayesianNetwork, data):
-    # Create an inference object
-    inference = VariableElimination(get_mbs_as_bn(model, ["success", "in_time", "network", "distance"]))
-
-    bic_sum = 0.0
-    try:
-        for variable in ["success", "in_time", "network", "distance"]:
-            cpd = get_mbs_as_bn(model, [variable]).get_cpds(variable)
-            log_likelihood = 0.0
-            evidence_variables = model.get_markov_blanket(variable)
-
-            # if 'consumption' in evidence_variables:
-            #     evidence_variables.remove('consumption')
-
-            for _, row in data.iterrows():
-                evidence = {col: row[col] for col in evidence_variables}
-                query_result = inference.query(variables=[variable], evidence=evidence)
-                state_index = cpd.__getattribute__("state_names")[variable].index(row[variable])
-                p = query_result.values[state_index]
-                log_likelihood += np.log(p if p > 0 else 1e-10)
-
-            k = len(cpd.get_values().flatten()) - len(cpd.variables)
-
-            n = len(data)
-            bic = -2 * log_likelihood + k * np.log(n)
-            bic_sum += bic
-    except ValueError or KeyError as e:
-        print_in_red(f"Should not happen after safeguard function!!!!" + str(e))
-
-    return bic_sum
-
-
-# @print_execution_time # takes ~2ms
-def get_mbs_as_bn(model: DAG or BayesianNetwork, center: [str]):
-    mb_list = []
-    for node in center:
-        mb_list.extend(model.get_markov_blanket(node))
-    mb = copy.deepcopy(model)
-
-    mb_list.extend(center)
-    for n in model.nodes:
-        if n not in mb_list:
-            mb.remove_node(n)
-
-    return mb
-
-
-# @print_execution_time # took ~13ms
-def verify_all_slo_parameters_known(model: BayesianNetwork, data):
-    for variable in ["success", "in_time", "fps", "pixel", "stream_count", "bitrate", "network", "distance"]:
-        for _, row in data.iterrows():
-            if row[variable] not in model.__getattribute__("states")[variable]:
-                return False
-
-        for v in model.get_markov_blanket(variable):
-            for _, row in data.iterrows():
-                if row[v] not in model.__getattribute__("states")[v]:
-                    return False
-
-    return True
-
-
-def cap_0_1(num: float):
-    if num < 0.0:
-        return 0.0
-    elif num > 1.0:
-        return 1.0
-    return num
-
-
-def interpolate_values(matrix):
-    x = np.arange(matrix.shape[1])
-    y = np.arange(matrix.shape[0])
-    xx, yy = np.meshgrid(x, y)
-
-    # Flatten the data and coordinates
-    x_flat = xx.flatten()
-    y_flat = yy.flatten()
-    data_flat = matrix.flatten()
-
-    valid_indices = data_flat != -1  # -1 indicates empty values
-    x_valid = x_flat[valid_indices]
-    y_valid = y_flat[valid_indices]
-    data_valid = data_flat[valid_indices]
-
-    # Interpolate missing values using griddata
-    m = 'linear' if len(data_valid) >= 4 else 'nearest'
-    interpolated_data = griddata((x_valid, y_valid), data_valid, (xx, yy), method=m)
-
-    mask = np.isnan(interpolated_data)
-    interpolated_data[mask] = griddata((x_valid, y_valid), data_valid, (xx[mask], yy[mask]), method='nearest')
-    return interpolated_data
 
 
 COLLECTION_NAME = "metrics"

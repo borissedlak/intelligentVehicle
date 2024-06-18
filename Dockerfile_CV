@@ -19,7 +19,7 @@ WORKDIR /src/
 
 # copy the content of the local directory to the working directory
 COPY services/CV /src/
-COPY detector /src/
+COPY metricReporter /src/
 COPY consumption /src/
 
 # install dependencies

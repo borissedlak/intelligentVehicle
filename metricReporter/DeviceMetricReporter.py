@@ -7,7 +7,7 @@ import psutil
 import pymongo
 
 from consumption.ConsRegression import ConsRegression
-from services.CV.cv_utils import is_jetson_host, DB_NAME
+from utils import is_jetson_host, DB_NAME
 
 DEVICE_NAME = os.environ.get('DEVICE_NAME')
 if DEVICE_NAME:

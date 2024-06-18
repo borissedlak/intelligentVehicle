@@ -5,8 +5,8 @@ import pandas as pd
 import pymongo
 from prometheus_api_client import PrometheusConnect
 
-import global_utils
-from global_utils import DB_NAME, COLLECTION_NAME, export_samples
+import utils
+from utils import DB_NAME, COLLECTION_NAME
 
 sample_file = "samples.csv"
 cpd_max_sum = 0.95
@@ -31,21 +31,26 @@ def retrieve_full_data():
     mongo_client = pymongo.MongoClient(MONGO_HOST)[DB_NAME]
     df = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
 
-    export_samples(df, sample_file)
+    utils.export_samples(df, sample_file)
     print(f"Reading {df.shape[0]} samples from mongoDB")
 
-    unique_pairs = global_utils.get_service_host_pairs(df)
+    unique_pairs = utils.get_service_host_pairs(df)
     print(f"Contains pairs for {unique_pairs}")
 
 
 def transform_metrics_for_MKP():
     df = pd.read_csv(sample_file)
-    unique_pairs = global_utils.get_service_host_pairs(df)
+    unique_pairs = utils.get_service_host_pairs(df)
+
+    # TODO: Incorporate in utils.prepareSamples()
+    df['in_time'] = df['delta'] <= (1000 / df['fps'])
 
     for (service, device_type) in unique_pairs:
+
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
-        global_utils.train_to_BN(filtered, service_name=service, export_file=f"{service}_{device_type}_model.xml")
+
+        utils.train_to_BN(filtered, service_name=service, export_file=f"{service}_{device_type}_model.xml")
 
         # conditions = {'pixel': 480, 'fps': 25}
         #

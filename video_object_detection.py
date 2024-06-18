@@ -5,11 +5,11 @@ import time
 
 import cv2
 
-from detector import utils
-from detector.DeviceMetricReporter import DeviceMetricReporter
-from detector.ServiceMetricReporter import ServiceMetricReporter
-from detector.YOLOv8ObjectDetector import YOLOv8ObjectDetector
-from detector.utils import COLLECTION_NAME
+from metricReporter import utils
+from metricReporter.DeviceMetricReporter import DeviceMetricReporter
+from metricReporter.ServiceMetricReporter import ServiceMetricReporter
+from metricReporter.YOLOv8ObjectDetector import YOLOv8ObjectDetector
+from metricReporter.utils import COLLECTION_NAME
 
 # Benchmark for road race with 'video.mp4'
 # PC CPU --> XX FPS

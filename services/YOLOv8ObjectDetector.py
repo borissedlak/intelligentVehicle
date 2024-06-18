@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import onnxruntime
 
-from services.CV.cv_utils import xywh2xyxy, multiclass_nms
+from utils import xywh2xyxy, multiclass_nms
 
 
 class YOLOv8ObjectDetector:
