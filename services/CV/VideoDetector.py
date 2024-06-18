@@ -53,7 +53,7 @@ class VideoDetector(VehicleService):
             return
 
     def process_one_iteration(self, params):
-        (source_pixel, source_fps) = params
+        source_pixel, source_fps = int(params['pixel']), int(params['fps'])
 
         global csv_values, csv_headers
 
