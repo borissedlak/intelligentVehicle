@@ -1,4 +1,4 @@
-opencv-python~=4.8.1.78
+opencv-python~=4.9.0.80
 numpy==1.26.4
 psutil~=5.9.8
 pymongo~=4.6.1
