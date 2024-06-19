@@ -231,14 +231,27 @@ def get_mb_name(service, host):
     return service + '-' + host
 
 
-def infer_slo_fulfillment(bn_model, slo_variables, constraints=None):
+def infer_slo_fulfillment(bn_model_VE: VariableElimination, slo_variables, constraints=None):
     if constraints is None:
         constraints = {}
     evidence = constraints  # | {'device_type': device_type}
-    ve = VariableElimination(bn_model)
-    result = ve.query(variables=slo_variables, evidence=evidence)
+    result = bn_model_VE.query(variables=slo_variables, evidence=evidence)
 
     return result
+
+
+def verify_all_parameters_known(model: BayesianNetwork, data, params):
+    for variable in params:
+        for _, row in data.iterrows():
+            if row[variable] not in model.__getattribute__("states")[variable]:
+                return False
+
+        # for v in model.get_markov_blanket(variable):
+        #     for _, row in data.iterrows():
+        #         if row[v] not in model.__getattribute__("states")[v]:
+        #             return False
+
+    return True
 
 
 def get_true(param):
@@ -328,40 +341,29 @@ def jaccard_similarity(list1, list2):
     return intersection_size / union_size
 
 
-def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None, latency_slo=None):
+def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None):
     samples["delta"] = samples["delta"].apply(np.floor).astype(int)
     samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
     samples["memory"] = samples["memory"].apply(np.floor).astype(int)
     samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
 
-    del samples['_id']
+    samples['fps'] = samples['fps'].astype(str)
+    samples['pixel'] = samples['pixel'].astype(str)
+    samples['in_time'] = samples['in_time'].astype(str)
+
+    if hasattr(samples, '_id'):
+        del samples['_id']
     del samples['timestamp']
+    del samples['delta']
 
     if remove_device_metrics:
         del samples['cpu']
         del samples['consumption']
         del samples['device_type']
 
-    if latency_slo:  # This assumes that the provider service is located close to 'Orin'
-        samples_merge = None
-        for device in ['PC', 'Orin', 'Laptop', 'Xavier']:
-            samples_cons = samples.copy()
-            samples_cons['consumer_location'] = device
-
-            def calculate_cumulative_net_delay(row):
-                return (get_latency_for_devices(row['device_type'], 'Nano') +
-                        get_latency_for_devices(row['device_type'], device) +
-                        row['delta'])
-
-            samples_cons['cumm_net_delay'] = samples_cons.apply(calculate_cumulative_net_delay, axis=1)
-            samples_cons['latency_slo'] = samples_cons['cumm_net_delay'] <= latency_slo
-            samples_merge = pd.concat([samples_merge, samples_cons],
-                                      ignore_index=True) if samples_merge is not None else samples_cons
-        samples = samples_merge
-
     if export_path is not None:
         samples.to_csv(export_path, index=False)
-        print(f"Loaded {export_path} from MongoDB")
+        print(f"Exported sample file to: {export_path}")
 
     return samples
 
@@ -394,6 +396,36 @@ def train_to_BN(samples, service_name, export_file=None, samples_path=None, dag=
         export_model_to_path(model, export_file)
 
     return model
+
+
+# @print_execution_time
+def get_surprise_for_data(model: BayesianNetwork, model_VE: VariableElimination, data: pd.DataFrame, slo_variables):
+    bic_sum = 0.0
+    try:
+        for variable in slo_variables:
+            cpd = get_mbs_as_bn(model, [variable]).get_cpds(variable)
+            log_likelihood = 0.0
+            evidence_variables = ['fps', 'pixel']  # model.get_markov_blanket(variable)
+
+            # if 'consumption' in evidence_variables:
+            #     evidence_variables.remove('consumption')
+
+            for _, row in data.iterrows():
+                evidence = {col: row[col] for col in evidence_variables}
+                query_result = model_VE.query(variables=[variable], evidence=evidence)
+                state_index = cpd.__getattribute__("state_names")[variable].index(row[variable])
+                p = query_result.values[state_index]
+                log_likelihood += np.log(p if p > 0 else 1e-10)
+
+            k = len(cpd.get_values().flatten()) - len(cpd.variables)
+
+            n = len(data)
+            bic = -2 * log_likelihood + k * np.log(n)
+            bic_sum += bic
+    except ValueError or KeyError as e:
+        print_in_red(f"Should not happen after safeguard function!!!!" + str(e))
+
+    return bic_sum
 
 
 def export_model_to_path(model, export_file):
@@ -531,9 +563,13 @@ def get_service_host_pairs(df):
     return unique_pairs
 
 
-def print_current_services(thread_lib: [threading.Thread]):
-    for t in thread_lib:
-        pass
+def str_to_bool(s):
+    if s == 'True':
+        return True
+    elif s == 'False':
+        return False
+    else:
+        raise ValueError(f"Cannot parse '{s}' as a boolean")
 
 
 COLLECTION_NAME = "metrics"

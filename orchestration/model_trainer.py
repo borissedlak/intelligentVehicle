@@ -1,10 +1,9 @@
 import os
 from datetime import datetime, timedelta
 
-import numpy as np
 import pandas as pd
 import pymongo
-from pgmpy.readwrite import XMLBIFReader
+from pgmpy.inference import VariableElimination
 from prometheus_api_client import PrometheusConnect
 
 import utils
@@ -45,23 +44,16 @@ def prepare_models():
     unique_pairs = utils.get_service_host_pairs(df)
 
     # TODO: Incorporate in utils.prepareSamples()
-    df["delta"] = df["delta"].apply(np.floor).astype(int)
-    df["cpu"] = df["cpu"].apply(np.floor).astype(int)
-    df["memory"] = df["memory"].apply(np.floor).astype(int)
-    df['in_time'] = df['delta'] <= (1000 / df['fps'])
-
-    del df['_id']
-    del df['timestamp']
+    df = utils.prepare_samples(df)
 
     for (service, device_type) in unique_pairs:
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
 
-        utils.train_to_BN(filtered, service_name=service, export_file=f"{service}_{device_type}_model.xml")
+        model = utils.train_to_BN(filtered, service_name=service, export_file=f"{service}_{device_type}_model.xml")
 
-        condition = filtered['delta'] < 1000 / filtered['fps']
-        percentage = (condition.sum() / len(filtered)) * 100
-        print(f"In_time fulfilled for {int(percentage)} %")
+        true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))
+        print(f"In_time fulfilled for {int(true * 100)} %")
 
 
 def get_latest_load(device_name="Laptop"):
@@ -96,13 +88,13 @@ if __name__ == "__main__":
     # Utilizes 30% CPU, 15% Memory, No GPU, Consumption depending on fps
 
     # 2) Processor
-    # retrieve_full_data()
-    # prepare_models()
+    retrieve_full_data()
+    prepare_models()
     # get_latest_load(device_name='Orin')
 
-    model_path = f"CV_{DEVICE_NAME}_model.xml"
-    model = XMLBIFReader(model_path).get_model()
-
-    services = {"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
-    slo = utils.get_true(utils.infer_slo_fulfillment(model, services['slo_var'], services['constraints']))
-    print(slo)
+    # model_path = f"CV_{DEVICE_NAME}_model.xml"
+    # model = XMLBIFReader(model_path).get_model()
+    #
+    # services = {"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
+    # slo = utils.get_true(utils.infer_slo_fulfillment(model, services['slo_var'], services['constraints']))
+    # print(slo)

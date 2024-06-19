@@ -3,6 +3,7 @@ import threading
 from datetime import datetime
 
 import GPUtil
+import numpy as np
 import psutil
 import pymongo
 
@@ -37,13 +38,23 @@ class CyclicArray:
             self.buffer.pop(0)
             self.buffer.append(value)
 
+    def already_x_values(self, x=None):
+        if x is None:
+            x = self.max_size
+        return len(self.buffer) >= x
+
     def get(self):
         return self.buffer
 
     def average(self):
         if not self.buffer:
             return 0
-        return sum(self.buffer) / len(self.buffer)
+        return np.average(self.buffer)
+
+    def arithmetic_mean(self):
+        if not self.buffer:
+            return 0
+        return np.median(self.buffer)
 
 
 # TODO: Needs a device ID additionally if we have multiple devices with the same type

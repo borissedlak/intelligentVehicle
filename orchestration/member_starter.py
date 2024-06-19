@@ -2,10 +2,14 @@ import ast
 import os
 import threading
 
+import pandas as pd
 from flask import Flask, request, jsonify, send_from_directory
+from pgmpy.inference import VariableElimination
+from pgmpy.models import BayesianNetwork
 from pgmpy.readwrite import XMLBIFReader
 
 import utils
+from monitor.DeviceMetricReporter import CyclicArray
 from orchestration.http_client import HttpClient
 from services.CV.VideoDetector import VideoDetector
 from services.VehicleService import VehicleService
@@ -32,54 +36,87 @@ MODEL_DIRECTORY = "./"
 
 # def processing_loop(inf_service: VehicleService, constraints):
 class ServiceWrapper:
-    def __init__(self, inf_service: VehicleService, description):
+    def __init__(self, inf_service: VehicleService, description, model: BayesianNetwork):
         self._running = True
         self.inf_service = inf_service
-        self.description = description
+        self.s_description = description
+        self.model = model  # TODO: Filter MB with utils.get_mbs_as_bn(model, self.s_description['slo_var'])
+        self.model_VE = VariableElimination(self.model)
+        self.slo_hist = CyclicArray(100)  # TODO: If at some point I do dynamic adaptations, I must clear this
+        self.under_unknown_config = not utils.verify_all_parameters_known(model,
+                                                                          pd.DataFrame([self.s_description['constraints']]),
+                                                                          list(self.s_description['constraints'].keys()))
 
     def terminate(self):
         self._running = False
 
+    # TODO: Must update the model once a new version is received
+    def update_model(self):
+        # utils.verify_all_parameters_known()
+        pass
+
     def run(self):
         while self._running:
             # TODO: Must check the metrics against the SLOs and detect violations
-            metrics = self.inf_service.process_one_iteration(self.description['constraints'])
-            print(metrics)
+            reality_metrics = self.inf_service.process_one_iteration(self.s_description['constraints'])
+            reality_row = utils.prepare_samples(pd.DataFrame([reality_metrics]))
+
+            for var in self.s_description['slo_var']:
+                current_slo_f = reality_row[var][0]
+                self.slo_hist.add(utils.str_to_bool(current_slo_f))
+                rebalanced_slo_f = self.slo_hist.average()
+
+                # print(f'Current avg slo f: {self.slo_hist.average()}')
+                # print(f'Current avg slo f: {rebalanced_slo_f}')
+
+            if not self.under_unknown_config:
+
+                # TODO: This assumes some links between the parameters and the in_time
+                print(utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_var']))
+
+                expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_var'],
+                                                                         self.s_description['constraints']))
+                print(f"Expectation {round(expectation, 2)} vs. reality {round(rebalanced_slo_f, 2)}")
+            else:
+                print("Evaluating unknown configuration")
+
+                if self.slo_hist.already_x_values():
+                    print("gathered sufficient data")
 
         print(f"Thread {self.inf_service} exited gracefully")
 
 
 def start_service(s):
+    model_path = f"{s['name']}_{DEVICE_NAME}_model.xml"
+    model = XMLBIFReader(model_path).get_model()
+
     if s['name'] == "XYZ":
         service_wrapper = None  # Other services
     else:
         # service: VehicleService = VideoDetector()
-        service_wrapper = ServiceWrapper(VideoDetector(), s)
+        service_wrapper = ServiceWrapper(VideoDetector(), s, model)
 
-    model_path = f"CV_{DEVICE_NAME}_model.xml"
-    model = XMLBIFReader(model_path).get_model()
-
-    slo = utils.get_true(utils.infer_slo_fulfillment(model, s['slo_var'], s['constraints']))
+    # slo = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), s['slo_var'], s['constraints']))
 
     # Case 1: If SLO fulfillment looks promising then start immediately
     # Case 1.1: Same if not known, we'll find out during operation
 
-    if slo >= 0.80:
+    if 0.0 >= 0.00:  # slo >= X
         background_thread = threading.Thread(target=service_wrapper.run, name=s['name'])
         background_thread.daemon = True  # Set the thread as a daemon, so it exits when the main program exits
         background_thread.start()
         # background_thread.__getattribute__('_args')
 
-        print(f"{service_wrapper.inf_service} started detached for expected SLO fulfillment {slo}")
+        print(f"{service_wrapper.inf_service} started detached for expected SLO fulfillment ")  # '{slo}")
         thread_lib.append((background_thread, service_wrapper))
-        utils.print_current_services(thread_lib)
+        # utils.print_current_services(thread_lib)
     else:
-        print(f"Skipping service due tu low expected SLO fulfillment {slo}")
+        print(f"Skipping service due tu low expected SLO fulfillment")  # {slo}")
 
     # Case 2: However, if it is below the thresh, try to offload
 
 
-services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
+services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '15'}}]
 
 for service_description in services:
     print(f"Starting {service_description['name']} by default")
