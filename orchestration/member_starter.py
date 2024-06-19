@@ -76,7 +76,7 @@ def start_service(s):
         background_thread.start()
         # background_thread.__getattribute__('_args')
 
-        print(f"{s['name']} started detached for expected SLO fulfillment {slo}")
+        print(f"{service_wrapper.inf_service} started detached for expected SLO fulfillment {slo}")
         thread_lib.append((background_thread, service_wrapper))
         utils.print_current_services(thread_lib)
     else:
@@ -103,6 +103,10 @@ def start():
 @app.route("/stop_all_services", methods=['POST'])
 def stop_all():
     global thread_lib
+    if len(thread_lib) <= 0:
+        print(f"No service threads running locally")
+        return "Stopped all threads"
+
     print(f"Going to stop {len(thread_lib)} threads")
 
     for bg_thread, task_object in thread_lib:
@@ -110,6 +114,11 @@ def stop_all():
     # service_d = ast.literal_eval(request.args.get('service_description'))
     # start_service(service_d)
     thread_lib = []
+    return "Stopped all threads"
+
+@app.route("/pull_all_services", methods=['GET'])
+def pull_all():
+
     return "Stopped all threads"
 
 

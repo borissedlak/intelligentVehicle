@@ -24,13 +24,39 @@ else:
     print(f"Didn't find ENV value for LEADER_HOST, default to: {LEADER_HOST}")
 
 
+class CyclicArray:
+    def __init__(self, max_size):
+        self.max_size = max_size
+        self.buffer = []
+
+    def add(self, value):
+        if len(self.buffer) < self.max_size:
+            self.buffer.append(value)
+        else:
+            # When buffer is full, remove the oldest value and append the new one
+            self.buffer.pop(0)
+            self.buffer.append(value)
+
+    def get(self):
+        return self.buffer
+
+    def average(self):
+        if not self.buffer:
+            return 0
+        return sum(self.buffer) / len(self.buffer)
+
+
 # TODO: Needs a device ID additionally if we have multiple devices with the same type
 class DeviceMetricReporter:
-    def __init__(self, gpu_available=0):
+    def __init__(self, gpu_available=0, gpu_avg_history_n=5):
         self.host = DEVICE_NAME
         self.consumption_regression = ConsRegression(self.host)
         self.mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
         self.gpu_available = gpu_available
+        self.gpu_avg_history = None
+
+        if gpu_avg_history_n > 0:
+            self.gpu_avg_history = CyclicArray(gpu_avg_history_n)
 
         if is_jetson_host(self.host):
             from jtop.jtop import jtop
@@ -46,8 +72,14 @@ class DeviceMetricReporter:
         gpu = 0
         if is_jetson_host(self.host):  # Has Jetson lib defined
             # print(self.jetson_metrics.stats)
-            # TODO: The GPU values are way too unstable, I must fix this somehow, or make an average over the last 5 values
+
             gpu = self.jetson_metrics.stats['GPU']
+
+            # TODO: The GPU values are way too unstable, I must fix this somehow, or make an average over the last 5 values
+            if self.gpu_avg_history is not None:
+                self.gpu_avg_history.add(gpu)
+                gpu = self.gpu_avg_history.average()
+
             cons = self.jetson_metrics.stats['Power TOT'] / 1000
             mode = self.jetson_metrics.stats['nvp model']
         elif self.gpu_available:
