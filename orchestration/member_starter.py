@@ -10,6 +10,7 @@ from pgmpy.readwrite import XMLBIFReader
 
 import utils
 from monitor.DeviceMetricReporter import CyclicArray
+from orchestration import model_trainer
 from orchestration.http_client import HttpClient
 from services.CV.VideoDetector import VideoDetector
 from services.VehicleService import VehicleService
@@ -116,7 +117,7 @@ def start_service(s):
     # Case 2: However, if it is below the thresh, try to offload
 
 
-services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '15'}}]
+services = []  # [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '15'}}]
 
 for service_description in services:
     print(f"Starting {service_description['name']} by default")
@@ -151,16 +152,35 @@ def stop_all():
 
 @app.route('/model_list', methods=['GET'])
 def list_files():
-    """Endpoint to list files available for download."""
     files = os.listdir(MODEL_DIRECTORY)
     filtered_files = [f for f in files if f.endswith('model.xml')]
     return jsonify(filtered_files)
 
 
 @app.route('/model/<model_name>', methods=['GET'])
-def download_file(model_name):
-    """Endpoint to download a specific file."""
+def provide_model(model_name):
     return send_from_directory(MODEL_DIRECTORY, model_name)
+
+
+@app.route('/model/upload', methods=['POST'])
+def override_model():
+    for f_key in request.files.keys():
+        file = request.files[f_key]
+        file.save(file.filename)
+        print(f"Receiving model file '{file.filename}'")
+
+    return 'All files uploaded'
+
+
+@app.route('/retrain_models', methods=['POST'])
+def retrain_models():
+    print("Starting model training")
+    model_trainer.retrieve_full_data()
+    n = model_trainer.prepare_models()
+
+    http_client.push_files_to_member()  # TODO: Must filter which files
+
+    return f"Trained {n} models"
 
 
 def run_server():

@@ -55,6 +55,8 @@ def prepare_models():
         true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))
         print(f"In_time fulfilled for {int(true * 100)} %")
 
+    return len(unique_pairs)
+
 
 def get_latest_load(device_name="Laptop"):
     # Connect to Prometheus
