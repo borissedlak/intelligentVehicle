@@ -98,5 +98,7 @@ class VideoDetector(VehicleService):
             if processing_time < available_time_frame:
                 time.sleep((available_time_frame - processing_time) / 1000)
 
+        return merged_metrics
+
     def initialize_video(self):
         self.cap = cv2.VideoCapture(self.video_path)

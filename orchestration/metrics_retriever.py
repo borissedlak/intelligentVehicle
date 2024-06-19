@@ -1,8 +1,10 @@
 import os
 from datetime import datetime, timedelta
 
+import numpy as np
 import pandas as pd
 import pymongo
+from pgmpy.readwrite import XMLBIFReader
 from prometheus_api_client import PrometheusConnect
 
 import utils
@@ -38,37 +40,28 @@ def retrieve_full_data():
     print(f"Contains pairs for {unique_pairs}")
 
 
-def transform_metrics_for_MKP():
+def prepare_models():
     df = pd.read_csv(sample_file)
     unique_pairs = utils.get_service_host_pairs(df)
 
     # TODO: Incorporate in utils.prepareSamples()
+    df["delta"] = df["delta"].apply(np.floor).astype(int)
+    df["cpu"] = df["cpu"].apply(np.floor).astype(int)
+    df["memory"] = df["memory"].apply(np.floor).astype(int)
     df['in_time'] = df['delta'] <= (1000 / df['fps'])
 
-    for (service, device_type) in unique_pairs:
+    del df['_id']
+    del df['timestamp']
 
+    for (service, device_type) in unique_pairs:
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
 
         utils.train_to_BN(filtered, service_name=service, export_file=f"{service}_{device_type}_model.xml")
 
-        # conditions = {'pixel': 480, 'fps': 25}
-        #
-        # mask = pd.Series([True] * len(filtered))
-        # for column, value in conditions.items():
-        #     mask = mask & (df[column] == value)
-        #
-        # filtered = filtered[mask]
-
         condition = filtered['delta'] < 1000 / filtered['fps']
         percentage = (condition.sum() / len(filtered)) * 100
         print(f"In_time fulfilled for {int(percentage)} %")
-
-        # infer_slo_fulfillment(filtered, conditions)
-
-
-def infer_slo_fulfillment(df, conditions):
-    pass
 
 
 def get_latest_load(device_name="Laptop"):
@@ -89,9 +82,7 @@ def get_latest_load(device_name="Laptop"):
         end_time=end_time
     )
 
-    # Check if data is present
     if metric_data:
-        # Get the latest value
         latest_value = metric_data[0]['values'][-1]
         timestamp, cpu_load = latest_value
         print(f"Timestamp: {timestamp}, CPU Load: {cpu_load}")
@@ -105,6 +96,13 @@ if __name__ == "__main__":
     # Utilizes 30% CPU, 15% Memory, No GPU, Consumption depending on fps
 
     # 2) Processor
-    retrieve_full_data()
-    transform_metrics_for_MKP()
-    # get_latest_load()
+    # retrieve_full_data()
+    # prepare_models()
+    # get_latest_load(device_name='Orin')
+
+    model_path = f"CV_{DEVICE_NAME}_model.xml"
+    model = XMLBIFReader(model_path).get_model()
+
+    services = {"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
+    slo = utils.get_true(utils.infer_slo_fulfillment(model, services['slo_var'], services['constraints']))
+    print(slo)

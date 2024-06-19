@@ -3,3 +3,4 @@ __pycache__/
 model_*.sav
 *.pt
 venv/
+*_model.xml

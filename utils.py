@@ -16,6 +16,7 @@ from networkx.drawing.nx_pydot import graphviz_layout
 from pgmpy.base import DAG
 from pgmpy.estimators import AICScore, HillClimbSearch, MaximumLikelihoodEstimator
 from pgmpy.factors.discrete import DiscreteFactor
+from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 from pgmpy.readwrite import XMLBIFWriter, XMLBIFReader
 
@@ -228,6 +229,16 @@ def get_mb_name(service, host):
     # sorted_strings = sorted([s1, s2], reverse=False)
     # return '-'.join(sorted_strings)
     return service + '-' + host
+
+
+def infer_slo_fulfillment(bn_model, slo_variables, constraints=None):
+    if constraints is None:
+        constraints = {}
+    evidence = constraints  # | {'device_type': device_type}
+    ve = VariableElimination(bn_model)
+    result = ve.query(variables=slo_variables, evidence=evidence)
+
+    return result
 
 
 def get_true(param):

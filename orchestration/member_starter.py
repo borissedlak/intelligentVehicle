@@ -2,8 +2,7 @@ import ast
 import os
 import threading
 
-from flask import Flask, request
-from pgmpy.inference import VariableElimination
+from flask import Flask, request, jsonify, send_from_directory
 from pgmpy.readwrite import XMLBIFReader
 
 import utils
@@ -28,30 +27,25 @@ else:
 thread_lib = []
 http_client = HttpClient(HOST=HTTP_SERVER)
 
-
-def infer_slo_fulfillment(bn_model, slo_variables, constraints=None):
-    if constraints is None:
-        constraints = {}
-    evidence = constraints  # | {'device_type': device_type}
-    ve = VariableElimination(bn_model)
-    result = ve.query(variables=slo_variables, evidence=evidence)
-
-    return result
+MODEL_DIRECTORY = "./"
 
 
 # def processing_loop(inf_service: VehicleService, constraints):
 class ServiceWrapper:
-    def __init__(self, inf_service: VehicleService, constraints):
+    def __init__(self, inf_service: VehicleService, description):
         self._running = True
         self.inf_service = inf_service
-        self.constraints = constraints
+        self.description = description
 
     def terminate(self):
         self._running = False
 
     def run(self):
         while self._running:
-            self.inf_service.process_one_iteration(self.constraints)
+            # TODO: Must check the metrics against the SLOs and detect violations
+            metrics = self.inf_service.process_one_iteration(self.description['constraints'])
+            print(metrics)
+
         print(f"Thread {self.inf_service} exited gracefully")
 
 
@@ -60,12 +54,12 @@ def start_service(s):
         service_wrapper = None  # Other services
     else:
         # service: VehicleService = VideoDetector()
-        service_wrapper = ServiceWrapper(VideoDetector(), s['constraints'])
+        service_wrapper = ServiceWrapper(VideoDetector(), s)
 
     model_path = f"CV_{DEVICE_NAME}_model.xml"
     model = XMLBIFReader(model_path).get_model()
 
-    slo = utils.get_true(infer_slo_fulfillment(model, s['slo_var'], s['constraints']))
+    slo = utils.get_true(utils.infer_slo_fulfillment(model, s['slo_var'], s['constraints']))
 
     # Case 1: If SLO fulfillment looks promising then start immediately
     # Case 1.1: Same if not known, we'll find out during operation
@@ -90,6 +84,7 @@ services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480
 for service_description in services:
     print(f"Starting {service_description['name']} by default")
     start_service(service_description)
+
 app = Flask(__name__)
 
 
@@ -116,10 +111,19 @@ def stop_all():
     thread_lib = []
     return "Stopped all threads"
 
-@app.route("/pull_all_services", methods=['GET'])
-def pull_all():
 
-    return "Stopped all threads"
+@app.route('/model_list', methods=['GET'])
+def list_files():
+    """Endpoint to list files available for download."""
+    files = os.listdir(MODEL_DIRECTORY)
+    filtered_files = [f for f in files if f.endswith('model.xml')]
+    return jsonify(filtered_files)
+
+
+@app.route('/model/<model_name>', methods=['GET'])
+def download_file(model_name):
+    """Endpoint to download a specific file."""
+    return send_from_directory(MODEL_DIRECTORY, model_name)
 
 
 def run_server():
