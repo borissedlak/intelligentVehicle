@@ -4,3 +4,4 @@ model_*.sav
 *.pt
 venv/
 *_model.xml
+samples.csv

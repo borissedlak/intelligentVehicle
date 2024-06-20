@@ -1,5 +1,6 @@
 import ast
 import os
+import warnings
 from io import StringIO
 
 import pandas as pd
@@ -9,12 +10,13 @@ from pgmpy.readwrite import XMLBIFReader
 import utils
 from orchestration import model_trainer
 from orchestration.HttpClient import HttpClient
-from orchestration.member_starter import start_service
+from orchestration.ServiceStarter import start_service
 
 app = Flask(__name__)
 
 MODEL_DIRECTORY = "./"
 
+warnings.filterwarnings("ignore", category=Warning, module='pgmpy')
 HTTP_SERVER = utils.get_ENV_PARAM('HTTP_SERVER', "127.0.0.1")
 DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
@@ -89,7 +91,7 @@ def update_model_immediately(model_name):
     df = pd.read_csv(StringIO(csv_string))
 
     model_trainer.update_models_new_samples(model_name, df)
-    http_client.push_files_to_member([model_name])  # TODO: Pass model name
+    http_client.push_files_to_member([model_name])
     return "Updated model successfully"
 
 
@@ -110,10 +112,11 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '15'}}]
+services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '10'}}]
 
 for service_description in services:
     print(f"Starting {service_description['name']} by default")
-    start_service(service_description)
+    thread_reference = start_service(service_description)
+    thread_lib.append(thread_reference)
 
 run_server()

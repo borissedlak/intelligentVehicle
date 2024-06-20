@@ -1,14 +1,14 @@
+import itertools
 import os
 import warnings
 from datetime import datetime, timedelta
 
 import pandas as pd
 import pymongo
+import utils
 from pgmpy.inference import VariableElimination
 from pgmpy.readwrite import XMLBIFReader
 from prometheus_api_client import PrometheusConnect
-
-import utils
 from utils import DB_NAME, COLLECTION_NAME
 
 warnings.filterwarnings("ignore", category=Warning, module='pgmpy')
@@ -42,11 +42,19 @@ def retrieve_full_data():
     print(f"Contains pairs for {unique_pairs}")
 
 
-def prepare_models():
+def prepare_models(fill_param_tables=True):
     df = pd.read_csv(sample_file)
     unique_pairs = utils.get_service_host_pairs(df)
 
     df = utils.prepare_samples(df)
+
+    if fill_param_tables:
+        line_param = []
+        for (source_pixel, source_fps, service, device) in itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV'], ['Laptop']):
+            line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': 0, 'memory': 0, 'gpu': 0,
+                               'delta': 1, 'consumption': 0, 'service': service, 'device_type': device})
+        df_param_fill = utils.prepare_samples(pd.DataFrame(line_param))
+        df = pd.concat([df, df_param_fill], ignore_index=True)
 
     for (service, device_type) in unique_pairs:
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
@@ -60,7 +68,7 @@ def prepare_models():
     return len(unique_pairs)
 
 
-@utils.print_execution_time # takes roughly 45ms for 1 sample
+@utils.print_execution_time  # takes roughly 45ms for 1 sample
 def update_models_new_samples(model_name, samples):
     model = XMLBIFReader(model_name).get_model()
     # updated_model = utils.train_to_BN(samples, service_name="CV", export_file=model_name)
@@ -106,7 +114,7 @@ if __name__ == "__main__":
     # Utilizes 30% CPU, 15% Memory, No GPU, Consumption depending on fps
 
     # 2) Processor
-    retrieve_full_data()
+    # retrieve_full_data()
     prepare_models()
     # get_latest_load(device_name='Orin')
 

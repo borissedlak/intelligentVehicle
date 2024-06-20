@@ -30,11 +30,10 @@ class CyclicArray:
         self.max_size = max_size
         self.buffer = []
 
-    def add(self, value):
+    def append(self, value):
         if len(self.buffer) < self.max_size:
             self.buffer.append(value)
         else:
-            # When buffer is full, remove the oldest value and append the new one
             self.buffer.pop(0)
             self.buffer.append(value)
 
@@ -42,6 +41,9 @@ class CyclicArray:
         if x is None:
             x = self.max_size
         return len(self.buffer) >= x
+
+    def get_percentage_filled(self):
+        return round(len(self.buffer) / self.max_size, 2)
 
     def get(self):
         return self.buffer
@@ -55,6 +57,9 @@ class CyclicArray:
         if not self.buffer:
             return 0
         return np.median(self.buffer)
+
+    def clear(self):
+        self.buffer = []
 
 
 # TODO: Needs a device ID additionally if we have multiple devices with the same type
@@ -88,7 +93,7 @@ class DeviceMetricReporter:
 
             # TODO: The GPU values are way too unstable, I must fix this somehow, or make an average over the last 5 values
             if self.gpu_avg_history is not None:
-                self.gpu_avg_history.add(gpu)
+                self.gpu_avg_history.append(gpu)
                 gpu = self.gpu_avg_history.average()
 
             cons = self.jetson_metrics.stats['Power TOT'] / 1000
