@@ -1,38 +1,25 @@
-import ast
-import os
 import threading
+import warnings
 
 import pandas as pd
-from flask import Flask, request, jsonify, send_from_directory
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 from pgmpy.readwrite import XMLBIFReader
 
 import utils
 from monitor.DeviceMetricReporter import CyclicArray
-from orchestration import model_trainer
-from orchestration.http_client import HttpClient
+from orchestration.HttpClient import HttpClient
 from services.CV.VideoDetector import VideoDetector
 from services.VehicleService import VehicleService
 
-HTTP_SERVER = os.environ.get('HTTP_SERVER')
-if HTTP_SERVER:
-    print(f'Found ENV value for HTTP_SERVER: {HTTP_SERVER}')
-else:
-    HTTP_SERVER = "127.0.0.1"
-    print(f"Didn't find ENV value for HTTP_SERVER, default to: {HTTP_SERVER}")
+HTTP_SERVER = utils.get_ENV_PARAM('HTTP_SERVER', "127.0.0.1")
+DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
-DEVICE_NAME = os.environ.get('DEVICE_NAME')
-if DEVICE_NAME:
-    print(f'Found ENV value for DEVICE_NAME: {DEVICE_NAME}')
-else:
-    DEVICE_NAME = "Unknown"
-    print(f"Didn't find ENV value for DEVICE_NAME, default to: {DEVICE_NAME}")
-
-thread_lib = []
+# thread_lib = []
 http_client = HttpClient(HOST=HTTP_SERVER)
 
 MODEL_DIRECTORY = "./"
+warnings.filterwarnings("ignore", category=Warning, module='pgmpy')
 
 
 # def processing_loop(inf_service: VehicleService, constraints):
@@ -51,10 +38,9 @@ class ServiceWrapper:
     def terminate(self):
         self._running = False
 
-    # TODO: Must update the model once a new version is received
-    def update_model(self):
-        # utils.verify_all_parameters_known()
-        pass
+    def update_model(self, model):
+        self.model = model
+        self.model_VE = VariableElimination(self.model)
 
     def run(self):
         while self._running:
@@ -70,25 +56,30 @@ class ServiceWrapper:
                 # print(f'Current avg slo f: {self.slo_hist.average()}')
                 # print(f'Current avg slo f: {rebalanced_slo_f}')
 
+            # TODO: Metrics should be buffered for x rows before send
+            model_file = utils.create_model_name(self.s_description['name'], DEVICE_NAME)
+            http_client.push_metrics_retrain(model_file, reality_row)
+
             if not self.under_unknown_config:
 
                 # TODO: This assumes some links between the parameters and the in_time
-                print(utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_var']))
+                surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_var'])
+                print(f"M| Absolute surprise for sample {surprise}")
 
                 expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_var'],
                                                                          self.s_description['constraints']))
-                print(f"Expectation {round(expectation, 2)} vs. reality {round(rebalanced_slo_f, 2)}")
+                print(f"M| Expectation {round(expectation, 2)} vs. reality {round(rebalanced_slo_f, 2)}")
             else:
                 print("Evaluating unknown configuration")
 
                 if self.slo_hist.already_x_values():
                     print("gathered sufficient data")
 
-        print(f"Thread {self.inf_service} exited gracefully")
+        print(f"M| Thread {self.inf_service} exited gracefully")
 
 
 def start_service(s):
-    model_path = f"{s['name']}_{DEVICE_NAME}_model.xml"
+    model_path = utils.create_model_name(s['name'], DEVICE_NAME)
     model = XMLBIFReader(model_path).get_model()
 
     if s['name'] == "XYZ":
@@ -108,93 +99,10 @@ def start_service(s):
         background_thread.start()
         # background_thread.__getattribute__('_args')
 
-        print(f"{service_wrapper.inf_service} started detached for expected SLO fulfillment ")  # '{slo}")
-        thread_lib.append((background_thread, service_wrapper))
+        print(f"M| {service_wrapper.inf_service} started detached for expected SLO fulfillment ")  # '{slo}")
+        return background_thread, service_wrapper
         # utils.print_current_services(thread_lib)
     else:
-        print(f"Skipping service due tu low expected SLO fulfillment")  # {slo}")
+        print(f"M| Skipping service due tu low expected SLO fulfillment")  # {slo}")
 
     # Case 2: However, if it is below the thresh, try to offload
-
-
-services = []  # [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '15'}}]
-
-for service_description in services:
-    print(f"Starting {service_description['name']} by default")
-    start_service(service_description)
-
-app = Flask(__name__)
-
-
-@app.route("/start_service", methods=['POST'])
-def start():
-    service_d = ast.literal_eval(request.args.get('service_description'))
-    start_service(service_d)
-    return "success"
-
-
-@app.route("/stop_all_services", methods=['POST'])
-def stop_all():
-    global thread_lib
-    if len(thread_lib) <= 0:
-        print(f"No service threads running locally")
-        return "Stopped all threads"
-
-    print(f"Going to stop {len(thread_lib)} threads")
-
-    for bg_thread, task_object in thread_lib:
-        task_object.terminate()
-    # service_d = ast.literal_eval(request.args.get('service_description'))
-    # start_service(service_d)
-    thread_lib = []
-    return "Stopped all threads"
-
-
-@app.route('/model_list', methods=['GET'])
-def list_files():
-    files = os.listdir(MODEL_DIRECTORY)
-    filtered_files = [f for f in files if f.endswith('model.xml')]
-    return jsonify(filtered_files)
-
-
-@app.route('/model/<model_name>', methods=['GET'])
-def provide_model(model_name):
-    return send_from_directory(MODEL_DIRECTORY, model_name)
-
-
-@app.route('/model/upload', methods=['POST'])
-def override_model():
-    for f_key in request.files.keys():
-        file = request.files[f_key]
-        file.save(file.filename)
-        print(f"Receiving model file '{file.filename}'")
-
-    return 'All files uploaded'
-
-
-@app.route('/retrain_models', methods=['POST'])
-def retrain_models():
-    print("Starting model training")
-    model_trainer.retrieve_full_data()
-    n = model_trainer.prepare_models()
-
-    http_client.push_files_to_member()  # TODO: Must filter which files
-
-    return f"Trained {n} models"
-
-
-def run_server():
-    app.run(host='0.0.0.0', port=8080)
-
-
-run_server()
-
-# background_thread = threading.Thread(target=run_server)
-# background_thread.daemon = True
-# background_thread.start()
-#
-# while True:
-#     user_input = input()
-#
-#     if user_input.startswith("start: "):
-#         print(eval(user_input[7:]))

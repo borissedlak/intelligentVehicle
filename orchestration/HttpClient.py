@@ -1,3 +1,4 @@
+import pandas as pd
 import requests
 
 
@@ -9,6 +10,7 @@ class HttpClient:
         self.http_connection = None
         self.START_SERVICE_PATH = "/start_service"
         self.MODEL_UPLOAD_PATH = "/model/upload"
+        self.MODEL_UPDATE_PATH = "/model/update"
 
         print(f"Opening HTTP Connection with {self.HOST} and {self.PORT}")
 
@@ -22,11 +24,20 @@ class HttpClient:
         response = self.SESSION.get(f"http://{self.HOST}:{self.PORT}{self.START_SERVICE_PATH}", params=query_params)
         response.raise_for_status()  # Raise an exception for non-2xx status codes
 
-    def push_files_to_member(self):
-        files = [('file1', ('CV_Laptop_model.xml', open('CV_Laptop_model.xml', 'rb'), 'application/xml')),
-                 ('file2', ('CV_Laptop_model.xml', open('CV_Laptop_model.xml', 'rb'), 'application/xml'))]
+    def push_files_to_member(self, model_names):
+        files = []
+        for index, m in enumerate(model_names):
+            files.append((f'file{index + 1}', (m, open(m, 'rb'), 'application/xml')))
 
         # headers = {'Content-Type': 'application/xml'}  # Set the content type
         url = f"http://{self.HOST}:{self.PORT}{self.MODEL_UPLOAD_PATH}"
         response = self.SESSION.post(url, files=files)
+        response.raise_for_status()  # Raise an exception for non-2xx status codes
+
+    def push_metrics_retrain(self, service_name, df: pd.DataFrame):
+        csv_string = df.to_csv(index=False)
+
+        headers = {'Content-Type': 'text/csv'}
+        url = f"http://{self.HOST}:{self.PORT}{self.MODEL_UPDATE_PATH}/{service_name}"
+        response = self.SESSION.post(url, data=csv_string, headers=headers)
         response.raise_for_status()  # Raise an exception for non-2xx status codes

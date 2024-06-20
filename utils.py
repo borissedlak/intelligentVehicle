@@ -2,7 +2,6 @@ import copy
 import csv
 import fnmatch
 import os
-import threading
 import time
 from itertools import combinations
 
@@ -18,7 +17,7 @@ from pgmpy.estimators import AICScore, HillClimbSearch, MaximumLikelihoodEstimat
 from pgmpy.factors.discrete import DiscreteFactor
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
-from pgmpy.readwrite import XMLBIFWriter, XMLBIFReader
+from pgmpy.readwrite import XMLBIFWriter
 
 class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
                'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
@@ -341,20 +340,34 @@ def jaccard_similarity(list1, list2):
     return intersection_size / union_size
 
 
-def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None):
-    samples["delta"] = samples["delta"].apply(np.floor).astype(int)
-    samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
-    samples["memory"] = samples["memory"].apply(np.floor).astype(int)
-    samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
+def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None, conversion=True):
+    if conversion:
+        samples["delta"] = samples["delta"].apply(np.floor).astype(int)
+        samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
+        samples["memory"] = samples["memory"].apply(np.floor).astype(int)
+        samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
+        samples['energy_saved'] = samples['consumption'] <= 100
+
+        samples['cpu'] = pd.cut(samples['cpu'], bins=[0, 50, 70, 90, 100],
+                                labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
+        samples['memory'] = pd.cut(samples['memory'], bins=[0, 50, 70, 90, 100],
+                                   labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
+        samples['gpu'] = pd.cut(samples['gpu'], bins=[0, 50, 70, 90, 100],
+                                labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
 
     samples['fps'] = samples['fps'].astype(str)
     samples['pixel'] = samples['pixel'].astype(str)
     samples['in_time'] = samples['in_time'].astype(str)
+    samples['energy_saved'] = samples['energy_saved'].astype(str)
 
     if hasattr(samples, '_id'):
         del samples['_id']
-    del samples['timestamp']
-    del samples['delta']
+    if hasattr(samples, 'timestamp'):
+        del samples['timestamp']
+    if hasattr(samples, 'delta'):
+        del samples['delta']
+    if hasattr(samples, 'consumption'):
+        del samples['consumption']
 
     if remove_device_metrics:
         del samples['cpu']
@@ -431,7 +444,7 @@ def get_surprise_for_data(model: BayesianNetwork, model_VE: VariableElimination,
 def export_model_to_path(model, export_file):
     writer = XMLBIFWriter(model)
     writer.write_xmlbif(filename=export_file)
-    print(f"Model exported as '{export_file}'")
+    print(f"L| Model exported as '{export_file}'")
 
 
 def find_files_with_prefix(directory, prefix, suffix):
@@ -448,52 +461,6 @@ def find_nested_files_with_suffix(root_dir, suffix):
             matching_files.append(os.path.join(root, filename))
 
     return matching_files
-
-
-def check_similar_services_same_host(host):
-    d = "../consumer/"
-    similar_services_at_same_host = []
-
-    potential_matches = find_files_with_prefix(d, "Consumer_", ".xml")
-    for potential_match in potential_matches:
-        model = XMLBIFReader(d + potential_match).get_model()
-        if not model.has_node('device_type'):
-            continue
-
-        host_known = host in model.get_cpds('device_type').__getattribute__('state_names')['device_type']
-        if host_known:
-            similar_services_at_same_host.append(model)
-
-    return similar_services_at_same_host
-
-
-def check_same_services_similar_host(service, host, any_host=False):
-    classification = pd.read_csv("../inference/device_classification.csv")
-    current_device = classification[classification['device_name'] == host].to_dict(orient='list')
-    current_device_cpu = current_device['cpu'][0]
-
-    device_criteria = (classification['cpu'] <= current_device_cpu)
-    if any_host:
-        device_criteria = True
-
-    similar_devices = classification[device_criteria &
-                                     (classification['device_name'] != host)]
-    model_list = []
-
-    # Idea: This should take the highest from the available
-    potential_matches = find_nested_files_with_suffix('../', f'{service}_model.xml')
-    for pm in potential_matches:
-        model = XMLBIFReader(pm).get_model()
-
-        if not model.has_node('device_type'):
-            continue
-
-        for index, row in similar_devices.iterrows():
-            same_service_at_similar_host = row['device_name'] in \
-                                           model.get_cpds('device_type').__getattribute__('state_names')['device_type']
-            if same_service_at_similar_host:
-                model_list.append(model)
-    return model_list
 
 
 def MERGE(service_mb: BayesianNetwork, potential_host_mb: BayesianNetwork):
@@ -520,20 +487,6 @@ def check_edges_with_service(potential_host_mb: BayesianNetwork):
             return False
 
     return True
-
-
-# Idea: This should penalize the service variables that are dependent on the hardware blanket
-def PENAL(mb: BayesianNetwork, offset):
-    for hw_variable in ['cpu', 'memory']:  # TODO: Extend with other variables
-        original_cpd = mb.get_cpds(hw_variable)
-        original_states = original_cpd.__getattribute__('state_names')
-        modified_hw_values = list(map(str, [(1 + offset) * int(num) for num in original_states[hw_variable]]))
-
-        new_states = original_states
-        new_states[hw_variable] = modified_hw_values
-        original_cpd.__setattr__('state_names', new_states)
-        mb.add_cpds(original_cpd)
-    return mb
 
 
 def check_device_present_in_mb(model, device):
@@ -574,3 +527,17 @@ def str_to_bool(s):
 
 COLLECTION_NAME = "metrics"
 DB_NAME = "vehicle"
+
+
+def create_model_name(service_name, device_name):
+    return f"{service_name}_{device_name}_model.xml"
+
+
+def get_ENV_PARAM(var, DEFAULT):
+    ENV = os.environ.get(var)
+    if ENV:
+        print(f'Found ENV value for {var}: {ENV}')
+    else:
+        ENV = DEFAULT
+        print(f"Didn't find ENV value for {var}, default to: {DEFAULT}")
+    return ENV

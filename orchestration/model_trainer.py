@@ -1,14 +1,17 @@
 import os
+import warnings
 from datetime import datetime, timedelta
 
 import pandas as pd
 import pymongo
 from pgmpy.inference import VariableElimination
+from pgmpy.readwrite import XMLBIFReader
 from prometheus_api_client import PrometheusConnect
 
 import utils
 from utils import DB_NAME, COLLECTION_NAME
 
+warnings.filterwarnings("ignore", category=Warning, module='pgmpy')
 sample_file = "samples.csv"
 cpd_max_sum = 0.95
 
@@ -43,7 +46,6 @@ def prepare_models():
     df = pd.read_csv(sample_file)
     unique_pairs = utils.get_service_host_pairs(df)
 
-    # TODO: Incorporate in utils.prepareSamples()
     df = utils.prepare_samples(df)
 
     for (service, device_type) in unique_pairs:
@@ -56,6 +58,20 @@ def prepare_models():
         print(f"In_time fulfilled for {int(true * 100)} %")
 
     return len(unique_pairs)
+
+
+@utils.print_execution_time # takes roughly 45ms for 1 sample
+def update_models_new_samples(model_name, samples):
+    model = XMLBIFReader(model_name).get_model()
+    # updated_model = utils.train_to_BN(samples, service_name="CV", export_file=model_name)
+
+    # past_data_length = len(self.past_training_data)
+    # if hasattr(self, 'backup_data'):
+    #     past_data_length += len(self.backup_data)
+
+    samples = utils.prepare_samples(samples, conversion=False)
+    model.fit_update(samples, n_prev_samples=1000)  # TODO: What is the correct length here? Depends on the batch size I'd say
+    utils.export_model_to_path(model, model_name)
 
 
 def get_latest_load(device_name="Laptop"):
