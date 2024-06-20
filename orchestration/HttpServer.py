@@ -1,6 +1,6 @@
 import ast
+import logging
 import os
-import warnings
 from io import StringIO
 
 import pandas as pd
@@ -16,7 +16,9 @@ app = Flask(__name__)
 
 MODEL_DIRECTORY = "./"
 
-warnings.filterwarnings("ignore", category=Warning, module='pgmpy')
+logging.getLogger('pgmpy').setLevel(logging.ERROR)  # This worked, but the ones below not...
+logging.getLogger('werkzeug').setLevel(logging.WARNING)  # This worked, but the ones below not...
+# logging.filterwarnings("ignore", category=Warning, module='pgmpy')
 HTTP_SERVER = utils.get_ENV_PARAM('HTTP_SERVER', "127.0.0.1")
 DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 

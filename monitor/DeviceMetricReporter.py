@@ -45,6 +45,9 @@ class CyclicArray:
     def get_percentage_filled(self):
         return round(len(self.buffer) / self.max_size, 2)
 
+    def get_number_items(self):
+        return len(self.buffer)
+
     def get(self):
         return self.buffer
 

@@ -65,6 +65,7 @@ class ServiceWrapper:
             evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
             # print(evidence_to_retrain)
             if evidence_to_retrain >= RETRAINING_RATE:
+                print(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
                 df = pd.concat(self.metrics_buffer.get(), ignore_index=True)
                 model_file = utils.create_model_name(self.s_description['name'], DEVICE_NAME)
                 http_client.push_metrics_retrain(model_file, df)
