@@ -1,5 +1,5 @@
+import logging
 import threading
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 http_client = HttpClient(HOST=HTTP_SERVER)
 
 MODEL_DIRECTORY = "./"
-warnings.filterwarnings("ignore", category=Warning, module='pgmpy')
+log = logging.getLogger("vehicle")
 
 RETRAINING_RATE = 0.5  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
@@ -63,15 +63,16 @@ class ServiceWrapper:
             # print(f"M| Absolute surprise for sample {surprise}")
 
             evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
-            # print(evidence_to_retrain)
+            log.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
+
             if evidence_to_retrain >= RETRAINING_RATE:
-                print(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
+                log.info(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
                 df = pd.concat(self.metrics_buffer.get(), ignore_index=True)
                 model_file = utils.create_model_name(self.s_description['name'], DEVICE_NAME)
                 http_client.push_metrics_retrain(model_file, df)
                 self.metrics_buffer.clear()
 
-        print(f"M| Thread {self.inf_service} exited gracefully")
+        log.info(f"M| Thread {self.inf_service} exited gracefully")
 
 
 def start_service(s):
@@ -95,12 +96,11 @@ def start_service(s):
         background_thread = threading.Thread(target=service_wrapper.run, name=s['name'])
         background_thread.daemon = True  # Set the thread as a daemon, so it exits when the main program exits
         background_thread.start()
-        # background_thread.__getattribute__('_args')
 
-        print(f"M| {service_wrapper.inf_service} started detached for expected SLO fulfillment ")  # '{slo}")
+        log.info(f"M| {service_wrapper.inf_service} started detached for expected SLO fulfillment ")  # '{slo}")
         return background_thread, service_wrapper
         # utils.print_current_services(thread_lib)
     else:
-        print(f"M| Skipping service due tu low expected SLO fulfillment")  # {slo}")
+        log.info(f"M| Skipping service due tu low expected SLO fulfillment")  # {slo}")
 
     # Case 2: However, if it is below the thresh, try to offload

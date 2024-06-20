@@ -1,4 +1,3 @@
-import os
 import threading
 from datetime import datetime
 
@@ -8,21 +7,10 @@ import psutil
 import pymongo
 
 from consumption.ConsRegression import ConsRegression
-from utils import is_jetson_host, DB_NAME
+from utils import is_jetson_host, DB_NAME, get_ENV_PARAM
 
-DEVICE_NAME = os.environ.get('DEVICE_NAME')
-if DEVICE_NAME:
-    print(f'Found ENV value for DEVICE_NAME: {DEVICE_NAME}')
-else:
-    DEVICE_NAME = "Unknown"
-    print(f"Didn't find ENV value for DEVICE_NAME, default to: {DEVICE_NAME}")
-
-LEADER_HOST = os.environ.get('LEADER_HOST')
-if LEADER_HOST:
-    print(f'Found ENV value for LEADER_HOST: {LEADER_HOST}')
-else:
-    LEADER_HOST = "localhost"
-    print(f"Didn't find ENV value for LEADER_HOST, default to: {LEADER_HOST}")
+DEVICE_NAME = get_ENV_PARAM('DEVICE_NAME', "Unknown")
+LEADER_HOST = get_ENV_PARAM('LEADER_HOST', "localhost")
 
 
 class CyclicArray:
@@ -90,8 +78,6 @@ class DeviceMetricReporter:
 
         gpu = 0
         if is_jetson_host(self.host):  # Has Jetson lib defined
-            # print(self.jetson_metrics.stats)
-
             gpu = self.jetson_metrics.stats['GPU']
 
             # TODO: The GPU values are way too unstable, I must fix this somehow, or make an average over the last 5 values

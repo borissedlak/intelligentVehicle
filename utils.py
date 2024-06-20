@@ -1,6 +1,7 @@
 import copy
 import csv
 import fnmatch
+import logging
 import os
 import time
 from itertools import combinations
@@ -28,6 +29,41 @@ class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'tra
                'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
                'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
                'scissors', 'teddy bear', 'hair drier', 'toothbrush']
+
+
+def instantiate_advanced_logger(package):
+    class CustomFormatter(logging.Formatter):
+        grey = "\x1b[38;20m"
+        yellow = "\x1b[33;20m"
+        red = "\x1b[31;20m"
+        bold_red = "\x1b[31;1m"
+        reset = "\x1b[0m"
+        format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+
+        FORMATS = {
+            logging.DEBUG: grey + format + reset,
+            logging.INFO: reset + format + reset,
+            logging.WARNING: yellow + format + reset,
+            logging.ERROR: red + format + reset,
+            logging.CRITICAL: bold_red + format + reset
+        }
+
+        def format(self, record):
+            log_fmt = self.FORMATS.get(record.levelno)
+            formatter = logging.Formatter(log_fmt)
+            return formatter.format(record)
+
+    logger = logging.getLogger(package)
+    logger.setLevel(logging.DEBUG)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+    stream_handler.setFormatter(CustomFormatter())
+    logger.addHandler(stream_handler)
+
+    return logger
+
+
+log = logging.getLogger("vehicle")
 
 # Create a list of colors for each class where each color is a tuple of 3 integer values
 rng = np.random.default_rng(3)
@@ -444,7 +480,7 @@ def get_surprise_for_data(model: BayesianNetwork, model_VE: VariableElimination,
 def export_model_to_path(model, export_file):
     writer = XMLBIFWriter(model)
     writer.write_xmlbif(filename=export_file)
-    print(f"L| Model exported as '{export_file}'")
+    log.info(f"L| Model exported as '{export_file}'")
 
 
 def find_files_with_prefix(directory, prefix, suffix):
@@ -536,8 +572,13 @@ def create_model_name(service_name, device_name):
 def get_ENV_PARAM(var, DEFAULT):
     ENV = os.environ.get(var)
     if ENV:
-        print(f'Found ENV value for {var}: {ENV}')
+        logging.info(f'Found ENV value for {var}: {ENV}')
     else:
         ENV = DEFAULT
-        print(f"Didn't find ENV value for {var}, default to: {DEFAULT}")
+        logging.warning(f"Didn't find ENV value for {var}, default to: {DEFAULT}")
     return ENV
+
+
+def log_and_return(lg, severity, msg):
+    lg.log(severity, msg)
+    return msg
