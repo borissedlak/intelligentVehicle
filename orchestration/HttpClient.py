@@ -3,8 +3,8 @@ import requests
 
 
 class HttpClient:
-    def __init__(self, HOST='localhost'):
-        self.HOST = HOST
+    def __init__(self, DEFAULT_HOST='localhost'):
+        self.HOST = DEFAULT_HOST
         self.PORT = 8080
         self.SESSION = requests.Session()
         self.http_connection = None
@@ -24,13 +24,15 @@ class HttpClient:
         response = self.SESSION.get(f"http://{self.HOST}:{self.PORT}{self.START_SERVICE_PATH}", params=query_params)
         response.raise_for_status()  # Raise an exception for non-2xx status codes
 
-    def push_files_to_member(self, model_names):
+    def push_files_to_member(self, model_names, target_route=None):
+        if target_route is None:
+            target_route = self.HOST
         files = []
         for index, m in enumerate(model_names):
             files.append((f'file{index + 1}', (m, open(m, 'rb'), 'application/xml')))
 
         # headers = {'Content-Type': 'application/xml'}  # Set the content type
-        url = f"http://{self.HOST}:{self.PORT}{self.MODEL_UPLOAD_PATH}"
+        url = f"http://{target_route}:{self.PORT}{self.MODEL_UPLOAD_PATH}"
         response = self.SESSION.post(url, files=files)
         response.raise_for_status()  # Raise an exception for non-2xx status codes
 

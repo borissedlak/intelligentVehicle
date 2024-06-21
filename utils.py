@@ -595,3 +595,8 @@ def calculate_slo_fulfillment(var, row):
         return row['consumption'] <= 100
     else:
         raise RuntimeError("Why?")
+
+
+# TODO: This I must do dynamically
+def discover_platoon_devices():
+    return ['192.168.31.20', '192.168.31.183']

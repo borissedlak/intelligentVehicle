@@ -13,10 +13,10 @@ from orchestration.HttpClient import HttpClient
 from services.CV.VideoDetector import VideoDetector
 from services.VehicleService import VehicleService
 
-HTTP_SERVER = utils.get_ENV_PARAM('HTTP_SERVER', "127.0.0.1")
+LEADER_HOST = utils.get_ENV_PARAM('LEADER_HOST', "127.0.0.1")
 DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
-http_client = HttpClient(HOST=HTTP_SERVER)
+http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 
 MODEL_DIRECTORY = "./"
 log = logging.getLogger("vehicle")
