@@ -10,7 +10,7 @@ DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 PORT = 8000
 start_http_server(PORT)
 
-device_metric_reporter = DeviceMetricReporter(gpu_available=False)
+device_metric_reporter = DeviceMetricReporter(gpu_available=False, gpu_avg_history_n=50)
 
 # Create a Counter metric
 # registry = CollectorRegistry()
@@ -29,4 +29,4 @@ if __name__ == '__main__':
         gpu_load.labels(device_name=DEVICE_NAME).set(device_metrics["metrics"]["gpu"])
         memory_load.labels(device_name=DEVICE_NAME).set(device_metrics["metrics"]["memory"])
         consumption.labels(device_name=DEVICE_NAME).set(device_metrics["metrics"]["consumption"])
-        time.sleep(1)
+        time.sleep(0.25)
