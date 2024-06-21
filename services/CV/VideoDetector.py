@@ -32,7 +32,7 @@ class VideoDetector(VehicleService):
             self.source_pixel = source_pixel
             self.source_fps = source_fps
 
-    def __init__(self):
+    def __init__(self, show_results=False):
         ROOT = os.path.dirname(__file__)
         self.model_path = ROOT + "/models/yolov8n.onnx"
         self.video_path = ROOT + "/data/pamela_reif_cut.mp4"
@@ -42,7 +42,7 @@ class VideoDetector(VehicleService):
         self.device_metric_reporter = DeviceMetricReporter(self.detector.gpu_available())
         self.service_metric_reporter = ServiceMetricReporter("CV")
 
-        self.show_result = False
+        self.show_result = show_results
         self.write_csv = False
         # csv_values = []
         # csv_headers = []
@@ -78,7 +78,7 @@ class VideoDetector(VehicleService):
             cv2.imshow("Detected Objects", combined_img)
 
         processing_time = (time.time() - start_time) * 1000.0
-        #print(f"Inference time: {processing_time:.2f} ms")
+        # print(f"Inference time: {processing_time:.2f} ms")
 
         pixel = combined_img.shape[0]
 

@@ -5,11 +5,10 @@ import time
 
 import cv2
 
-from metricReporter import utils
-from metricReporter.DeviceMetricReporter import DeviceMetricReporter
-from metricReporter.ServiceMetricReporter import ServiceMetricReporter
-from metricReporter.YOLOv8ObjectDetector import YOLOv8ObjectDetector
-from metricReporter.utils import COLLECTION_NAME
+import utils
+from monitor.DeviceMetricReporter import DeviceMetricReporter
+from monitor.ServiceMetricReporter import ServiceMetricReporter
+from services.YOLOv8ObjectDetector import YOLOv8ObjectDetector
 
 # Benchmark for road race with 'video.mp4'
 # PC CPU --> XX FPS
@@ -27,7 +26,7 @@ else:
     DEVICE_NAME = "Unknown"
     print(f"Didn't find ENV value for DEVICE_NAME, default to: {DEVICE_NAME}")
 
-model_path = "models/yolov8n.onnx"
+model_path = "services/CV/models/yolov8n.onnx"
 detector = YOLOv8ObjectDetector(model_path, conf_threshold=0.5, iou_threshold=0.5)
 simulate_fps = True
 
@@ -47,7 +46,7 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
 
             print(f"Now processing: {source_pixel} p, {source_fps} FPS, Round {x + 1}")
             available_time_frame = (1000 / source_fps)
-            cap = cv2.VideoCapture("data/pamela_reif_cut.mp4")
+            cap = cv2.VideoCapture("services/CV/data/pamela_reif_cut.mp4")
 
             # output_video = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 30, (1280, 720))
 
@@ -98,7 +97,7 @@ def process_video(video_info, show_result=False, repeat=1, write_csv=False):
                     csv_headers = merged_metrics.keys()
                     csv_values.append(merged_metrics)
                 else:
-                    device_metric_reporter.report_metrics(COLLECTION_NAME, merged_metrics)
+                    device_metric_reporter.report_metrics(utils.COLLECTION_NAME, merged_metrics)
 
                 if simulate_fps:
                     if processing_time < available_time_frame:
@@ -112,7 +111,7 @@ if __name__ == "__main__":
     write_csv = False
     # process_video(video_info=itertools.product([480, 720, 1080], [15, 20, 25, 30, 35]),
     process_video(video_info=itertools.product([480, 720, 1080], [25]),
-                  show_result=False,
+                  show_result=True,
                   write_csv=write_csv,
                   repeat=5)
 

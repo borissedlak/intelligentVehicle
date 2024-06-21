@@ -64,6 +64,7 @@ class ServiceWrapper:
 
             evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
             log.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
+            log.debug(f"For expectation {expectation} vs {reality}")
 
             if evidence_to_retrain >= RETRAINING_RATE:
                 log.info(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
