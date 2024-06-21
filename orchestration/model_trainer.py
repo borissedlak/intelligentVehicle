@@ -49,7 +49,7 @@ def prepare_models(fill_param_tables=True):
         line_param = []
         bins = [15, 35, 65, 90]
         for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy) in (
-                itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV'], ['Laptop'], bins, bins, bins, [1, 999], [1, 999])):
+                itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV'], ['Laptop', 'Orin'], bins, bins, bins, [1, 999], [1, 999])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu,
                                'delta': delta, 'consumption': energy, 'service': service, 'device_type': device})
         df_param_fill = utils.prepare_samples(pd.DataFrame(line_param))

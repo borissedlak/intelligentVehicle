@@ -27,6 +27,7 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
 http_client = HttpClient(DEFAULT_HOST=HTTP_SERVER)
 thread_lib = []
+current_platoon = ['localhost']
 
 
 # MEMBER ROUTES ######################################
@@ -75,6 +76,15 @@ def override_model():
     return utils.log_and_return(logger, logging.INFO, "M| All files received successfully")
 
 
+@app.route('/update_platoon_members', methods=['POST'])
+def update_platoon_members():
+    global current_platoon
+    member_ips = request.args.get('platoon_members')
+    current_platoon = member_ips.split(",")
+
+    return utils.log_and_return(logger, logging.INFO, f"M| Update local list of platoon members to {current_platoon}")
+
+
 # LEADER ROUTES ######################################
 
 @app.route('/model_list', methods=['GET'])
@@ -99,7 +109,7 @@ def update_model_immediately(model_name):
     # TODO: This should run in a new thread in the bg
     # TODO: What if another process requests to retrain while retrain is still running?
     model_trainer.update_models_new_samples(model_name, df)
-    for client_ip in utils.discover_platoon_devices():
+    for client_ip in current_platoon:
         http_client.push_files_to_member([model_name], target_route=client_ip)
 
     return utils.log_and_return(logger, logging.INFO, "L| Updated model successfully")
