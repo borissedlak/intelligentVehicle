@@ -376,7 +376,7 @@ def jaccard_similarity(list1, list2):
     return intersection_size / union_size
 
 
-@print_execution_time
+# @print_execution_time
 def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None, conversion=True):
     if conversion:
         samples["delta"] = samples["delta"].apply(np.floor).astype(int)
@@ -479,7 +479,7 @@ def get_surprise_for_data(model: BayesianNetwork, model_VE: VariableElimination,
     return bic_sum
 
 
-@print_execution_time
+# @print_execution_time
 def export_model_to_path(model, export_file):
     writer = XMLBIFWriter(model)
     writer.write_xmlbif(filename=export_file)
@@ -585,6 +585,7 @@ def get_ENV_PARAM(var, DEFAULT):
 def log_and_return(lg, severity, msg):
     lg.log(severity, msg)
     return msg
+
 
 # @print_execution_time
 def calculate_slo_fulfillment(var, row):

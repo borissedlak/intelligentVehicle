@@ -18,12 +18,7 @@ from services.YOLOv8ObjectDetector import YOLOv8ObjectDetector
 # Xavier CPU --> 4 FPS
 
 
-DEVICE_NAME = os.environ.get('DEVICE_NAME')
-if DEVICE_NAME:
-    print(f'Found ENV value for DEVICE_NAME: {DEVICE_NAME}')
-else:
-    DEVICE_NAME = "Unknown"
-    print(f"Didn't find ENV value for DEVICE_NAME, default to: {DEVICE_NAME}")
+DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 
 
 class VideoDetector(VehicleService):
