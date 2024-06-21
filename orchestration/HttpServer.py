@@ -93,6 +93,7 @@ def update_model_immediately(model_name):
     csv_string = request.data.decode('utf-8')
     df = pd.read_csv(StringIO(csv_string))
 
+    # TODO: This should run in a new thread in the bg
     model_trainer.update_models_new_samples(model_name, df)
     http_client.push_files_to_member([model_name])
     return utils.log_and_return(logger, logging.INFO, "L| Updated model successfully")

@@ -384,11 +384,12 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
         samples['energy_saved'] = samples['consumption'] <= 100
 
-        samples['cpu'] = pd.cut(samples['cpu'], bins=[0, 50, 70, 90, 100],
+        # Idea: The number of buckets or even their distribution could also be a hyperparameter
+        samples['cpu'] = pd.cut(samples['cpu'], bins=[0, 25, 50, 75, 100],
                                 labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
-        samples['memory'] = pd.cut(samples['memory'], bins=[0, 50, 70, 90, 100],
+        samples['memory'] = pd.cut(samples['memory'], bins=[0, 25, 50, 75, 100],
                                    labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
-        samples['gpu'] = pd.cut(samples['gpu'], bins=[0, 50, 70, 90, 100],
+        samples['gpu'] = pd.cut(samples['gpu'], bins=[0, 25, 50, 75, 100],
                                 labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
 
     samples['fps'] = samples['fps'].astype(str)
