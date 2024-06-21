@@ -71,13 +71,8 @@ def prepare_models(fill_param_tables=True):
 @utils.print_execution_time  # takes roughly 45ms for 1 sample
 def update_models_new_samples(model_name, samples):
     model = XMLBIFReader(model_name).get_model()
-    # updated_model = utils.train_to_BN(samples, service_name="CV", export_file=model_name)
 
-    # past_data_length = len(self.past_training_data)
-    # if hasattr(self, 'backup_data'):
-    #     past_data_length += len(self.backup_data)
-
-    samples = utils.prepare_samples(samples, conversion=False)
+    samples = utils.prepare_samples(samples)
     model.fit_update(samples, n_prev_samples=PREV_SAMPLES_LENGTH)
     utils.export_model_to_path(model, model_name)
 

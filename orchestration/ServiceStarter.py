@@ -48,17 +48,18 @@ class ServiceWrapper:
     def run(self):
         while self._running:
             reality_metrics = self.inf_service.process_one_iteration(self.s_description['constraints'])
-            reality_row = utils.prepare_samples(pd.DataFrame([reality_metrics]))
+            self.metrics_buffer.append(reality_metrics)
+            # reality_row = utils.prepare_samples(pd.DataFrame([reality_metrics]))
 
             for var in self.s_description['slo_var']:
-                current_slo_f = reality_row[var][0]
-                self.slo_hist.append(utils.str_to_bool(current_slo_f))
+                current_slo_f = utils.calculate_slo_fulfillment(var, reality_metrics)
+                # current_slo_f = reality_row[var][0]
+                self.slo_hist.append(current_slo_f)
                 rebalanced_slo_f = round(self.slo_hist.average(), 2)
                 reality = rebalanced_slo_f  # TODO: Must also support multiple SLOs
 
             expectation = round(utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_var'],
                                                                            self.s_description['constraints'])), 2)
-            self.metrics_buffer.append(reality_row)
             # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_var'])
             # print(f"M| Absolute surprise for sample {surprise}")
 
@@ -68,9 +69,9 @@ class ServiceWrapper:
 
             if evidence_to_retrain >= RETRAINING_RATE:
                 log.info(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
-                df = pd.concat(self.metrics_buffer.get(), ignore_index=True)
+                df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
                 model_file = utils.create_model_name(self.s_description['name'], DEVICE_NAME)
-                http_client.push_metrics_retrain(model_file, df)
+                http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
                 self.metrics_buffer.clear()
 
         log.info(f"M| Thread {self.inf_service} exited gracefully")

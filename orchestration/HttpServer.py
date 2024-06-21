@@ -19,7 +19,7 @@ MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 logging.getLogger('pgmpy').setLevel(logging.ERROR)  # This worked, but the ones below not...
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
-logging.getLogger('vehicle').setLevel(logging.DEBUG)
+logging.getLogger('vehicle').setLevel(logging.INFO)
 # logging.filterwarnings("ignore", category=Warning, module='pgmpy')
 
 HTTP_SERVER = utils.get_ENV_PARAM('HTTP_SERVER', "127.0.0.1")
@@ -37,7 +37,8 @@ def start():
     service_d = ast.literal_eval(request.args.get('service_description'))
     thread_description = start_service(service_d)
     thread_lib.append(thread_description)
-    return "success"
+
+    return utils.log_and_return(logger, logging.INFO, "M| Started service successfully")
 
 
 @app.route("/stop_all_services", methods=['POST'])
@@ -63,12 +64,13 @@ def override_model():
     for f_key in request.files.keys():
         file = request.files[f_key]
         file.save(file.filename)
-        logger.info(f"M| Receiving model file '{file.filename}'")
+        # logger.info(f"M| Receiving model file '{file.filename}'")
 
         for (thread, wrapper) in thread_lib:
             if file.filename == utils.create_model_name(wrapper.s_description['name'], DEVICE_NAME):
                 model = XMLBIFReader(file.filename).get_model()
                 wrapper.update_model(model)
+                logger.info(f"M| Update model for {thread} > {wrapper}")
 
     return utils.log_and_return(logger, logging.INFO, "M| All files received successfully")
 
@@ -79,6 +81,7 @@ def override_model():
 def list_files():
     files = os.listdir(MODEL_DIRECTORY)
     filtered_files = [f for f in files if f.endswith('model.xml')]
+
     return jsonify(filtered_files)
 
 
@@ -97,6 +100,7 @@ def update_model_immediately(model_name):
     # TODO: What if another process requests to retrain while retrain is still running?
     model_trainer.update_models_new_samples(model_name, df)
     http_client.push_files_to_member([model_name])
+
     return utils.log_and_return(logger, logging.INFO, "L| Updated model successfully")
 
 
@@ -108,7 +112,6 @@ def retrain_models():
     # TODO: This should run in a new thread in the bg
     model_trainer.retrieve_full_data()
     n = model_trainer.prepare_models()
-
     http_client.push_files_to_member()  # TODO: Must filter which files
 
     return utils.log_and_return(logger, logging.INFO, f"Trained {n} models")
@@ -118,7 +121,8 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
+services = [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]#,
+            # {"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:
     logger.info(f"Starting {service_description['name']} by default")
