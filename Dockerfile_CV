@@ -8,22 +8,20 @@ ENV SEND_SYSTEM_STATS=""
 
 #Local dependencies for cv2
 RUN apt-get update
-RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.tuna.tsinghua.edu.cn/ubuntu/|g' /etc/apt/sources.list
-RUN sed -i 's|http://security.ubuntu.com/ubuntu/|http://mirrors.tuna.tsinghua.edu.cn/ubuntu/|g' /etc/apt/sources.list
 RUN apt-get install ffmpeg libsm6 libxext6  -y
 RUN apt-get install gcc python3-dev graphviz -y # python3-pydot inside python3-dev?
-#
 
 # set the working directory in the container
 WORKDIR /src/
 
 # copy the content of the local directory to the working directory
 COPY services/CV /src/
-COPY metricReporter /src/
+COPY requirements.txt /src/
 COPY consumption /src/
+COPY utils.py /src/
 
 # install dependencies
-RUN pip install -r requirements.txt
+RUN pip install -r ./requirements.txt
 
 # command to run on container start
 CMD [ "python", "./starter.py" ]

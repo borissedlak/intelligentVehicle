@@ -69,6 +69,8 @@ log = logging.getLogger("vehicle")
 rng = np.random.default_rng(3)
 colors = rng.uniform(0, 255, size=(len(class_names), 3))
 
+NUMBER_OF_BINS = 4  # Idea: The number of buckets or even their distribution is a hyperparameter
+
 
 def print_execution_time(func):
     def wrapper(*args, **kwargs):
@@ -376,6 +378,13 @@ def jaccard_similarity(list1, list2):
     return intersection_size / union_size
 
 
+def split_into_bins(n):
+    if n <= 0:
+        return []
+    step = 100 / n
+    return [i * step for i in range(n + 1)]
+
+
 # @print_execution_time
 def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None, conversion=True):
     if conversion:
@@ -385,12 +394,12 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
         samples['energy_saved'] = samples['consumption'] <= 100
 
-        # Idea: The number of buckets or even their distribution could also be a hyperparameter
-        samples['cpu'] = pd.cut(samples['cpu'], bins=[0, 25, 50, 75, 100],
+        samples['cpu'] = pd.cut(samples['cpu'], bins=split_into_bins(NUMBER_OF_BINS),
                                 labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
-        samples['memory'] = pd.cut(samples['memory'], bins=[0, 25, 50, 75, 100],
+        print(split_into_bins(4))
+        samples['memory'] = pd.cut(samples['memory'], bins=split_into_bins(NUMBER_OF_BINS),
                                    labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
-        samples['gpu'] = pd.cut(samples['gpu'], bins=[0, 25, 50, 75, 100],
+        samples['gpu'] = pd.cut(samples['gpu'], bins=split_into_bins(NUMBER_OF_BINS),
                                 labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
 
     samples['fps'] = samples['fps'].astype(str)

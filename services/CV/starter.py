@@ -2,7 +2,7 @@ import itertools
 
 from VideoDetector import VideoDetector
 
-vd = VideoDetector(show_results=True)
+vd = VideoDetector(show_results=False)
 
 for (source_pixel, source_fps) in itertools.product([480, 720, 1080], [5, 10, 15, 20]):
 

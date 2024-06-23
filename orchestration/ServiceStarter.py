@@ -52,6 +52,7 @@ class ServiceWrapper:
             # reality_row = utils.prepare_samples(pd.DataFrame([reality_metrics]))
 
             for var in self.s_description['slo_var']:
+                # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
                 current_slo_f = utils.calculate_slo_fulfillment(var, reality_metrics)
                 # current_slo_f = reality_row[var][0]
                 self.slo_hist.append(current_slo_f)
