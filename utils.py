@@ -395,12 +395,11 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples['energy_saved'] = samples['consumption'] <= 100
 
         samples['cpu'] = pd.cut(samples['cpu'], bins=split_into_bins(NUMBER_OF_BINS),
-                                labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
-        print(split_into_bins(4))
+                                labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
         samples['memory'] = pd.cut(samples['memory'], bins=split_into_bins(NUMBER_OF_BINS),
-                                   labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
+                                   labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
         samples['gpu'] = pd.cut(samples['gpu'], bins=split_into_bins(NUMBER_OF_BINS),
-                                labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
+                                labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
 
     samples['fps'] = samples['fps'].astype(str)
     samples['pixel'] = samples['pixel'].astype(str)
@@ -606,6 +605,6 @@ def calculate_slo_fulfillment(var, row):
         raise RuntimeError("Why?")
 
 
-# TODO: This I must do dynamically
+# TODO: This I should do dynamically
 def discover_platoon_devices():
     return ['192.168.31.20', '192.168.31.183']

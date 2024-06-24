@@ -18,6 +18,7 @@ WORKDIR /src/
 COPY services/CV /src/
 COPY requirements.txt /src/
 COPY consumption /src/
+COPY monitor /src/
 COPY utils.py /src/
 
 # install dependencies
