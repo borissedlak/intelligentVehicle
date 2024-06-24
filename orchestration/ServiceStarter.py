@@ -10,6 +10,7 @@ from pgmpy.readwrite import XMLBIFReader
 import utils
 from monitor.DeviceMetricReporter import CyclicArray
 from orchestration.HttpClient import HttpClient
+from orchestration.SloEstimator import SloEstimator
 from services.CV.VideoDetector import VideoDetector
 from services.VehicleService import VehicleService
 
@@ -19,25 +20,28 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 
 MODEL_DIRECTORY = "./"
-log = logging.getLogger("vehicle")
+logger = logging.getLogger("vehicle")
 
 RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
+OFFLOADING_RATE = 0.3  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 
 
 class ServiceWrapper:
-    def __init__(self, inf_service: VehicleService, description, model: BayesianNetwork, isolated=False):
+    def __init__(self, inf_service: VehicleService, description, model: BayesianNetwork, platoon_members, isolated=False):
         self._running = True
         self.inf_service = inf_service
         self.s_description = description
         self.model = model  # TODO: Filter MB with utils.get_mbs_as_bn(model, self.s_description['slo_vars'])
         self.model_VE = VariableElimination(self.model)
-        self.slo_hist = CyclicArray(100)  # TODO: If at some point I do dynamic adaptations, I must clear this
+        self.slo_hist = CyclicArray(100)
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)
         self.under_unknown_config = not utils.verify_all_parameters_known(model,
                                                                           pd.DataFrame([self.s_description['constraints']]),
                                                                           list(self.s_description['constraints'].keys()))
         self.isolated = isolated
+        self.slo_estimator = SloEstimator(self.model, self.s_description)
+        self.platoon_members = platoon_members
 
     def terminate(self):
         self._running = False
@@ -49,9 +53,12 @@ class ServiceWrapper:
     def update_isolation(self, isolated):
         self.isolated = isolated
 
+    def update_platoon(self, platoon):
+        self.platoon_members = platoon
+
+    # TODO: Upon error, restart the loop
     def run(self):
         while self._running:
-            # TODO: If its the only service, add a flag isolated = True
             reality_metrics = self.inf_service.process_one_iteration(self.s_description['constraints'])
             reality_metrics['isolated'] = self.isolated
             self.inf_service.report_to_mongo(reality_metrics)
@@ -62,58 +69,55 @@ class ServiceWrapper:
             for var in self.s_description['slo_vars']:
                 # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
                 current_slo_f = utils.calculate_slo_fulfillment(var, reality_metrics)
-                # current_slo_f = reality_row[var][0]
                 self.slo_hist.append(current_slo_f)
                 rebalanced_slo_f = round(self.slo_hist.average(), 2)
                 reality = rebalanced_slo_f  # TODO: Must also support multiple SLOs
 
-            expectation = round(utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_vars'],
-                                                                           self.s_description['constraints'])), 2)
+            expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_vars'],
+                                                                     self.s_description['constraints'] | {"isolated": f'{self.isolated}'}))
             # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_vars'])
             # print(f"M| Absolute surprise for sample {surprise}")
 
             evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
-            log.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
-            log.debug(f"For expectation {expectation} vs {reality}")
+            logger.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
+            logger.debug(f"For expectation {expectation} vs {reality}")
 
-            if evidence_to_retrain >= RETRAINING_RATE:
-                log.info(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
-                df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
-                model_file = utils.create_model_name(self.s_description['name'], DEVICE_NAME)
-                http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
-                self.metrics_buffer.clear()
+            # if evidence_to_retrain >= RETRAINING_RATE:
+            #     logger.info(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
+            #     df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
+            #     model_file = utils.create_model_name(self.s_description['name'], DEVICE_NAME)
+            #     http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
+            #     self.metrics_buffer.clear()
+
+            evidence_to_load_off = (expectation - reality) + 0  # TODO: Some other factors
+            logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
+
+            if evidence_to_load_off >= OFFLOADING_RATE:
+                for vehicle_address in self.platoon_members:
+                    service_name = utils.create_model_name("CV", "Laptop")
+                    slo_target_estimated = self.slo_estimator.infer_target_slo_f(service_name, vehicle_address)
+
+                    print(slo_target_estimated)
+
+        logger.info(f"M| Thread {self.inf_service} exited gracefully")
 
 
-
-        log.info(f"M| Thread {self.inf_service} exited gracefully")
-
-
-def start_service(s, isolated=False):
-    # TODO: This should pull the latest model before starting
-    # TODO: However, the exceptions are that the member is also leader or its already up-to-date
-
+def start_service(s, platoon_members, isolated=False):
     model_path = utils.create_model_name(s['name'], DEVICE_NAME)
     model = XMLBIFReader(model_path).get_model()
 
-    if s['name'] == "XYZ":
-        service_wrapper = None  # Other services
+    if s['name'] == "CV":
+        service_wrapper = ServiceWrapper(VideoDetector(), s, model, platoon_members, isolated)
     else:
-        service_wrapper = ServiceWrapper(VideoDetector(), s, model, isolated)
+        raise RuntimeError(f"What is this {s['name']}?")
 
-    # slo = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), s['slo_vars'], s['constraints']))
+    background_thread = threading.Thread(target=service_wrapper.run, name=s['name'])
+    background_thread.daemon = True  # Set the thread as a daemon, so it exits when the main program exits
+    background_thread.start()
 
-    # Case 1: If SLO fulfillment looks promising then start immediately
-    # Case 1.1: Same if not known, we'll find out during operation
+    logger.info(f"M| {service_wrapper.inf_service} started detached for expected SLO fulfillment ")
 
-    if 0.0 >= 0.00:  # slo >= X
-        background_thread = threading.Thread(target=service_wrapper.run, name=s['name'])
-        background_thread.daemon = True  # Set the thread as a daemon, so it exits when the main program exits
-        background_thread.start()
+    slo = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), s['slo_vars'], s['constraints']))
+    logger.debug(f"M| Expected SLO fulfillment is {slo}")
 
-        log.info(f"M| {service_wrapper.inf_service} started detached for expected SLO fulfillment ")  # '{slo}")
-        return background_thread, service_wrapper
-        # utils.print_current_services(thread_lib)
-    else:
-        log.info(f"M| Skipping service due tu low expected SLO fulfillment")  # {slo}")
-
-    # Case 2: However, if it is below the thresh, try to offload
+    return background_thread, service_wrapper

@@ -27,14 +27,14 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
 http_client = HttpClient(DEFAULT_HOST=HTTP_SERVER)
 thread_lib = []
-current_platoon = ['localhost']
+current_platoon = ['host.docker.internal:8000']
 
 
 # MEMBER ROUTES ######################################
 
 @app.route("/start_service", methods=['POST'])
 def start():
-    global thread_lib
+    global thread_lib, current_platoon
     service_d = ast.literal_eval(request.args.get('service_description'))
     isolated = not len(thread_lib) > 0
 
@@ -42,8 +42,8 @@ def start():
         for (thread, wrapper) in thread_lib:
             wrapper.update_isolation(False)
 
-    thread_description = start_service(service_d, isolated)
-    thread_lib.append(thread_description)
+    thread_ref = start_service(service_d, current_platoon, isolated)
+    thread_lib.append(thread_ref)
 
     return utils.log_and_return(logger, logging.INFO, "M| Started service successfully")
 
@@ -87,6 +87,9 @@ def update_platoon_members():
     global current_platoon
     member_ips = request.args.get('platoon_members')
     current_platoon = member_ips.split(",")
+
+    for (thread, wrapper) in thread_lib:
+        wrapper.update_platoon(current_platoon)
 
     return utils.log_and_return(logger, logging.INFO, f"M| Update local list of platoon members to {current_platoon}")
 
@@ -137,12 +140,13 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-services = []  # [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]#,
+services = [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
 # {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:
     logger.info(f"Starting {service_description['name']} by default")
-    thread_reference = start_service(service_description)
+    is_isolated = len(services) == 1
+    thread_reference = start_service(service_description, current_platoon, isolated=is_isolated)
     thread_lib.append(thread_reference)
 
 # http_client.push_files_to_member([utils.create_model_name("CV", "Orin")], target_route="192.168.31.183")

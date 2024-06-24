@@ -79,14 +79,15 @@ def update_models_new_samples(model_name, samples):
     utils.export_model_to_path(model, model_name)
 
 
-def get_latest_load(metric_type="cpu", device_name="Laptop"):
+@utils.print_execution_time
+def get_latest_load(instance, metric_type="cpu", device_name="Laptop"):
     # Connect to Prometheus
-    prom = PrometheusConnect(url="http://localhost:9090", disable_ssl=True)
-    query = metric_type + '_load{device_name="' + device_name + '"}'
+    prom = PrometheusConnect(url=f"http://{LEADER_HOST}:9090", disable_ssl=True)
+    query = metric_type + '_load{device_name="' + device_name + '",instance="' + instance + '"}'
 
     # Query the latest value
     end_time = datetime.now()
-    start_time = end_time - timedelta(minutes=10)  # Query the last 5 minutes for safety
+    start_time = end_time - timedelta(minutes=5)  # Query the last 5 minutes for safety
 
     # Get the metric data
     metric_data = prom.get_metric_range_data(
@@ -104,11 +105,6 @@ def get_latest_load(metric_type="cpu", device_name="Laptop"):
 
 
 if __name__ == "__main__":
-    # 1) Provider
-    # Skipped! Assumed at Nano
-    # Utilizes 30% CPU, 15% Memory, No GPU, Consumption depending on fps
-
-    # 2) Processor
-    retrieve_full_data()
-    prepare_models()
-    # get_latest_load(device_name='Orin')
+    # retrieve_full_data()
+    # prepare_models()
+    print(get_latest_load(device_name='Laptop', instance="host.docker.internal:8000"))
