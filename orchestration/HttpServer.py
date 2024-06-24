@@ -19,7 +19,7 @@ MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 logging.getLogger('pgmpy').setLevel(logging.ERROR)  # This worked, but the ones below not...
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
-logging.getLogger('vehicle').setLevel(logging.INFO)
+logging.getLogger('vehicle').setLevel(logging.DEBUG)
 # logging.filterwarnings("ignore", category=Warning, module='pgmpy')
 
 HTTP_SERVER = utils.get_ENV_PARAM('HTTP_SERVER', "127.0.0.1")
@@ -36,7 +36,13 @@ current_platoon = ['localhost']
 def start():
     global thread_lib
     service_d = ast.literal_eval(request.args.get('service_description'))
-    thread_description = start_service(service_d)
+    isolated = not len(thread_lib) > 0
+
+    if not isolated:
+        for (thread, wrapper) in thread_lib:
+            wrapper.update_isolation(False)
+
+    thread_description = start_service(service_d, isolated)
     thread_lib.append(thread_description)
 
     return utils.log_and_return(logger, logging.INFO, "M| Started service successfully")
@@ -131,12 +137,14 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-services = []  # [{"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]#,
-# {"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
+services = []  # [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]#,
+# {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:
     logger.info(f"Starting {service_description['name']} by default")
     thread_reference = start_service(service_description)
     thread_lib.append(thread_reference)
+
+# http_client.push_files_to_member([utils.create_model_name("CV", "Orin")], target_route="192.168.31.183")
 
 run_server()

@@ -47,6 +47,9 @@ class VideoDetector(VehicleService):
             print("Error opening video ...")
             return
 
+    def report_to_mongo(self, metrics):
+        self.device_metric_reporter.report_metrics(utils.COLLECTION_NAME, metrics)
+
     def process_one_iteration(self, params):
         source_pixel, source_fps = int(params['pixel']), int(params['fps'])
 
@@ -83,11 +86,11 @@ class VideoDetector(VehicleService):
         # intersection_name = utils.get_mb_name(service_blanket["target"], device_blanket["target"])
         merged_metrics = utils.merge_single_dicts(service_blanket["metrics"], device_blanket["metrics"])
 
-        if self.write_csv:
-            csv_headers = merged_metrics.keys()
-            csv_values.append(merged_metrics)
-        else:
-            self.device_metric_reporter.report_metrics(utils.COLLECTION_NAME, merged_metrics)
+        # if self.write_csv:
+        #     csv_headers = merged_metrics.keys()
+        #     csv_values.append(merged_metrics)
+        # else:
+        #     self.device_metric_reporter.report_metrics(utils.COLLECTION_NAME, merged_metrics)
 
         if self.simulate_fps:
             if processing_time < available_time_frame:

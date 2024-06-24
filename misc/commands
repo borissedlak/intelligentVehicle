@@ -16,6 +16,11 @@ docker cp eloquent_davinci:/data/ $HOME/
 480p = 409920
 720p = 921600
 
+# For Docker configuration
+"dns": [
+    "8.8.8.8",
+    "8.8.4.4"
+  ],
 
 export VARNAME="my value"
 sudo nano /etc/environment

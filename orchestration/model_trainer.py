@@ -19,7 +19,7 @@ cpd_max_sum = 0.95
 DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 LEADER_HOST = utils.get_ENV_PARAM("LEADER_HOST", "localhost")
 
-PREV_SAMPLES_LENGTH = 1000  # Idea: This is also a hyperparameter, initially I should be small and then larger later
+PREV_SAMPLES_LENGTH = 300  # Idea: This is also a hyperparameter, initially I should be small and then larger later
 
 
 # @utils.print_execution_time
@@ -30,8 +30,8 @@ def retrieve_full_data():
     utils.export_samples(df, sample_file)
     print(f"Reading {df.shape[0]} samples from mongoDB")
 
-    unique_pairs = utils.get_service_host_pairs(df)
-    print(f"Contains pairs for {unique_pairs}")
+    # unique_pairs = utils.get_service_host_pairs(df)
+    # print(f"Contains pairs for {unique_pairs}")
 
 
 def prepare_models(fill_param_tables=True):
@@ -47,11 +47,12 @@ def prepare_models(fill_param_tables=True):
 
     if fill_param_tables:
         line_param = []
-        bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS+1]
-        for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy) in (
-                itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV'], ['Laptop', 'Orin'], bin_values, bin_values, bin_values, [1, 999], [1, 999])):
-            line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu,
-                               'delta': delta, 'consumption': energy, 'service': service, 'device_type': device})
+        bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
+        for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, isolated) in (
+                itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV'], ['Laptop', 'Orin'], bin_values, bin_values, bin_values,
+                                  [1, 999], [1, 999], [True, False])):
+            line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu, 'delta': delta,
+                               'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated})
         df_param_fill = utils.prepare_samples(pd.DataFrame(line_param))
         df = pd.concat([df, df_param_fill], ignore_index=True)
 
@@ -109,13 +110,6 @@ if __name__ == "__main__":
     # Utilizes 30% CPU, 15% Memory, No GPU, Consumption depending on fps
 
     # 2) Processor
-    # retrieve_full_data()
+    retrieve_full_data()
     prepare_models()
     # get_latest_load(device_name='Orin')
-
-    # model_path = f"CV_{DEVICE_NAME}_model.xml"
-    # model = XMLBIFReader(model_path).get_model()
-    #
-    # services = {"name": 'CV', 'slo_var': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
-    # slo = utils.get_true(utils.infer_slo_fulfillment(model, services['slo_var'], services['constraints']))
-    # print(slo)

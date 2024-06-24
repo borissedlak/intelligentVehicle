@@ -55,7 +55,7 @@ class CyclicArray:
 
 # TODO: Needs a device ID additionally if we have multiple devices with the same type
 class DeviceMetricReporter:
-    def __init__(self, gpu_available=0, gpu_avg_history_n=5):
+    def __init__(self, gpu_available=0, gpu_avg_history_n=15):
         self.host = DEVICE_NAME
         self.consumption_regression = ConsRegression(self.host)
         self.mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
@@ -90,10 +90,7 @@ class DeviceMetricReporter:
         elif self.gpu_available:
             if len(GPUtil.getGPUs()) > 0:  # Has Nvidia GPU but is no Jetson
                 gpu = int(GPUtil.getGPUs()[0].load * 100)
-            else:  # Old workaround
-                # frame_gpu_translation = {15: 30, 20: 40, 25: 65, 30: 75, 35: 80}  # Orin
-                # frame_gpu_translation = {15: 35, 20: 50, 25: 70, 30: 80, 35: 85}  # Xavier
-                # gpu = frame_gpu_translation[source_fps]
+            else:
                 raise RuntimeError("How come?")
 
         return {"target": self.host,

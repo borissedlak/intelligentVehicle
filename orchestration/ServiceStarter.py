@@ -21,22 +21,23 @@ http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 MODEL_DIRECTORY = "./"
 log = logging.getLogger("vehicle")
 
-RETRAINING_RATE = 0.5  # Idea: This is a hyperparameter
+RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 
 
 class ServiceWrapper:
-    def __init__(self, inf_service: VehicleService, description, model: BayesianNetwork):
+    def __init__(self, inf_service: VehicleService, description, model: BayesianNetwork, isolated=False):
         self._running = True
         self.inf_service = inf_service
         self.s_description = description
-        self.model = model  # TODO: Filter MB with utils.get_mbs_as_bn(model, self.s_description['slo_var'])
+        self.model = model  # TODO: Filter MB with utils.get_mbs_as_bn(model, self.s_description['slo_vars'])
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(100)  # TODO: If at some point I do dynamic adaptations, I must clear this
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)
         self.under_unknown_config = not utils.verify_all_parameters_known(model,
                                                                           pd.DataFrame([self.s_description['constraints']]),
                                                                           list(self.s_description['constraints'].keys()))
+        self.isolated = isolated
 
     def terminate(self):
         self._running = False
@@ -45,13 +46,20 @@ class ServiceWrapper:
         self.model = model
         self.model_VE = VariableElimination(self.model)
 
+    def update_isolation(self, isolated):
+        self.isolated = isolated
+
     def run(self):
         while self._running:
+            # TODO: If its the only service, add a flag isolated = True
             reality_metrics = self.inf_service.process_one_iteration(self.s_description['constraints'])
+            reality_metrics['isolated'] = self.isolated
+            self.inf_service.report_to_mongo(reality_metrics)
+
             self.metrics_buffer.append(reality_metrics)
             # reality_row = utils.prepare_samples(pd.DataFrame([reality_metrics]))
 
-            for var in self.s_description['slo_var']:
+            for var in self.s_description['slo_vars']:
                 # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
                 current_slo_f = utils.calculate_slo_fulfillment(var, reality_metrics)
                 # current_slo_f = reality_row[var][0]
@@ -59,9 +67,9 @@ class ServiceWrapper:
                 rebalanced_slo_f = round(self.slo_hist.average(), 2)
                 reality = rebalanced_slo_f  # TODO: Must also support multiple SLOs
 
-            expectation = round(utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_var'],
+            expectation = round(utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_vars'],
                                                                            self.s_description['constraints'])), 2)
-            # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_var'])
+            # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_vars'])
             # print(f"M| Absolute surprise for sample {surprise}")
 
             evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
@@ -78,7 +86,7 @@ class ServiceWrapper:
         log.info(f"M| Thread {self.inf_service} exited gracefully")
 
 
-def start_service(s):
+def start_service(s, isolated=False):
     # TODO: This should pull the latest model before starting
     # TODO: However, the exceptions are that the member is also leader or its already up-to-date
 
@@ -88,9 +96,9 @@ def start_service(s):
     if s['name'] == "XYZ":
         service_wrapper = None  # Other services
     else:
-        service_wrapper = ServiceWrapper(VideoDetector(), s, model)
+        service_wrapper = ServiceWrapper(VideoDetector(), s, model, isolated)
 
-    # slo = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), s['slo_var'], s['constraints']))
+    # slo = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), s['slo_vars'], s['constraints']))
 
     # Case 1: If SLO fulfillment looks promising then start immediately
     # Case 1.1: Same if not known, we'll find out during operation

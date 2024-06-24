@@ -401,10 +401,14 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples['gpu'] = pd.cut(samples['gpu'], bins=split_into_bins(NUMBER_OF_BINS),
                                 labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
 
+    samples['cpu'] = samples['cpu'].astype(str)
+    samples['memory'] = samples['memory'].astype(str)
+    samples['gpu'] = samples['gpu'].astype(str)
     samples['fps'] = samples['fps'].astype(str)
     samples['pixel'] = samples['pixel'].astype(str)
     samples['in_time'] = samples['in_time'].astype(str)
     samples['energy_saved'] = samples['energy_saved'].astype(str)
+    samples['isolated'] = samples['isolated'].astype(str)
 
     if hasattr(samples, '_id'):
         del samples['_id']
