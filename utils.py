@@ -385,6 +385,20 @@ def split_into_bins(n):
     return [i * step for i in range(n + 1)]
 
 
+def compress_into_n_bins(p_dist):
+    binned_P = np.zeros(NUMBER_OF_BINS)
+    bin_size = len(p_dist) / NUMBER_OF_BINS
+
+    for i in range(NUMBER_OF_BINS):
+        start_index = int(i * bin_size)
+        end_index = int((i + 1) * bin_size)
+        binned_P[i] = np.sum(p_dist[start_index:end_index])
+
+    # print("Binned convolutional distribution:")
+    # print(binned_P)
+    return binned_P
+
+
 # @print_execution_time
 def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None, conversion=True):
     if conversion:
