@@ -34,6 +34,7 @@ def retrieve_full_data():
     # print(f"Contains pairs for {unique_pairs}")
 
 
+# TODO: I must finally pin the DAG I think
 def prepare_models(fill_param_tables=True):
     try:
         df = pd.read_csv(sample_file)
@@ -78,12 +79,10 @@ def update_models_new_samples(model_name, samples):
     utils.export_model_to_path(model, model_name)
 
 
-def get_latest_load(device_name="Laptop"):
+def get_latest_load(metric_type="cpu", device_name="Laptop"):
     # Connect to Prometheus
     prom = PrometheusConnect(url="http://localhost:9090", disable_ssl=True)
-
-    # Define the query
-    query = 'cpu_load{device_name="' + device_name + '"}'
+    query = metric_type + '_load{device_name="' + device_name + '"}'
 
     # Query the latest value
     end_time = datetime.now()
@@ -98,10 +97,10 @@ def get_latest_load(device_name="Laptop"):
 
     if metric_data:
         latest_value = metric_data[0]['values'][-1]
-        timestamp, cpu_load = latest_value
-        print(f"Timestamp: {timestamp}, CPU Load: {cpu_load}")
+        return latest_value
     else:
         print("No data found for the given query.")
+        return None
 
 
 if __name__ == "__main__":
