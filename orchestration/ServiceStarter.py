@@ -24,7 +24,7 @@ MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 
 RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
-OFFLOADING_RATE = 0.3  # Idea: This is a hyperparameter
+OFFLOADING_RATE = - 999  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
 
@@ -95,11 +95,13 @@ class ServiceWrapper(threading.Thread):
                 #     http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
                 #     self.metrics_buffer.clear()
 
-                evidence_to_load_off = (expectation - reality) + 0  # TODO: Some other factors
+                evidence_to_load_off = (expectation - reality) + (1 - reality)
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
 
                 if evidence_to_load_off >= OFFLOADING_RATE:
                     for vehicle_address in self.platoon_members:
+                        if vehicle_address == "192.168.31.20":
+                            vehicle_address = "host.docker.internal"
                         service_name = utils.create_model_name("CV", "Laptop")
                         slo_target_estimated = self.slo_estimator.infer_target_slo_f(service_name, vehicle_address)
 
@@ -112,7 +114,7 @@ class ServiceWrapper(threading.Thread):
                 print(error_traceback)
 
                 utils.print_in_red(f"ACI Background thread encountered an exception:{e}")
-                self.start()
+                # self.start()
 
         logger.info(f"M| Thread {self.inf_service} exited gracefully")
 

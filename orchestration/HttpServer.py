@@ -140,7 +140,7 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-services = [] # [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
+services = []  # [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
 # {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:

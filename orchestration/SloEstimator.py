@@ -47,9 +47,9 @@ class SloEstimator:
                                                       isolated="False")
         logger.debug(f"M| Predictions for SLO fulfillment once load shifted {prediction_shifted}")
 
-        # TODO: What if multiple services are running there?
         hw_conv = {}
         for var in ['cpu', 'gpu', 'memory']:
+        # TODO: What if multiple services are running there?
             var_conv = utils.compress_into_n_bins(np.convolve(hw_predictions[var], hw_predictions[var]))
             hw_conv = hw_conv | {var: var_conv}
         prediction_conv = self.calc_weighted_slo_f(hw_conv, dest_model=dest_model, isolated="False")

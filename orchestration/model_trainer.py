@@ -90,7 +90,7 @@ def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"], device_name
 
     metrics_lib = {}
     for m in metric_types:
-        query = m + '_load{device_name="' + device_name + '",instance="' + instance + '"}'
+        query = m + '_load{instance="' + instance + ':8000"}' # device_name="' + device_name + '",
 
         metric_data = prom.get_metric_range_data(
             metric_name=query,
@@ -108,12 +108,13 @@ def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"], device_name
     return metrics_lib
 
 
-def convert_prometheus_to_category(current_loat):
-    current_load_list = list(map(float, list(current_loat.values())))
+def convert_prometheus_to_category(current_load):
+    current_load_list = list(map(float, list(current_load.values())))
     return np.digitize(list(current_load_list), utils.split_into_bins(utils.NUMBER_OF_BINS)) - 1
 
 
 if __name__ == "__main__":
     # retrieve_full_data()
     # prepare_models()
-    print(get_latest_load(device_name='Laptop', instance="host.docker.internal:8000"))
+    print(get_latest_load(instance="host.docker.internal"))
+    print(get_latest_load(instance="192.168.31.183"))
