@@ -46,7 +46,6 @@ class SloEstimator:
         prediction_shifted = self.calc_weighted_slo_f(hw_predictions, dest_model=dest_model, shift=(current_load_category + 1),
                                                       isolated="False")
         logger.debug(f"M| Predictions for SLO fulfillment once load shifted {prediction_shifted}")
-        # TODO: This is clearly different from before
 
         # TODO: What if multiple services are running there?
         hw_conv = {}
@@ -65,7 +64,7 @@ class SloEstimator:
         sum_slo_f = np.zeros((4, 4, 4))
         sum_0_5 = 0
         for i, _ in enumerate(p_dist_hw['cpu']):
-            cpu_index = (i + shift[0])
+            cpu_index = i + shift[0]
             for j, _ in enumerate(p_dist_hw['gpu']):
                 gpu_index = (j + shift[1])
                 for k, _ in enumerate(p_dist_hw['memory']):
@@ -73,13 +72,14 @@ class SloEstimator:
 
                     # TODO: df conversion too slow, try to get this working for not df
                     if not utils.verify_all_parameters_known(dest_model, pd.DataFrame([{'cpu': f'{cpu_index}'}]), ['cpu']):
-                        cpu_index = len(p_dist_hw) - 1
+                        cpu_index = len(p_dist_hw['cpu']) - 1
                     if not utils.verify_all_parameters_known(dest_model, pd.DataFrame([{'gpu': f'{gpu_index}'}]), ['gpu']):
-                        gpu_index = len(p_dist_hw) - 1
+                        gpu_index = len(p_dist_hw['gpu']) - 1
                     if not utils.verify_all_parameters_known(dest_model, pd.DataFrame([{'memory': f'{mem_index}'}]), ['memory']):
-                        mem_index = len(p_dist_hw) - 1
+                        mem_index = len(p_dist_hw['memory']) - 1
 
                     p_cumm = p_dist_hw['cpu'][i] * p_dist_hw['gpu'][j] * p_dist_hw['memory'][k]
+                    # print(i, shift[0], cpu_index)
                     slo_f_i = utils.get_true(
                         utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
                                                     {'cpu': f'{cpu_index}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
