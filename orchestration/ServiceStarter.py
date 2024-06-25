@@ -1,5 +1,6 @@
 import logging
 import threading
+import traceback
 
 import numpy as np
 import pandas as pd
@@ -110,8 +111,8 @@ class ServiceWrapper(threading.Thread):
                 print("Error Traceback:")
                 print(error_traceback)
 
-                util.print_in_red(f"ACI Background thread encountered an exception:{e}")
-                return self.start()
+                utils.print_in_red(f"ACI Background thread encountered an exception:{e}")
+                self.start()
 
         logger.info(f"M| Thread {self.inf_service} exited gracefully")
 
