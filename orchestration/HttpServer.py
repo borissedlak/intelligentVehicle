@@ -56,7 +56,7 @@ def stop_all():
 
     logger.info(f"M| Going to stop {len(thread_lib)} threads")
 
-    for bg_thread, task_object in thread_lib:
+    for task_object in thread_lib:
         task_object.terminate()
     # service_d = ast.literal_eval(request.args.get('service_description'))
     # start_service(service_d)
@@ -73,7 +73,7 @@ def override_model():
         file.save(file.filename)
         # logger.info(f"M| Receiving model file '{file.filename}'")
 
-        for (thread, wrapper) in thread_lib:
+        for wrapper in thread_lib:
             if file.filename == utils.create_model_name(wrapper.s_description['name'], DEVICE_NAME):
                 model = XMLBIFReader(file.filename).get_model()
                 wrapper.update_model(model)
@@ -88,7 +88,7 @@ def update_platoon_members():
     member_ips = request.args.get('platoon_members')
     current_platoon = member_ips.split(",")
 
-    for (thread, wrapper) in thread_lib:
+    for wrapper in thread_lib:
         wrapper.update_platoon(current_platoon)
 
     return utils.log_and_return(logger, logging.INFO, f"M| Update local list of platoon members to {current_platoon}")
