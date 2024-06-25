@@ -14,7 +14,6 @@ from utils import DB_NAME, COLLECTION_NAME
 
 logger = logging.getLogger("vehicle")
 sample_file = "samples.csv"
-cpd_max_sum = 0.95
 
 DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 LEADER_HOST = utils.get_ENV_PARAM("LEADER_HOST", "localhost")

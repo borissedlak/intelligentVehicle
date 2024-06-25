@@ -19,7 +19,7 @@ MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 logging.getLogger('pgmpy').setLevel(logging.ERROR)  # This worked, but the ones below not...
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
-logging.getLogger('vehicle').setLevel(logging.DEBUG)
+logging.getLogger('vehicle').setLevel(logging.INFO)
 # logging.filterwarnings("ignore", category=Warning, module='pgmpy')
 
 HTTP_SERVER = utils.get_ENV_PARAM('HTTP_SERVER', "127.0.0.1")
