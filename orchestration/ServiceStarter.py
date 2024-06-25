@@ -49,6 +49,7 @@ class ServiceWrapper:
     def update_model(self, model):
         self.model = model
         self.model_VE = VariableElimination(self.model)
+        self.slo_estimator.reload_source_model(self.model)
 
     def update_isolation(self, isolated):
         self.isolated = isolated

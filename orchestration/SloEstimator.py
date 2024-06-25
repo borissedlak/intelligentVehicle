@@ -14,9 +14,12 @@ logging.getLogger("vehicle").setLevel(logging.DEBUG)
 
 class SloEstimator:
     def __init__(self, source_model, service_desc):
-        self.source_model = source_model  # TODO: Must reload once received
+        self.source_model = source_model
         self.s_desc = service_desc
         self.model_VE = VariableElimination(self.source_model)
+
+    def reload_source_model(self, source_model):
+        self.source_model = source_model
 
     def infer_target_slo_f(self, target_model_name, target_host="localhost"):
 
@@ -35,6 +38,7 @@ class SloEstimator:
             current_load_category = np.digitize([current_load], utils.split_into_bins(utils.NUMBER_OF_BINS))[0] - 1
             prediction_shifted = self.calc_weighted_slo_f(cpu_distribution, dest_model=dest_model, shift=(current_load_category + 1))
 
+            # TODO: What if multiple services are running there?
             P_conv = utils.compress_into_n_bins(np.convolve(cpu_distribution, cpu_distribution))
             prediction_conv = self.calc_weighted_slo_f(P_conv, dest_model=dest_model, isolated="False")
 
