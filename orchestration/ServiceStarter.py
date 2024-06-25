@@ -62,7 +62,6 @@ class ServiceWrapper(threading.Thread):
     def update_platoon(self, platoon):
         self.platoon_members = platoon
 
-    # TODO: Upon error, restart the loop
     def run(self):
         while self._running:
             try:
@@ -70,17 +69,18 @@ class ServiceWrapper(threading.Thread):
                 reality_metrics['isolated'] = self.isolated
                 self.inf_service.report_to_mongo(reality_metrics)
                 self.metrics_buffer.append(reality_metrics)
-                # reality_row = utils.prepare_samples(pd.DataFrame([reality_metrics]))
 
+                # TODO: Must also support multiple SLOs
                 for var in self.s_description['slo_vars']:
                     # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
                     current_slo_f = utils.calculate_slo_fulfillment(var, reality_metrics)
                     self.slo_hist.append(current_slo_f)
                     rebalanced_slo_f = round(self.slo_hist.average(), 2)
-                    reality = rebalanced_slo_f  # TODO: Must also support multiple SLOs
+                    reality = rebalanced_slo_f
 
                 expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_vars'],
-                                                                         self.s_description['constraints'] | {"isolated": f'{self.isolated}'}))
+                                                                         self.s_description['constraints'] | {
+                                                                             "isolated": f'{self.isolated}'}))
                 # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_vars'])
                 # print(f"M| Absolute surprise for sample {surprise}")
 
@@ -100,11 +100,12 @@ class ServiceWrapper(threading.Thread):
 
                 if evidence_to_load_off >= OFFLOADING_RATE:
                     for vehicle_address in self.platoon_members:
+                        target_model_name = utils.create_model_name(self.s_description['name'], utils.conv_ip_to_host_type(vehicle_address))
                         if vehicle_address == "192.168.31.20":
                             vehicle_address = "host.docker.internal"
-                        service_name = utils.create_model_name("CV", "Laptop")
-                        slo_target_estimated = self.slo_estimator.infer_target_slo_f(service_name, vehicle_address)
+                        slo_target_estimated = self.slo_estimator.infer_target_slo_f(target_model_name, vehicle_address)
 
+                        # TODO: Must be compared with the local reality, otherwise it does not make sense to load off
                         print(slo_target_estimated)
 
             except Exception as e:
@@ -129,13 +130,10 @@ def start_service(s, platoon_members, isolated=False):
         raise RuntimeError(f"What is this {s['name']}?")
 
     service_wrapper.start()
-    # background_thread = threading.Thread(target=service_wrapper.run, name=s['name'])
-    # background_thread.daemon = True  # Set the thread as a daemon, so it exits when the main program exits
-    # background_thread.start()
 
     logger.info(f"M| {service_wrapper.inf_service} started detached for expected SLO fulfillment ")
 
-    slo = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), s['slo_vars'], s['constraints']))
-    logger.debug(f"M| Expected SLO fulfillment is {slo}")
+    # slo = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), s['slo_vars'], s['constraints']))
+    # logger.debug(f"M| Expected SLO fulfillment is {slo}")
 
     return service_wrapper

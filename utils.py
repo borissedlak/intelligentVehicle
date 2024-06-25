@@ -626,3 +626,8 @@ def calculate_slo_fulfillment(var, row):
 # TODO: This I should do dynamically
 def discover_platoon_devices():
     return ['192.168.31.20', '192.168.31.183']
+
+
+def conv_ip_to_host_type(ip):
+    ip_dict = {'192.168.31.20': "Laptop", '192.168.31.183': "Orin", '192.168.31.198': "Orin"}
+    return ip_dict[ip]
