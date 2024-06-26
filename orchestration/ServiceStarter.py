@@ -28,6 +28,7 @@ RETRAINING_RATE = 999.0  # Idea: This is a hyperparameter
 OFFLOADING_RATE = - 999  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
+SLO_COLDSTART_DELAY = 15  # Idea: This is a hyperparameter
 
 
 class ServiceWrapper(threading.Thread):
@@ -99,16 +100,23 @@ class ServiceWrapper(threading.Thread):
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
 
                 target_running_services = []
-                if evidence_to_load_off >= OFFLOADING_RATE:
-                    # TODO: Filter out local one
+                if evidence_to_load_off >= OFFLOADING_RATE and self.slo_hist.already_x_values(SLO_COLDSTART_DELAY):
                     for vehicle_address in self.platoon_members[1:]:
                         target_model_name = utils.create_model_name(self.s_description['name'], utils.conv_ip_to_host_type(vehicle_address))
+
+                        prometheus_instance_name = vehicle_address
                         if vehicle_address == "192.168.31.20":
-                            vehicle_address = "host.docker.internal"
-                        slo_target_estimated = self.slo_estimator.infer_target_slo_f(target_model_name, vehicle_address)
-                        pass
-                        # TODO: Must be compared with the local reality, otherwise it does not make sense to load off
-                        # print(slo_target_estimated)
+                            prometheus_instance_name = "host.docker.internal"
+                        slo_target_estimated = self.slo_estimator.infer_target_slo_f(target_model_name, prometheus_instance_name)
+                        logger.debug(f"Estimated SLO fulfillment at target {slo_target_estimated}")
+                        slo_tradeoff = sum([1 - slo for slo in slo_target_estimated[2]])
+
+                        # TODO: This must get the max value before offloading
+                        # Idea: This should also consider how much the SLOs are improved locally after loading off
+                        if True:  # (1 - reality) > slo_tradeoff:
+                            http_client.start_service_remotely(self.s_description, target_route=vehicle_address)
+                            self.terminate()
+                            return
 
             except Exception as e:
 

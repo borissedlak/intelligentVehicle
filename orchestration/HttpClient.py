@@ -14,14 +14,11 @@ class HttpClient:
 
         print(f"Opening HTTP Connection with {self.HOST} and {self.PORT}")
 
-    def send_system_stats(self, cpu, device_name, disabled_aci, gpu_available):
+    def start_service_remotely(self, s_desc, target_route):
         query_params = {
-            "cpu": cpu,
-            "device_name": device_name,
-            "disabled_aci": disabled_aci,
-            "gpu_available": gpu_available
+            "service_description": str(s_desc)
         }
-        response = self.SESSION.get(f"http://{self.HOST}:{self.PORT}{self.START_SERVICE_PATH}", params=query_params)
+        response = self.SESSION.post(f"http://{target_route}:{self.PORT}{self.START_SERVICE_PATH}", params=query_params)
         response.raise_for_status()  # Raise an exception for non-2xx status codes
 
     def push_files_to_member(self, model_names, target_route=None):
