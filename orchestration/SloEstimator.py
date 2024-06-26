@@ -23,13 +23,14 @@ class SloEstimator:
     # @utils.print_execution_time  # takes 400ms
     def infer_target_slo_f(self, target_model_name, target_host="localhost", target_running_services=None):
         dest_model = XMLBIFReader(target_model_name).get_model()
+        dest_model_VE = VariableElimination(dest_model)
         dest_device = utils.conv_ip_to_host_type(target_host)
         # Write: I might create a cube representation of the solution space
-        hw_load_p, slof_local_isolated = self.get_isolated_hw_predictions()
+        hw_load_p, slof_local_isolated = self.get_isolated_hw_predictions(model_VE=dest_model_VE)
 
         # Write: The problem is that the load does not rise linear with more services
         # Idea: So what I can do is take the one that is worse to make a conservative prediction
-        prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model, target_host)
+        prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, target_host)
         logger.debug(f"M| Predictions for SLO fulfillment once load shifted {prediction_shifted}")
 
         if target_running_services is None:
@@ -40,10 +41,9 @@ class SloEstimator:
         return slof_local_isolated, prediction_shifted, prediction_conv
 
     # @utils.print_execution_time  # takes 120ms
-    def calc_weighted_slo_f(self, p_dist_hw, dest_model=None, isolated="False", shift=[0, 0, 0]):
-        if dest_model is None:
-            dest_model = self.source_model
-        dest_model_VE = VariableElimination(dest_model)
+    def calc_weighted_slo_f(self, p_dist_hw, dest_model_VE=None, isolated="False", shift=[0, 0, 0]):
+        if dest_model_VE is None:
+            dest_model_VE = VariableElimination(self.source_model)
 
         sum_slo_f = np.zeros((4, 4, 4))
         for i, _ in enumerate(p_dist_hw['cpu']):
@@ -78,8 +78,9 @@ class SloEstimator:
 
     # @utils.print_execution_time  # takes 120ms
     def get_isolated_hw_predictions(self, model_VE=None, s_desc=None):
-        if model_VE is None or s_desc is None:  # No values means take the origin description
+        if model_VE is None:
             model_VE = self.model_VE
+        if s_desc is None:  # No values means take the origin description
             s_desc = self.s_desc
         hw_predictions = {}
         for var in ['cpu', 'gpu', 'memory']:
@@ -88,24 +89,23 @@ class SloEstimator:
             hw_predictions = hw_predictions | {var: hw_distribution}
 
         logger.debug(f"M| Predictions for isolated hardware consumption {hw_predictions}")
-        slof_local_isolated = self.calc_weighted_slo_f(hw_predictions, isolated="True")
+        slof_local_isolated = self.calc_weighted_slo_f(hw_predictions, dest_model_VE=model_VE, isolated="True")
         logger.debug(f"M| Expected SLO fulfillment for running {s_desc['name']} locally isolated {slof_local_isolated}")
         return hw_predictions, slof_local_isolated
 
     # @utils.print_execution_time  # takes 150ms
-    def get_shifted_hw_predictions(self, origin_load_p, target_model, target_host):
+    def get_shifted_hw_predictions(self, origin_load_p, target_model_VE, target_host):
         dest_current_load = model_trainer.get_latest_load(instance=target_host)
         dest_current_load_cat = model_trainer.convert_prometheus_to_category(dest_current_load)
         logger.debug(f"M| Current load for target device classified into {dest_current_load_cat}")
         if target_host == "host.docker.internal" or target_host == "192.168.31.20":
             dest_current_load_cat[1] = -1
-        return self.calc_weighted_slo_f(origin_load_p, dest_model=target_model, shift=(dest_current_load_cat + 1), isolated="False")
+        return self.calc_weighted_slo_f(origin_load_p, dest_model_VE=target_model_VE, shift=(dest_current_load_cat + 1), isolated="False")
 
-    # Write: I might optimize the runtime a bit, but I can also compare the runtime of shifter vs. conv
     # @utils.print_execution_time  # takes 100ms
     def get_conv_hw_predictions(self, origin_load_p, target_model_is, target_device, target_running_services):
         if not target_running_services:
-            return [self.calc_weighted_slo_f(origin_load_p, dest_model=target_model_is, isolated="True")]
+            return [self.calc_weighted_slo_f(origin_load_p, dest_model_VE=VariableElimination(target_model_is), isolated="True")]
 
         target_conv_load = origin_load_p
         target_models = [target_model_is]
@@ -120,7 +120,7 @@ class SloEstimator:
 
         target_slo_f = []
         for model in target_models:
-            target_slo_f.append(self.calc_weighted_slo_f(target_conv_load, dest_model=model, isolated="False"))
+            target_slo_f.append(self.calc_weighted_slo_f(target_conv_load, dest_model_VE=VariableElimination(model), isolated="False"))
 
         return target_slo_f
 

@@ -24,7 +24,7 @@ http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 
-RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
+RETRAINING_RATE = 999.0  # Idea: This is a hyperparameter
 OFFLOADING_RATE = - 999  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
@@ -79,7 +79,7 @@ class ServiceWrapper(threading.Thread):
         service_thread.start()
 
         while self._running:
-            time.sleep(5)
+            time.sleep(1)
             if self.reality_metrics is None:
                 continue
             try:
@@ -98,9 +98,10 @@ class ServiceWrapper(threading.Thread):
                 evidence_to_load_off = (expectation - reality) + (1 - reality)
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
 
+                target_running_services = []
                 if evidence_to_load_off >= OFFLOADING_RATE:
                     # TODO: Filter out local one
-                    for vehicle_address in self.platoon_members:
+                    for vehicle_address in self.platoon_members[1:]:
                         target_model_name = utils.create_model_name(self.s_description['name'], utils.conv_ip_to_host_type(vehicle_address))
                         if vehicle_address == "192.168.31.20":
                             vehicle_address = "host.docker.internal"
@@ -146,10 +147,6 @@ def start_service(s, platoon_members, isolated=False):
         raise RuntimeError(f"What is this {s['name']}?")
 
     service_wrapper.start()
-
     logger.info(f"M| {service_wrapper.inf_service} started detached for expected SLO fulfillment ")
-
-    # slo = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), s['slo_vars'], s['constraints']))
-    # logger.debug(f"M| Expected SLO fulfillment is {slo}")
 
     return service_wrapper
