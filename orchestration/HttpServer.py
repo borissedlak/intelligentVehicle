@@ -39,7 +39,7 @@ def start():
     isolated = not len(thread_lib) > 0
 
     if not isolated:
-        for (thread, wrapper) in thread_lib:
+        for wrapper in thread_lib:
             wrapper.update_isolation(False)
 
     thread_ref = start_service(service_d, current_platoon, isolated)
@@ -56,8 +56,8 @@ def stop_all():
 
     logger.info(f"M| Going to stop {len(thread_lib)} threads")
 
-    for task_object in thread_lib:
-        task_object.terminate()
+    for wrapper in thread_lib:
+        wrapper.terminate()
     # service_d = ast.literal_eval(request.args.get('service_description'))
     # start_service(service_d)
     thread_lib = []
@@ -77,7 +77,7 @@ def override_model():
             if file.filename == utils.create_model_name(wrapper.s_description['name'], DEVICE_NAME):
                 model = XMLBIFReader(file.filename).get_model()
                 wrapper.update_model(model)
-                logger.info(f"M| Update model for {thread} > {wrapper}")
+                logger.info(f"M| Update model for {wrapper}")
 
     return utils.log_and_return(logger, logging.INFO, "M| All files received successfully")
 

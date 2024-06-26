@@ -115,15 +115,13 @@ class SloEstimator:
             dest_current_load_cat[1] = -1
         return self.calc_weighted_slo_f(origin_load_p, dest_model=target_model, shift=(dest_current_load_cat + 1), isolated="False")
 
-    # TODO: I must take the isolated load at the origin and convolve with any service that is running there
-    #  but for this I must first load all their models and then execute the get_isolated_hw_predictions
     @utils.print_execution_time
     def get_conv_hw_predictions(self, origin_load_p, target_model_is, target_device, target_running_services):
         if not target_running_services:
-            return self.calc_weighted_slo_f(origin_load_p, dest_model=target_model_is, isolated="True")
+            return [self.calc_weighted_slo_f(origin_load_p, dest_model=target_model_is, isolated="True")]
 
         target_conv_load = origin_load_p
-        target_models = []
+        target_models = [target_model_is]
         for s_desc in target_running_services:
             target_model = XMLBIFReader(utils.create_model_name(s_desc['name'], target_device)).get_model()
             target_models.append(target_model)
@@ -133,15 +131,25 @@ class SloEstimator:
                 var_conv = utils.compress_into_n_bins(np.convolve(target_conv_load[var], s_load_p[var]))
                 target_conv_load[var] = var_conv
 
-        return self.calc_weighted_slo_f(target_conv_load, dest_model=target_model_is, isolated="False")
+        target_slo_f = []
+        for model in target_models:
+            target_slo_f.append(self.calc_weighted_slo_f(target_conv_load, dest_model=model, isolated="False"))
+
+        return target_slo_f
 
 
 if __name__ == "__main__":
     local_model_name = utils.create_model_name("CV", "Orin")
     local_model = XMLBIFReader(local_model_name).get_model()
 
-    s_description = {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
+    s_description = {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '10'}}
     estimator = SloEstimator(local_model, service_desc=s_description)
 
-    target_running_services = [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
-    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_services))
+    target_running_s = [s_description]
+    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
+
+    target_running_s.append(s_description)
+    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
+
+    target_running_s.append(s_description)
+    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))

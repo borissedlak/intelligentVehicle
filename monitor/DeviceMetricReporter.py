@@ -55,7 +55,7 @@ class CyclicArray:
 
 # TODO: Needs a device ID additionally if we have multiple devices with the same type
 class DeviceMetricReporter:
-    def __init__(self, gpu_available=0, gpu_avg_history_n=15):
+    def __init__(self, gpu_available=0, gpu_avg_history_n=50):
         self.host = DEVICE_NAME
         self.consumption_regression = ConsRegression(self.host)
         self.mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
