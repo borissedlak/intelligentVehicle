@@ -11,6 +11,7 @@ class HttpClient:
         self.START_SERVICE_PATH = "/start_service"
         self.MODEL_UPLOAD_PATH = "/model/upload"
         self.MODEL_UPDATE_PATH = "/model/update"
+        self.ASSIGNMENT_UPDATE_PATH = "/update_service_assignment"
 
         print(f"Opening HTTP Connection with {self.HOST} and {self.PORT}")
 
@@ -39,4 +40,13 @@ class HttpClient:
         headers = {'Content-Type': 'text/csv'}
         url = f"http://{self.HOST}:{self.PORT}{self.MODEL_UPDATE_PATH}/{service_name}"
         response = self.SESSION.post(url, data=csv_string, headers=headers)
+        response.raise_for_status()  # Raise an exception for non-2xx status codes
+
+    def update_service_assignment(self, s_desc, s_host, target_route):
+        query_params = {
+            "service_description": str(s_desc),
+            "service_host": s_host
+        }
+        url = f"http://{target_route}:{self.PORT}{self.ASSIGNMENT_UPDATE_PATH}"
+        response = self.SESSION.post(url, params=query_params)
         response.raise_for_status()  # Raise an exception for non-2xx status codes

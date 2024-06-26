@@ -52,6 +52,7 @@ class ServiceWrapper(threading.Thread):
         self.isolated = isolated
         self.slo_estimator = SloEstimator(self.model, self.s_description)
         self.platoon_members = platoon_members
+        self.service_assignment = []
 
     def terminate(self):
         self._running = False
@@ -63,6 +64,9 @@ class ServiceWrapper(threading.Thread):
 
     def update_isolation(self, isolated):
         self.isolated = isolated
+
+    def update_service_assignment(self, service_assignment):
+        self.service_assignment = service_assignment
 
     def update_platoon(self, platoon):
         self.platoon_members = platoon
@@ -100,15 +104,16 @@ class ServiceWrapper(threading.Thread):
                 evidence_to_load_off = (expectation - reality) + (1 - reality)
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
 
-                target_running_services = []
                 if evidence_to_load_off >= OFFLOADING_RATE and self.slo_hist.already_x_values(SLO_COLDSTART_DELAY):
-                    for vehicle_address in [m for m in self.platoon_members if m != utils.get_local_ip()]:
+                    for vehicle_address in utils.get_all_other_members(self.platoon_members):
+                        target_running_services = utils.get_running_services_for_host(self.service_assignment, vehicle_address)
                         target_model_name = utils.create_model_name(self.s_description['type'], utils.conv_ip_to_host_type(vehicle_address))
 
                         prometheus_instance_name = vehicle_address
                         if vehicle_address == "192.168.31.20":
                             prometheus_instance_name = "host.docker.internal"
-                        slo_target_estimated = self.slo_estimator.infer_target_slo_f(target_model_name, prometheus_instance_name)
+                        slo_target_estimated = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
+                                                                                     prometheus_instance_name)
                         logger.debug(f"Estimated SLO fulfillment at target {slo_target_estimated}")
                         slo_tradeoff = sum([1 - slo for slo in slo_target_estimated[2]])
 

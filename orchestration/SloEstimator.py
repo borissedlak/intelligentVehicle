@@ -21,16 +21,16 @@ class SloEstimator:
         self.source_model = source_model
 
     # @utils.print_execution_time  # takes 400ms
-    def infer_target_slo_f(self, target_model_name, target_host="localhost", target_running_services=None):
+    def infer_target_slo_f(self, target_model_name, target_running_services, prometheus_instance):
         dest_model = XMLBIFReader(target_model_name).get_model()
         dest_model_VE = VariableElimination(dest_model)
-        dest_device = utils.conv_ip_to_host_type(target_host)
+        dest_device = utils.conv_ip_to_host_type(prometheus_instance)
         # Write: I might create a cube representation of the solution space
         hw_load_p, slof_local_isolated = self.get_isolated_hw_predictions(model_VE=dest_model_VE)
 
         # Write: The problem is that the load does not rise linear with more services
         # Idea: So what I can do is take the one that is worse to make a conservative prediction
-        prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, target_host)
+        prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, prometheus_instance)
         logger.debug(f"M| Predictions for SLO fulfillment once load shifted {prediction_shifted}")
 
         if target_running_services is None:
@@ -135,13 +135,13 @@ if __name__ == "__main__":
     estimator = SloEstimator(local_model, service_desc=s_description)
 
     target_running_s = []
-    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
+    print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
 
     target_running_s = [s_description]
-    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
+    print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
 
     target_running_s.append(s_description)
-    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
+    print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
 
     target_running_s.append(s_description)
-    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
+    print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))

@@ -635,6 +635,7 @@ def conv_ip_to_host_type(ip):
     return ip_dict[ip]
 
 
+@print_execution_time
 def get_local_ip():
     interfaces = netifaces.interfaces()
     for interface in interfaces:
@@ -645,3 +646,16 @@ def get_local_ip():
                 if ip and ip.startswith('192.168'):
                     return ip
     return None
+
+
+def get_all_other_members(platoon):
+    return [m for m in platoon if m != get_local_ip()]
+
+
+def get_running_services_for_host(service_host_map, target_host):
+    desc_list = []
+    for item in service_host_map:
+        for key, value in item.items():
+            if value['host'] == target_host:
+                desc_list.append(value['desc'])
+    return desc_list

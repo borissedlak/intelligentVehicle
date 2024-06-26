@@ -28,13 +28,14 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 http_client = HttpClient(DEFAULT_HOST=HTTP_SERVER)
 thread_lib = []
 current_platoon = ['192.168.31.20']
+service_host_map = {}
 
 
 # MEMBER ROUTES ######################################
 
 @app.route("/start_service", methods=['POST'])
 def start():
-    global thread_lib, current_platoon
+    global thread_lib, current_platoon, service_host_map
     service_d = ast.literal_eval(request.args.get('service_description'))
     isolated = not len(thread_lib) > 0
 
@@ -45,7 +46,21 @@ def start():
     thread_ref = start_service(service_d, current_platoon, isolated)
     thread_lib.append(thread_ref)
 
-    return utils.log_and_return(logger, logging.INFO, "M| Started service successfully")
+    localhost = utils.get_local_ip()
+    s_id_type = f"{service_d['type']}-{service_d['id']}"
+    service_host_map[s_id_type] = {'desc': service_d, 'host': localhost}
+    update_wrapper_service_assignments()
+    for vehicle_address in utils.get_all_other_members(current_platoon):
+        http_client.update_service_assignment(str(service_d), localhost, vehicle_address)
+
+    return "M| Started service successfully"
+
+
+def update_wrapper_service_assignments():
+    global service_host_map, thread_lib
+
+    for thread in thread_lib:
+        thread.update_service_assignment(service_host_map)
 
 
 @app.route("/stop_all_services", methods=['POST'])
@@ -94,6 +109,18 @@ def update_platoon_members():
     return utils.log_and_return(logger, logging.INFO, f"M| Update local list of platoon members to {current_platoon}")
 
 
+@app.route('/update_service_assignment', methods=['POST'])
+def update_service_assignment():
+    global service_host_map
+    s_desc = ast.literal_eval(request.args.get('service_description'))
+    s_host = request.args.get('service_host')
+    s_id_type = f"{s_desc['type']}-{s_desc['id']}"
+    service_host_map[s_id_type] = {'desc': s_desc, 'host': s_host}
+
+    update_wrapper_service_assignments()
+    return utils.log_and_return(logger, logging.DEBUG, f"M| Updated service assignment for {s_id_type}")
+
+
 # LEADER ROUTES ######################################
 
 @app.route('/model_list', methods=['GET'])
@@ -140,7 +167,7 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-services = [] # [{"id": 1, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
+services = []  # [{"id": 1, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
 # {"id": 2, "name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:
