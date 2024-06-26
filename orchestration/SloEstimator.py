@@ -20,7 +20,7 @@ class SloEstimator:
     def reload_source_model(self, source_model):
         self.source_model = source_model
 
-    @utils.print_execution_time  # takes 700ms
+    # @utils.print_execution_time  # takes 400ms
     def infer_target_slo_f(self, target_model_name, target_host="localhost", target_running_services=None):
         dest_model = XMLBIFReader(target_model_name).get_model()
         dest_device = utils.conv_ip_to_host_type(target_host)
@@ -39,14 +39,13 @@ class SloEstimator:
 
         return slof_local_isolated, prediction_shifted, prediction_conv
 
-    @utils.print_execution_time  # takes 258ms
+    # @utils.print_execution_time  # takes 120ms
     def calc_weighted_slo_f(self, p_dist_hw, dest_model=None, isolated="False", shift=[0, 0, 0]):
         if dest_model is None:
             dest_model = self.source_model
         dest_model_VE = VariableElimination(dest_model)
 
         sum_slo_f = np.zeros((4, 4, 4))
-        # sum_0_5 = 0
         for i, _ in enumerate(p_dist_hw['cpu']):
             cpu_index = (i + shift[0]) if i + shift[0] <= utils.NUMBER_OF_BINS - 1 else utils.NUMBER_OF_BINS - 1
             for j, _ in enumerate(p_dist_hw['gpu']):
@@ -75,13 +74,9 @@ class SloEstimator:
                     weighted_p = p_cumm * slo_f_i
                     sum_slo_f[i, j, k] = weighted_p
 
-                    # if slo_f_i == 0.5:
-                    #     sum_0_5 += 1
-
-        # print(f"Number of 0.5 is {sum_0_5}")
         return np.sum(sum_slo_f)
 
-    @utils.print_execution_time  # takes 230ms
+    # @utils.print_execution_time  # takes 120ms
     def get_isolated_hw_predictions(self, model_VE=None, s_desc=None):
         if model_VE is None or s_desc is None:  # No values means take the origin description
             model_VE = self.model_VE
@@ -97,7 +92,7 @@ class SloEstimator:
         logger.debug(f"M| Expected SLO fulfillment for running {s_desc['name']} locally isolated {slof_local_isolated}")
         return hw_predictions, slof_local_isolated
 
-    @utils.print_execution_time  # takes 250ms
+    # @utils.print_execution_time  # takes 150ms
     def get_shifted_hw_predictions(self, origin_load_p, target_model, target_host):
         dest_current_load = model_trainer.get_latest_load(instance=target_host)
         dest_current_load_cat = model_trainer.convert_prometheus_to_category(dest_current_load)
@@ -107,7 +102,7 @@ class SloEstimator:
         return self.calc_weighted_slo_f(origin_load_p, dest_model=target_model, shift=(dest_current_load_cat + 1), isolated="False")
 
     # Write: I might optimize the runtime a bit, but I can also compare the runtime of shifter vs. conv
-    @utils.print_execution_time  # takes 200ms
+    # @utils.print_execution_time  # takes 100ms
     def get_conv_hw_predictions(self, origin_load_p, target_model_is, target_device, target_running_services):
         if not target_running_services:
             return [self.calc_weighted_slo_f(origin_load_p, dest_model=target_model_is, isolated="True")]

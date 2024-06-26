@@ -105,7 +105,7 @@ class ServiceWrapper(threading.Thread):
                         if vehicle_address == "192.168.31.20":
                             vehicle_address = "host.docker.internal"
                         slo_target_estimated = self.slo_estimator.infer_target_slo_f(target_model_name, vehicle_address)
-
+                        pass
                         # TODO: Must be compared with the local reality, otherwise it does not make sense to load off
                         # print(slo_target_estimated)
 

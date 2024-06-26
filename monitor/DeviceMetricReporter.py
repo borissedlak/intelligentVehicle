@@ -12,6 +12,8 @@ from utils import is_jetson_host, DB_NAME, get_ENV_PARAM
 DEVICE_NAME = get_ENV_PARAM('DEVICE_NAME', "Unknown")
 LEADER_HOST = get_ENV_PARAM('LEADER_HOST', "localhost")
 
+GPU_AVG_HISTORY_LENGTH = 50
+
 
 class CyclicArray:
     def __init__(self, max_size):
@@ -55,7 +57,7 @@ class CyclicArray:
 
 # TODO: Needs a device ID additionally if we have multiple devices with the same type
 class DeviceMetricReporter:
-    def __init__(self, gpu_available=0, gpu_avg_history_n=50):
+    def __init__(self, gpu_available=0, gpu_avg_history_n=GPU_AVG_HISTORY_LENGTH):
         self.host = DEVICE_NAME
         self.consumption_regression = ConsRegression(self.host)
         self.mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
