@@ -114,7 +114,7 @@ def convert_prometheus_to_category(current_load):
 
 
 if __name__ == "__main__":
-    # retrieve_full_data()
-    # prepare_models()
-    print(get_latest_load(instance="host.docker.internal"))
-    print(get_latest_load(instance="192.168.31.183"))
+    retrieve_full_data()
+    prepare_models()
+    # print(get_latest_load(instance="host.docker.internal"))
+    # print(get_latest_load(instance="192.168.31.183"))

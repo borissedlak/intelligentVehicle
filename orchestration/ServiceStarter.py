@@ -99,6 +99,7 @@ class ServiceWrapper(threading.Thread):
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
 
                 if evidence_to_load_off >= OFFLOADING_RATE:
+                    # TODO: Filter out local one
                     for vehicle_address in self.platoon_members:
                         target_model_name = utils.create_model_name(self.s_description['name'], utils.conv_ip_to_host_type(vehicle_address))
                         if vehicle_address == "192.168.31.20":

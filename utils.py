@@ -629,5 +629,6 @@ def discover_platoon_devices():
 
 
 def conv_ip_to_host_type(ip):
-    ip_dict = {'192.168.31.20': "Laptop", '192.168.31.183': "Orin", '192.168.31.198': "Orin"}
+    ip_dict = {'192.168.31.20': "Laptop", "host.docker.internal": "Laptop", 'localhost': "Laptop", '192.168.31.183': "Orin",
+               '192.168.31.198': "Orin"}
     return ip_dict[ip]

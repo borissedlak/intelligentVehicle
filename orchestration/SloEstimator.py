@@ -22,8 +22,9 @@ class SloEstimator:
         self.source_model = source_model
 
     @utils.print_execution_time
-    def infer_target_slo_f(self, target_model_name, target_host="localhost"):
+    def infer_target_slo_f(self, target_model_name, target_host="localhost", target_running_services=None):
         dest_model = XMLBIFReader(target_model_name).get_model()
+        dest_device = utils.conv_ip_to_host_type(target_host)
         # Write: I might create a cube representation of the solution space
         hw_load_p, slof_local_isolated = self.get_isolated_hw_predictions()
 
@@ -32,8 +33,9 @@ class SloEstimator:
         prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model, target_host)
         logger.debug(f"M| Predictions for SLO fulfillment once load shifted {prediction_shifted}")
 
-        target_running_services = []
-        prediction_conv = self.get_conv_hw_predictions(hw_load_p, dest_model, target_running_services)
+        if target_running_services is None:
+            target_running_services = []
+        prediction_conv = self.get_conv_hw_predictions(hw_load_p, dest_model, dest_device, target_running_services)
         logger.debug(f"M| Predictions for SLO fulfillment when conv with existing services {prediction_conv}")
 
         return slof_local_isolated, prediction_shifted, prediction_conv
@@ -89,10 +91,13 @@ class SloEstimator:
         return np.sum(sum_slo_f)
 
     @utils.print_execution_time
-    def get_isolated_hw_predictions(self):
+    def get_isolated_hw_predictions(self, model_VE=None, s_desc=None):
+        if model_VE is None or s_desc is None:  # No values means take the origin description
+            model_VE = self.model_VE
+            s_desc = self.s_desc
         hw_predictions = {}
         for var in ['cpu', 'gpu', 'memory']:
-            hw_expectation_isolated = utils.infer_slo_fulfillment(self.model_VE, [var], self.s_desc['constraints'] | {'isolated': 'True'})
+            hw_expectation_isolated = utils.infer_slo_fulfillment(model_VE, [var], s_desc['constraints'] | {'isolated': 'True'})
             hw_distribution = hw_expectation_isolated.values
             hw_predictions = hw_predictions | {var: hw_distribution}
 
@@ -113,23 +118,30 @@ class SloEstimator:
     # TODO: I must take the isolated load at the origin and convolve with any service that is running there
     #  but for this I must first load all their models and then execute the get_isolated_hw_predictions
     @utils.print_execution_time
-    def get_conv_hw_predictions(self, origin_load_p, target_model, target_running_services):
+    def get_conv_hw_predictions(self, origin_load_p, target_model_is, target_device, target_running_services):
         if not target_running_services:
-            return self.calc_weighted_slo_f(origin_load_p, dest_model=target_model, isolated="True")
+            return self.calc_weighted_slo_f(origin_load_p, dest_model=target_model_is, isolated="True")
 
-        hw_conv = {}
-        for var in ['cpu', 'gpu', 'memory']:
-            var_conv = utils.compress_into_n_bins(np.convolve(origin_load_p[var], origin_load_p[var]))
-            hw_conv = hw_conv | {var: var_conv}
+        target_conv_load = origin_load_p
+        target_models = []
+        for s_desc in target_running_services:
+            target_model = XMLBIFReader(utils.create_model_name(s_desc['name'], target_device)).get_model()
+            target_models.append(target_model)
+            s_load_p, _ = self.get_isolated_hw_predictions(VariableElimination(target_model), s_desc)
 
-        return self.calc_weighted_slo_f(hw_conv, dest_model=target_model, isolated="False")
+            for var in ['cpu', 'gpu', 'memory']:
+                var_conv = utils.compress_into_n_bins(np.convolve(target_conv_load[var], s_load_p[var]))
+                target_conv_load[var] = var_conv
+
+        return self.calc_weighted_slo_f(target_conv_load, dest_model=target_model_is, isolated="False")
 
 
 if __name__ == "__main__":
-    local_model_name = utils.create_model_name("CV", "Laptop")
+    local_model_name = utils.create_model_name("CV", "Orin")
     local_model = XMLBIFReader(local_model_name).get_model()
 
     s_description = {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
     estimator = SloEstimator(local_model, service_desc=s_description)
 
-    print(estimator.infer_target_slo_f(target_model_name=local_model_name, target_host="host.docker.internal"))
+    target_running_services = [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
+    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_services))
