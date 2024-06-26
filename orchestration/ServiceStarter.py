@@ -52,7 +52,7 @@ class ServiceWrapper(threading.Thread):
         self.isolated = isolated
         self.slo_estimator = SloEstimator(self.model, self.s_description)
         self.platoon_members = platoon_members
-        self.service_assignment = []
+        self.service_assignment = {}
 
     def terminate(self):
         self._running = False

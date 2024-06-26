@@ -33,6 +33,7 @@ service_host_map = {}
 
 # MEMBER ROUTES ######################################
 
+@utils.print_execution_time
 @app.route("/start_service", methods=['POST'])
 def start():
     global thread_lib, current_platoon, service_host_map
@@ -50,6 +51,7 @@ def start():
     s_id_type = f"{service_d['type']}-{service_d['id']}"
     service_host_map[s_id_type] = {'desc': service_d, 'host': localhost}
     update_wrapper_service_assignments()
+
     for vehicle_address in utils.get_all_other_members(current_platoon):
         http_client.update_service_assignment(str(service_d), localhost, vehicle_address)
 

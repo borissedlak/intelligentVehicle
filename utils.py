@@ -635,7 +635,6 @@ def conv_ip_to_host_type(ip):
     return ip_dict[ip]
 
 
-@print_execution_time
 def get_local_ip():
     interfaces = netifaces.interfaces()
     for interface in interfaces:
@@ -654,8 +653,7 @@ def get_all_other_members(platoon):
 
 def get_running_services_for_host(service_host_map, target_host):
     desc_list = []
-    for item in service_host_map:
-        for key, value in item.items():
-            if value['host'] == target_host:
-                desc_list.append(value['desc'])
+    for key, value in service_host_map.items():
+        if value['host'] == target_host:
+            desc_list.append(value['desc'])
     return desc_list
