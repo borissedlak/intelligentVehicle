@@ -88,12 +88,12 @@ class ServiceWrapper(threading.Thread):
                 logger.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
                 logger.debug(f"For expectation {expectation} vs {reality}")
 
-                # if evidence_to_retrain >= RETRAINING_RATE:
-                #     logger.info(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
-                #     df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
-                #     model_file = utils.create_model_name(self.s_description['name'], DEVICE_NAME)
-                #     http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
-                #     self.metrics_buffer.clear()
+                if evidence_to_retrain >= RETRAINING_RATE:
+                    logger.info(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
+                    df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
+                    model_file = utils.create_model_name(self.s_description['name'], DEVICE_NAME)
+                    http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
+                    self.metrics_buffer.clear()
 
                 evidence_to_load_off = (expectation - reality) + (1 - reality)
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
@@ -107,7 +107,7 @@ class ServiceWrapper(threading.Thread):
                         slo_target_estimated = self.slo_estimator.infer_target_slo_f(target_model_name, vehicle_address)
 
                         # TODO: Must be compared with the local reality, otherwise it does not make sense to load off
-                        print(slo_target_estimated)
+                        #print(slo_target_estimated)
 
             except Exception as e:
 

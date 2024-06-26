@@ -149,6 +149,4 @@ for service_description in services:
     thread_reference = start_service(service_description, current_platoon, isolated=is_isolated)
     thread_lib.append(thread_reference)
 
-# http_client.push_files_to_member([utils.create_model_name("CV", "Orin")], target_route="192.168.31.183")
-
 run_server()

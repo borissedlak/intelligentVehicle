@@ -79,7 +79,7 @@ def update_models_new_samples(model_name, samples):
 
 
 # TODO: This takes way too long, doing the HTTP request in the processing cycle is nonsense
-@utils.print_execution_time
+#@utils.print_execution_time
 def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"]):
     # Connect to Prometheus
     prom = PrometheusConnect(url=f"http://{LEADER_HOST}:9090", disable_ssl=True)
