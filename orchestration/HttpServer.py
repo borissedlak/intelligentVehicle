@@ -124,16 +124,16 @@ def update_model_immediately(model_name):
     return utils.log_and_return(logger, logging.INFO, "L| Updated model successfully")
 
 
-@app.route('/retrain_models', methods=['POST'])
-def retrain_models():
-    logger.info("L| Starting model training")
-
-    # TODO: This should run in a new thread in the bg
-    model_trainer.retrieve_full_data()
-    n = model_trainer.prepare_models()
-    http_client.push_files_to_member()  # TODO: Must filter which files
-
-    return utils.log_and_return(logger, logging.INFO, f"Trained {n} models")
+# @app.route('/retrain_models', methods=['POST'])
+# def retrain_models():
+#     logger.info("L| Starting model training")
+#
+#     # TOD: This should run in a new thread in the bg
+#     model_trainer.retrieve_full_data()
+#     n = model_trainer.prepare_models()
+#     http_client.push_files_to_member()  # TOD: Must filter which files
+#
+#     return utils.log_and_return(logger, logging.INFO, f"Trained {n} models")
 
 
 def run_server():

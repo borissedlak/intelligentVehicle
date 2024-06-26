@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-import pandas as pd
 from pgmpy.inference import VariableElimination
 from pgmpy.readwrite import XMLBIFReader
 
@@ -21,7 +20,7 @@ class SloEstimator:
     def reload_source_model(self, source_model):
         self.source_model = source_model
 
-    @utils.print_execution_time
+    @utils.print_execution_time  # takes 700ms
     def infer_target_slo_f(self, target_model_name, target_host="localhost", target_running_services=None):
         dest_model = XMLBIFReader(target_model_name).get_model()
         dest_device = utils.conv_ip_to_host_type(target_host)
@@ -40,32 +39,24 @@ class SloEstimator:
 
         return slof_local_isolated, prediction_shifted, prediction_conv
 
-    @utils.print_execution_time
+    @utils.print_execution_time  # takes 258ms
     def calc_weighted_slo_f(self, p_dist_hw, dest_model=None, isolated="False", shift=[0, 0, 0]):
         if dest_model is None:
             dest_model = self.source_model
+        dest_model_VE = VariableElimination(dest_model)
 
         sum_slo_f = np.zeros((4, 4, 4))
-        sum_0_5 = 0
+        # sum_0_5 = 0
         for i, _ in enumerate(p_dist_hw['cpu']):
-            cpu_index = i + shift[0]
+            cpu_index = (i + shift[0]) if i + shift[0] <= utils.NUMBER_OF_BINS - 1 else utils.NUMBER_OF_BINS - 1
             for j, _ in enumerate(p_dist_hw['gpu']):
-                gpu_index = (j + shift[1])
+                gpu_index = (j + shift[1]) if j + shift[1] <= utils.NUMBER_OF_BINS - 1 else utils.NUMBER_OF_BINS - 1
                 for k, _ in enumerate(p_dist_hw['memory']):
-                    mem_index = (k + shift[2])
-
-                    # TODO: df conversion too slow, try to get this working for not df
-                    if not utils.verify_all_parameters_known(dest_model, pd.DataFrame([{'cpu': f'{cpu_index}'}]), ['cpu']):
-                        cpu_index = len(p_dist_hw['cpu']) - 1
-                    if not utils.verify_all_parameters_known(dest_model, pd.DataFrame([{'gpu': f'{gpu_index}'}]), ['gpu']):
-                        gpu_index = len(p_dist_hw['gpu']) - 1
-                    if not utils.verify_all_parameters_known(dest_model, pd.DataFrame([{'memory': f'{mem_index}'}]), ['memory']):
-                        mem_index = len(p_dist_hw['memory']) - 1
+                    mem_index = (k + shift[2]) if k + shift[2] <= utils.NUMBER_OF_BINS - 1 else utils.NUMBER_OF_BINS - 1
 
                     p_cumm = p_dist_hw['cpu'][i] * p_dist_hw['gpu'][j] * p_dist_hw['memory'][k]
-                    # print(i, shift[0], cpu_index)
                     slo_f_i = utils.get_true(
-                        utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
+                        utils.infer_slo_fulfillment(dest_model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
                                                     {'cpu': f'{cpu_index}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
                                                      'isolated': isolated}))
                     # print(slo_f_i)
@@ -84,13 +75,13 @@ class SloEstimator:
                     weighted_p = p_cumm * slo_f_i
                     sum_slo_f[i, j, k] = weighted_p
 
-                    if slo_f_i == 0.5:
-                        sum_0_5 += 1
+                    # if slo_f_i == 0.5:
+                    #     sum_0_5 += 1
 
         # print(f"Number of 0.5 is {sum_0_5}")
         return np.sum(sum_slo_f)
 
-    @utils.print_execution_time
+    @utils.print_execution_time  # takes 230ms
     def get_isolated_hw_predictions(self, model_VE=None, s_desc=None):
         if model_VE is None or s_desc is None:  # No values means take the origin description
             model_VE = self.model_VE
@@ -106,7 +97,7 @@ class SloEstimator:
         logger.debug(f"M| Expected SLO fulfillment for running {s_desc['name']} locally isolated {slof_local_isolated}")
         return hw_predictions, slof_local_isolated
 
-    @utils.print_execution_time
+    @utils.print_execution_time  # takes 250ms
     def get_shifted_hw_predictions(self, origin_load_p, target_model, target_host):
         dest_current_load = model_trainer.get_latest_load(instance=target_host)
         dest_current_load_cat = model_trainer.convert_prometheus_to_category(dest_current_load)
@@ -116,7 +107,7 @@ class SloEstimator:
         return self.calc_weighted_slo_f(origin_load_p, dest_model=target_model, shift=(dest_current_load_cat + 1), isolated="False")
 
     # Write: I might optimize the runtime a bit, but I can also compare the runtime of shifter vs. conv
-    @utils.print_execution_time
+    @utils.print_execution_time  # takes 200ms
     def get_conv_hw_predictions(self, origin_load_p, target_model_is, target_device, target_running_services):
         if not target_running_services:
             return [self.calc_weighted_slo_f(origin_load_p, dest_model=target_model_is, isolated="True")]
@@ -149,13 +140,13 @@ if __name__ == "__main__":
     estimator = SloEstimator(local_model, service_desc=s_description)
 
     target_running_s = []
-    estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s)
+    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
 
     target_running_s = [s_description]
-    estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s)
+    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
 
     target_running_s.append(s_description)
-    estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s)
+    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
 
     target_running_s.append(s_description)
-    estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s)
+    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
