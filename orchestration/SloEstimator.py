@@ -90,7 +90,7 @@ class SloEstimator:
 
         logger.debug(f"M| Predictions for isolated hardware consumption {hw_predictions}")
         slof_local_isolated = self.calc_weighted_slo_f(hw_predictions, dest_model_VE=model_VE, isolated="True")
-        logger.debug(f"M| Expected SLO fulfillment for running {s_desc['name']} locally isolated {slof_local_isolated}")
+        logger.debug(f"M| Expected SLO fulfillment for running {s_desc['type']} locally isolated {slof_local_isolated}")
         return hw_predictions, slof_local_isolated
 
     # @utils.print_execution_time  # takes 150ms
@@ -110,7 +110,7 @@ class SloEstimator:
         target_conv_load = origin_load_p
         target_models = [target_model_is]
         for s_desc in target_running_services:
-            target_model = XMLBIFReader(utils.create_model_name(s_desc['name'], target_device)).get_model()
+            target_model = XMLBIFReader(utils.create_model_name(s_desc['type'], target_device)).get_model()
             target_models.append(target_model)
             s_load_p, _ = self.get_isolated_hw_predictions(VariableElimination(target_model), s_desc)
 

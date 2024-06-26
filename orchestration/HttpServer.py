@@ -74,7 +74,7 @@ def override_model():
         # logger.info(f"M| Receiving model file '{file.filename}'")
 
         for wrapper in thread_lib:
-            if file.filename == utils.create_model_name(wrapper.s_description['name'], DEVICE_NAME):
+            if file.filename == utils.create_model_name(wrapper.s_description['type'], DEVICE_NAME):
                 model = XMLBIFReader(file.filename).get_model()
                 wrapper.update_model(model)
                 logger.info(f"M| Update model for {wrapper}")
@@ -140,11 +140,11 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-services = []  # [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
-# {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
+services = [] # [{"id": 1, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
+# {"id": 2, "name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:
-    logger.info(f"Starting {service_description['name']} by default")
+    logger.info(f"Starting {service_description['type']} by default")
     is_isolated = len(services) == 1
     thread_reference = start_service(service_description, current_platoon, isolated=is_isolated)
     thread_lib.append(thread_reference)

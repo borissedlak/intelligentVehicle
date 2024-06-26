@@ -35,7 +35,8 @@ class ServiceWrapper(threading.Thread):
     def __init__(self, inf_service: VehicleService, description, model: BayesianNetwork, platoon_members, isolated=False):
         super().__init__()
         self.daemon = True
-        self.name = description['name']
+        self.id = description['id']
+        self.type = description['type']
 
         self.reality_metrics = None
         self._running = True
@@ -92,7 +93,7 @@ class ServiceWrapper(threading.Thread):
                 if evidence_to_retrain >= RETRAINING_RATE:
                     logger.info(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
                     df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
-                    model_file = utils.create_model_name(self.s_description['name'], DEVICE_NAME)
+                    model_file = utils.create_model_name(self.s_description['type'], DEVICE_NAME)
                     http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
                     self.metrics_buffer.clear()
 
@@ -102,7 +103,7 @@ class ServiceWrapper(threading.Thread):
                 target_running_services = []
                 if evidence_to_load_off >= OFFLOADING_RATE and self.slo_hist.already_x_values(SLO_COLDSTART_DELAY):
                     for vehicle_address in [m for m in self.platoon_members if m != utils.get_local_ip()]:
-                        target_model_name = utils.create_model_name(self.s_description['name'], utils.conv_ip_to_host_type(vehicle_address))
+                        target_model_name = utils.create_model_name(self.s_description['type'], utils.conv_ip_to_host_type(vehicle_address))
 
                         prometheus_instance_name = vehicle_address
                         if vehicle_address == "192.168.31.20":
@@ -145,14 +146,14 @@ class ServiceWrapper(threading.Thread):
         return expectation, reality
 
 
-def start_service(s, platoon_members, isolated=False):
-    model_path = utils.create_model_name(s['name'], DEVICE_NAME)
+def start_service(s_desc, platoon_members, isolated=False):
+    model_path = utils.create_model_name(s_desc['type'], DEVICE_NAME)
     model = XMLBIFReader(model_path).get_model()
 
-    if s['name'] == "CV":
-        service_wrapper = ServiceWrapper(VideoDetector(), s, model, platoon_members, isolated)
+    if s_desc['type'] == "CV":
+        service_wrapper = ServiceWrapper(VideoDetector(), s_desc, model, platoon_members, isolated)
     else:
-        raise RuntimeError(f"What is this {s['name']}?")
+        raise RuntimeError(f"What is this {s_desc['type']}?")
 
     service_wrapper.start()
     logger.info(f"M| {service_wrapper.inf_service} started detached for expected SLO fulfillment ")
