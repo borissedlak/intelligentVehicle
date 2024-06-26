@@ -115,6 +115,8 @@ class ServiceWrapper(threading.Thread):
                         # TODO: This must get the max value before offloading
                         # Idea: This should also consider how much the SLOs are improved locally after loading off
                         if True:  # (1 - reality) > slo_tradeoff:
+                            logger.info(f"M| Thread {self.s_description['type']} #{self.s_description['id']} offloaded to "
+                                        f"{utils.conv_ip_to_host_type(vehicle_address)} at address {vehicle_address}")
                             http_client.start_service_remotely(self.s_description, target_route=vehicle_address)
                             self.terminate()
                             return
@@ -156,6 +158,6 @@ def start_service(s_desc, platoon_members, isolated=False):
         raise RuntimeError(f"What is this {s_desc['type']}?")
 
     service_wrapper.start()
-    logger.info(f"M| {service_wrapper.inf_service} started detached for expected SLO fulfillment ")
+    logger.info(f"M| New thread for {s_desc['type']} #{s_desc['id']} started detached")
 
     return service_wrapper
