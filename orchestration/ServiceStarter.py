@@ -101,7 +101,7 @@ class ServiceWrapper(threading.Thread):
 
                 target_running_services = []
                 if evidence_to_load_off >= OFFLOADING_RATE and self.slo_hist.already_x_values(SLO_COLDSTART_DELAY):
-                    for vehicle_address in self.platoon_members[1:]:
+                    for vehicle_address in [m for m in self.platoon_members if m != utils.get_local_ip()]:
                         target_model_name = utils.create_model_name(self.s_description['name'], utils.conv_ip_to_host_type(vehicle_address))
 
                         prometheus_instance_name = vehicle_address

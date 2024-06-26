@@ -7,6 +7,7 @@ import time
 from itertools import combinations
 
 import cv2
+import netifaces
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -632,3 +633,15 @@ def conv_ip_to_host_type(ip):
     ip_dict = {'192.168.31.20': "Laptop", "host.docker.internal": "Laptop", 'localhost': "Laptop", '192.168.31.183': "Orin",
                '192.168.31.198': "Orin"}
     return ip_dict[ip]
+
+
+def get_local_ip():
+    interfaces = netifaces.interfaces()
+    for interface in interfaces:
+        ifaddresses = netifaces.ifaddresses(interface)
+        if netifaces.AF_INET in ifaddresses:
+            for addr in ifaddresses[netifaces.AF_INET]:
+                ip = addr.get('addr')
+                if ip and ip.startswith('192.168'):
+                    return ip
+    return None
