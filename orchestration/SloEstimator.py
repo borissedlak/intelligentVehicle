@@ -9,7 +9,7 @@ import utils
 from orchestration import model_trainer
 
 logger = logging.getLogger("vehicle")
-#logging.getLogger("vehicle").setLevel(logging.DEBUG)
+logging.getLogger("vehicle").setLevel(logging.DEBUG)
 
 
 class SloEstimator:
@@ -21,7 +21,7 @@ class SloEstimator:
     def reload_source_model(self, source_model):
         self.source_model = source_model
 
-    #@utils.print_execution_time
+    @utils.print_execution_time
     def infer_target_slo_f(self, target_model_name, target_host="localhost", target_running_services=None):
         dest_model = XMLBIFReader(target_model_name).get_model()
         dest_device = utils.conv_ip_to_host_type(target_host)
@@ -40,7 +40,7 @@ class SloEstimator:
 
         return slof_local_isolated, prediction_shifted, prediction_conv
 
-    #@utils.print_execution_time
+    @utils.print_execution_time
     def calc_weighted_slo_f(self, p_dist_hw, dest_model=None, isolated="False", shift=[0, 0, 0]):
         if dest_model is None:
             dest_model = self.source_model
@@ -90,7 +90,7 @@ class SloEstimator:
         # print(f"Number of 0.5 is {sum_0_5}")
         return np.sum(sum_slo_f)
 
-    #@utils.print_execution_time
+    @utils.print_execution_time
     def get_isolated_hw_predictions(self, model_VE=None, s_desc=None):
         if model_VE is None or s_desc is None:  # No values means take the origin description
             model_VE = self.model_VE
@@ -106,7 +106,7 @@ class SloEstimator:
         logger.debug(f"M| Expected SLO fulfillment for running {s_desc['name']} locally isolated {slof_local_isolated}")
         return hw_predictions, slof_local_isolated
 
-    #@utils.print_execution_time
+    @utils.print_execution_time
     def get_shifted_hw_predictions(self, origin_load_p, target_model, target_host):
         dest_current_load = model_trainer.get_latest_load(instance=target_host)
         dest_current_load_cat = model_trainer.convert_prometheus_to_category(dest_current_load)
@@ -115,7 +115,8 @@ class SloEstimator:
             dest_current_load_cat[1] = -1
         return self.calc_weighted_slo_f(origin_load_p, dest_model=target_model, shift=(dest_current_load_cat + 1), isolated="False")
 
-    #@utils.print_execution_time
+    # Write: I might optimize the runtime a bit, but I can also compare the runtime of shifter vs. conv
+    @utils.print_execution_time
     def get_conv_hw_predictions(self, origin_load_p, target_model_is, target_device, target_running_services):
         if not target_running_services:
             return [self.calc_weighted_slo_f(origin_load_p, dest_model=target_model_is, isolated="True")]
@@ -139,17 +140,22 @@ class SloEstimator:
 
 
 if __name__ == "__main__":
+    logging.getLogger("vehicle").setLevel(logging.DEBUG)
+
     local_model_name = utils.create_model_name("CV", "Orin")
     local_model = XMLBIFReader(local_model_name).get_model()
 
     s_description = {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '10'}}
     estimator = SloEstimator(local_model, service_desc=s_description)
 
+    target_running_s = []
+    estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s)
+
     target_running_s = [s_description]
-    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
+    estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s)
 
     target_running_s.append(s_description)
-    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
+    estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s)
 
     target_running_s.append(s_description)
-    print(estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s))
+    estimator.infer_target_slo_f(local_model_name, "192.168.31.183", target_running_s)

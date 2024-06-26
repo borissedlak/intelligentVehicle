@@ -1,5 +1,6 @@
 import logging
 import threading
+import time
 import traceback
 
 import numpy as np
@@ -34,6 +35,8 @@ class ServiceWrapper(threading.Thread):
         super().__init__()
         self.daemon = True
         self.name = description['name']
+
+        self.reality_metrics = None
         self._running = True
         self.inf_service = inf_service
         self.s_description = description
@@ -41,9 +44,9 @@ class ServiceWrapper(threading.Thread):
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(SLO_HISTORY_BUFFER_SIZE)
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)
-        self.under_unknown_config = not utils.verify_all_parameters_known(model,
-                                                                          pd.DataFrame([self.s_description['constraints']]),
-                                                                          list(self.s_description['constraints'].keys()))
+        # self.under_unknown_config = not utils.verify_all_parameters_known(model,
+        #                                                                   pd.DataFrame([self.s_description['constraints']]),
+        #                                                                   list(self.s_description['constraints'].keys()))
         self.isolated = isolated
         self.slo_estimator = SloEstimator(self.model, self.s_description)
         self.platoon_members = platoon_members
@@ -62,28 +65,25 @@ class ServiceWrapper(threading.Thread):
     def update_platoon(self, platoon):
         self.platoon_members = platoon
 
-    def run(self):
+    def isolated_service(self):
         while self._running:
+            self.reality_metrics = self.inf_service.process_one_iteration(self.s_description['constraints'])
+            self.reality_metrics['isolated'] = self.isolated
+            self.inf_service.report_to_mongo(self.reality_metrics)
+            self.metrics_buffer.append(self.reality_metrics)
+
+        logger.info(f"M| Thread {self.inf_service} exited gracefully")
+
+    def run(self):
+        service_thread = threading.Thread(target=self.isolated_service, daemon=True)
+        service_thread.start()
+
+        while self._running:
+            time.sleep(5)
+            if self.reality_metrics is None:
+                continue
             try:
-                reality_metrics = self.inf_service.process_one_iteration(self.s_description['constraints'])
-                reality_metrics['isolated'] = self.isolated
-                self.inf_service.report_to_mongo(reality_metrics)
-                self.metrics_buffer.append(reality_metrics)
-
-                # TODO: Must also support multiple SLOs
-                for var in self.s_description['slo_vars']:
-                    # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
-                    current_slo_f = utils.calculate_slo_fulfillment(var, reality_metrics)
-                    self.slo_hist.append(current_slo_f)
-                    rebalanced_slo_f = round(self.slo_hist.average(), 2)
-                    reality = rebalanced_slo_f
-
-                expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_vars'],
-                                                                         self.s_description['constraints'] | {
-                                                                             "isolated": f'{self.isolated}'}))
-                # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_vars'])
-                # print(f"M| Absolute surprise for sample {surprise}")
-
+                expectation, reality = self.evaluate_slos(self.reality_metrics)
                 evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
                 logger.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
                 logger.debug(f"For expectation {expectation} vs {reality}")
@@ -107,7 +107,7 @@ class ServiceWrapper(threading.Thread):
                         slo_target_estimated = self.slo_estimator.infer_target_slo_f(target_model_name, vehicle_address)
 
                         # TODO: Must be compared with the local reality, otherwise it does not make sense to load off
-                        #print(slo_target_estimated)
+                        # print(slo_target_estimated)
 
             except Exception as e:
 
@@ -118,7 +118,22 @@ class ServiceWrapper(threading.Thread):
                 utils.print_in_red(f"ACI Background thread encountered an exception:{e}")
                 # self.start()
 
-        logger.info(f"M| Thread {self.inf_service} exited gracefully")
+    def evaluate_slos(self, reality_metrics):
+        # TODO: Must also support multiple SLOs
+        for var in self.s_description['slo_vars']:
+            # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
+            current_slo_f = utils.calculate_slo_fulfillment(var, reality_metrics)
+            self.slo_hist.append(current_slo_f)
+            rebalanced_slo_f = round(self.slo_hist.average(), 2)
+            reality = rebalanced_slo_f
+
+        expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_vars'],
+                                                                 self.s_description['constraints'] | {
+                                                                     "isolated": f'{self.isolated}'}))
+        # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_vars'])
+        # print(f"M| Absolute surprise for sample {surprise}")
+
+        return expectation, reality
 
 
 def start_service(s, platoon_members, isolated=False):

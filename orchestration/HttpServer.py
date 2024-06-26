@@ -27,7 +27,7 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
 http_client = HttpClient(DEFAULT_HOST=HTTP_SERVER)
 thread_lib = []
-current_platoon = ['host.docker.internal:8000']
+current_platoon = ['192.168.31.20']
 
 
 # MEMBER ROUTES ######################################
@@ -140,7 +140,7 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-services = []  # [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
+services = [{"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
 # {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:
