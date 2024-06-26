@@ -103,7 +103,7 @@ class SloEstimator:
 
         logger.debug(f"M| Predictions for isolated hardware consumption {hw_predictions}")
         slof_local_isolated = self.calc_weighted_slo_f(hw_predictions, isolated="True")
-        logger.debug(f"M| Expected SLO fulfillment for running {s_description['name']} locally isolated {slof_local_isolated}")
+        logger.debug(f"M| Expected SLO fulfillment for running {s_desc['name']} locally isolated {slof_local_isolated}")
         return hw_predictions, slof_local_isolated
 
     @utils.print_execution_time
