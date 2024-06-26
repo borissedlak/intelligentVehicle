@@ -2,14 +2,15 @@ import itertools
 import logging
 from datetime import datetime, timedelta
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pymongo
-import utils
 from pandas.errors import EmptyDataError
 from pgmpy.inference import VariableElimination
 from pgmpy.readwrite import XMLBIFReader
 from prometheus_api_client import PrometheusConnect
+
+import utils
 from utils import DB_NAME, COLLECTION_NAME
 
 logger = logging.getLogger("vehicle")
@@ -78,8 +79,7 @@ def update_models_new_samples(model_name, samples):
     utils.export_model_to_path(model, model_name)
 
 
-# TODO: This takes way too long, doing the HTTP request in the processing cycle is nonsense
-#@utils.print_execution_time
+# @utils.print_execution_time
 def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"]):
     # Connect to Prometheus
     prom = PrometheusConnect(url=f"http://{LEADER_HOST}:9090", disable_ssl=True)
@@ -90,7 +90,7 @@ def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"]):
 
     metrics_lib = {}
     for m in metric_types:
-        query = m + '_load{instance="' + instance + ':8000"}' # device_name="' + device_name + '",
+        query = m + '_load{instance="' + instance + ':8000"}'  # device_name="' + device_name + '",
 
         metric_data = prom.get_metric_range_data(
             metric_name=query,

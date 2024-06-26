@@ -55,7 +55,6 @@ class CyclicArray:
         self.buffer = []
 
 
-# TODO: Needs a device ID additionally if we have multiple devices with the same type
 class DeviceMetricReporter:
     def __init__(self, gpu_available=0, gpu_avg_history_n=GPU_AVG_HISTORY_LENGTH):
         self.host = DEVICE_NAME
@@ -82,7 +81,6 @@ class DeviceMetricReporter:
         if is_jetson_host(self.host):  # Has Jetson lib defined
             gpu = self.jetson_metrics.stats['GPU']
 
-            # TODO: The GPU values are way too unstable, I must fix this somehow, or make an average over the last 5 values
             if self.gpu_avg_history is not None:
                 self.gpu_avg_history.append(gpu)
                 gpu = self.gpu_avg_history.average()

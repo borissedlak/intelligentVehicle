@@ -339,19 +339,19 @@ def get_sum_up_to_x(cpd: DiscreteFactor, hw_variable, max_prob):
     raise RuntimeError("Why?")
 
 
-def get_latency_for_devices(d1, d2):
-    translate_dict = {'Nano': 0, 'Xavier': 1, 'Orin': 2, 'Laptop': 3, 'PC': 4}
-    # TODO: See that this actually makes sense together with the evaluation
-    distance = np.array([[1, 3, 5, 10, 20],
-                         [3, 1, 2, 7, 17],
-                         [5, 2, 1, 5, 15],
-                         [10, 7, 5, 1, 10],
-                         [20, 17, 15, 10, 1]])
-
-    a = translate_dict[d1]
-    b = translate_dict[d2]
-
-    return distance[a, b]
+# def get_latency_for_devices(d1, d2):
+#     translate_dict = {'Nano': 0, 'Xavier': 1, 'Orin': 2, 'Laptop': 3, 'PC': 4}
+#     # TOD: See that this actually makes sense together with the evaluation
+#     distance = np.array([[1, 3, 5, 10, 20],
+#                          [3, 1, 2, 7, 17],
+#                          [5, 2, 1, 5, 15],
+#                          [10, 7, 5, 1, 10],
+#                          [20, 17, 15, 10, 1]])
+#
+#     a = translate_dict[d1]
+#     b = translate_dict[d2]
+#
+#     return distance[a, b]
 
 
 def normalize_to_pods(prob_distribution, num_pods):
@@ -622,11 +622,6 @@ def calculate_slo_fulfillment(var, row):
         return row['consumption'] <= 100
     else:
         raise RuntimeError("Why?")
-
-
-# TODO: This I should do dynamically
-def discover_platoon_devices():
-    return ['192.168.31.20', '192.168.31.183']
 
 
 def conv_ip_to_host_type(ip):
