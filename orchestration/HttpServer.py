@@ -5,30 +5,28 @@ import threading
 from io import StringIO
 
 import pandas as pd
-from flask import Flask, request, jsonify, send_from_directory
-from pgmpy.readwrite import XMLBIFReader
-
 import utils
+from flask import Flask, request, jsonify, send_from_directory
 from orchestration import model_trainer
 from orchestration.HttpClient import HttpClient
 from orchestration.ServiceStarter import start_service
+from pgmpy.readwrite import XMLBIFReader
 
 app = Flask(__name__)
 
 MODEL_DIRECTORY = "./"
 
 logger = logging.getLogger("vehicle")
-logging.getLogger('pgmpy').setLevel(logging.ERROR)  # This worked, but the ones below not...
+logging.getLogger('pgmpy').setLevel(logging.ERROR)
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('vehicle').setLevel(logging.INFO)
-# logging.filterwarnings("ignore", category=Warning, module='pgmpy')
 
 HTTP_SERVER = utils.get_ENV_PARAM('HTTP_SERVER', "127.0.0.1")
 DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
 http_client = HttpClient(DEFAULT_HOST=HTTP_SERVER)
 thread_lib = []
-current_platoon = ['192.168.31.20']
+current_platoon = ['localhost']
 service_host_map = {}
 
 

@@ -5,14 +5,13 @@ import traceback
 
 import numpy as np
 import pandas as pd
-from pgmpy.inference import VariableElimination
-from pgmpy.models import BayesianNetwork
-from pgmpy.readwrite import XMLBIFReader
-
 import utils
 from monitor.DeviceMetricReporter import CyclicArray
 from orchestration.HttpClient import HttpClient
 from orchestration.SloEstimator import SloEstimator
+from pgmpy.inference import VariableElimination
+from pgmpy.models import BayesianNetwork
+from pgmpy.readwrite import XMLBIFReader
 from services.CV.VideoDetector import VideoDetector
 from services.VehicleService import VehicleService
 
@@ -24,8 +23,8 @@ http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 
-RETRAINING_RATE = 1999.0  # Idea: This is a hyperparameter
-OFFLOADING_RATE = -999.2  # 0.2  # Idea: This is a hyperparameter
+RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
+OFFLOADING_RATE = 999.2  # 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 15  # Idea: This is a hyperparameter
@@ -126,21 +125,17 @@ class ServiceWrapper(threading.Thread):
                 utils.print_in_red(f"ACI Background thread encountered an exception:{e}")
 
     def evaluate_slos(self, reality_metrics):
-        # TODO: Must also support multiple SLOs
-        for var in self.s_desc['slo_vars']:
-            # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
-            current_slo_f = utils.calculate_slo_fulfillment(var, reality_metrics)
-            self.slo_hist.append(current_slo_f)
-            rebalanced_slo_f = round(self.slo_hist.average(), 2)
-            reality = rebalanced_slo_f
+        # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
+        current_slo_f = utils.check_slos_fulfilled(self.s_desc['slo_vars'], reality_metrics)
+        self.slo_hist.append(current_slo_f)
+        rebalanced_slo_f = self.slo_hist.average()
 
         expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'],
-                                                                 self.s_desc['constraints'] | {
-                                                                     "isolated": f'{self.isolated}'}))
+                                                                 self.s_desc['constraints'] | {"isolated": f'{self.isolated}'}))
         # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_desc['slo_vars'])
         # print(f"M| Absolute surprise for sample {surprise}")
 
-        return expectation, reality
+        return expectation, rebalanced_slo_f
 
     def estimate_slos_offload(self, other_members):
         # How would the SLO-F at the target device change if we deploy an additional service there

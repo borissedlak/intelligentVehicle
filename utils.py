@@ -15,7 +15,7 @@ import pgmpy
 from matplotlib import pyplot as plt
 from networkx.drawing.nx_pydot import graphviz_layout
 from pgmpy.base import DAG
-from pgmpy.estimators import AICScore, HillClimbSearch, MaximumLikelihoodEstimator
+from pgmpy.estimators import AICScore, HillClimbSearch, MaximumLikelihoodEstimator, BDeuScore
 from pgmpy.factors.discrete import DiscreteFactor
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
@@ -30,6 +30,8 @@ class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'tra
                'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
                'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
                'scissors', 'teddy bear', 'hair drier', 'toothbrush']
+
+ENERGY_SLO_T = 100
 
 
 def instantiate_advanced_logger(package):
@@ -407,7 +409,7 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
         samples["memory"] = samples["memory"].apply(np.floor).astype(int)
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
-        samples['energy_saved'] = samples['consumption'] <= 100
+        samples['energy_saved'] = samples['consumption'] <= ENERGY_SLO_T
 
         samples['cpu'] = pd.cut(samples['cpu'], bins=split_into_bins(NUMBER_OF_BINS),
                                 labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
@@ -458,11 +460,11 @@ def train_to_BN(samples, service_name, export_file=None, samples_path=None, dag=
         samples = pd.read_csv(samples_path)
 
     if dag is None:
-        scoring_method = AICScore(data=samples)  # BDeuScore | AICScore
+        scoring_method = BDeuScore(data=samples)  # BDeuScore | AICScore
         estimator = HillClimbSearch(data=samples)
 
         dag: pgmpy.base.DAG = estimator.estimate(
-            scoring_method=scoring_method, max_indegree=5, epsilon=1,
+            scoring_method="bicscore", max_indegree=4, epsilon=10,
         )
 
     export_BN_to_graph(dag, vis_ls=['circo'], save=False, name="raw_model", show=True)
@@ -614,14 +616,19 @@ def log_and_return(lg, severity, msg):
     return msg
 
 
+# TODO: Use this function in model training with 1 slo_var
 # @print_execution_time
-def calculate_slo_fulfillment(var, row):
-    if var == "in_time":
-        return row['delta'] <= (1000 / row['fps'])
-    elif var == "energy_saved":
-        return row['consumption'] <= 100
-    else:
-        raise RuntimeError("Why?")
+def check_slos_fulfilled(slo_vars, row):
+    for var in slo_vars:
+        if var == "in_time":
+            if row['delta'] > (1000 / row['fps']):
+                return False
+        elif var == "energy_saved":
+            if row['consumption'] > ENERGY_SLO_T:
+                return False
+        else:
+            raise RuntimeError(f"SLO type {var} is unknown")
+    return True
 
 
 def conv_ip_to_host_type(ip):
