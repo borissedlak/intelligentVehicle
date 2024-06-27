@@ -24,8 +24,8 @@ http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 
-RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
-OFFLOADING_RATE = -999 # 0.2  # Idea: This is a hyperparameter
+RETRAINING_RATE = 1999.0  # Idea: This is a hyperparameter
+OFFLOADING_RATE = -999.2  # 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 15  # Idea: This is a hyperparameter
@@ -108,8 +108,8 @@ class ServiceWrapper(threading.Thread):
                         logger.info(f"M| Thread {self.type}-{self.id} would like to offload, but no other members in platoon")
                         continue
 
-                    offload_gains = self.estimate_slos_offload(other_members)
-                    target, gain = max(offload_gains, key=lambda x: x[1])
+                    offload_gain_list = self.estimate_slos_offload(other_members)
+                    target, gain = max(offload_gain_list, key=lambda x: x[1])
                     # TODO: What about the live information?
                     if gain > 0:
                         logger.info(f"M| Thread {self.type}-{self.id} offloaded to {utils.conv_ip_to_host_type(target)} at {target}")
@@ -120,13 +120,10 @@ class ServiceWrapper(threading.Thread):
                     logger.info(f"M| Thread {self.type}-{self.id} did not find a beneficial hosting destination")
 
             except Exception as e:
-
                 error_traceback = traceback.format_exc()
                 print("Error Traceback:")
                 print(error_traceback)
-
                 utils.print_in_red(f"ACI Background thread encountered an exception:{e}")
-                # self.start()
 
     def evaluate_slos(self, reality_metrics):
         # TODO: Must also support multiple SLOs
@@ -173,9 +170,9 @@ class ServiceWrapper(threading.Thread):
             slo_tradeoff_target_initial = sum([1 - slo for slo in slo_target_estimated_initial])
             slo_tradeoff_target_offload = sum([1 - slo for slo in slo_target_estimated_offload[2]])
 
-            offload_gain = ((slo_tradeoff_origin_offload + slo_tradeoff_target_offload) -
-                            (slo_tradeoff_target_initial + slo_tradeoff_origin_initial))
-            target_slo_f.append((vehicle_address, offload_gain))
+            offload_tradeoff_gain = ((slo_tradeoff_target_initial + slo_tradeoff_origin_initial) -
+                                     (slo_tradeoff_origin_offload + slo_tradeoff_target_offload))
+            target_slo_f.append((vehicle_address, offload_tradeoff_gain))
 
         return target_slo_f
 
