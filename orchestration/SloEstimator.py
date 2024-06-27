@@ -19,6 +19,25 @@ class SloEstimator:
 
     def reload_source_model(self, source_model):
         self.source_model = source_model
+        self.model_VE = VariableElimination(self.source_model)
+
+    def infer_local_slo_f(self, target_running_services, device_name, origin_s_desc=None):
+        remaining_services_o = target_running_services
+        if origin_s_desc is not None:
+            remaining_services_o = [s for s in target_running_services if s != origin_s_desc]
+        # If there is no other service locally, fine, return 1.0
+        if len(remaining_services_o) == 0:
+            return [1.0]
+        # If there is one other service locally, fine, return its isolated expectation
+        # Otherwise return the conv of the remaining services
+        else:
+            base_service = remaining_services_o[0]
+            dest_model = XMLBIFReader(utils.create_model_name(base_service['type'], device_name)).get_model()
+            dest_model_VE = VariableElimination(dest_model)
+            hw_load_p, slof_local_isolated = self.get_isolated_hw_predictions(model_VE=dest_model_VE)
+            prediction_conv = self.get_conv_hw_predictions(hw_load_p, dest_model, device_name, remaining_services_o[1:])
+            logger.debug(f"M| Predictions for SLO fulfillment at origin when conv with existing services {prediction_conv}")
+            return prediction_conv
 
     # @utils.print_execution_time  # takes 400ms
     def infer_target_slo_f(self, target_model_name, target_running_services, prometheus_instance):
@@ -31,12 +50,13 @@ class SloEstimator:
         # Write: The problem is that the load does not rise linear with more services
         # Idea: So what I can do is take the one that is worse to make a conservative prediction
         prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, prometheus_instance)
-        logger.debug(f"M| Predictions for SLO fulfillment once load shifted {prediction_shifted}")
+        logger.debug(f"M| Predictions for SLO fulfillment at target once load shifted {prediction_shifted}")
 
         if target_running_services is None:
             target_running_services = []
+            raise RuntimeError("If never called, remove this")
         prediction_conv = self.get_conv_hw_predictions(hw_load_p, dest_model, dest_device, target_running_services)
-        logger.debug(f"M| Predictions for SLO fulfillment when conv with existing services {prediction_conv}")
+        logger.debug(f"M| Predictions for SLO fulfillment at origin when conv with existing services {prediction_conv}")
 
         return slof_local_isolated, prediction_shifted, prediction_conv
 
@@ -124,6 +144,27 @@ class SloEstimator:
 
         return target_slo_f
 
+    # def get_conv_hw_predictions_local(self, origin_load_p, target_device, target_running_services):
+    #     if not target_running_services:
+    #         return [1.0]
+    #
+    #     target_conv_load = origin_load_p
+    #     target_models = [target_model_is]
+    #     for s_desc in target_running_services:
+    #         target_model = XMLBIFReader(utils.create_model_name(s_desc['type'], target_device)).get_model()
+    #         target_models.append(target_model)
+    #         s_load_p, _ = self.get_isolated_hw_predictions(VariableElimination(target_model), s_desc)
+    #
+    #         for var in ['cpu', 'gpu', 'memory']:
+    #             var_conv = utils.compress_into_n_bins(np.convolve(target_conv_load[var], s_load_p[var]))
+    #             target_conv_load[var] = var_conv
+    #
+    #     target_slo_f = []
+    #     for model in target_models:
+    #         target_slo_f.append(self.calc_weighted_slo_f(target_conv_load, dest_model_VE=VariableElimination(model), isolated="False"))
+    #
+    #     return target_slo_f
+
 
 if __name__ == "__main__":
     logging.getLogger("vehicle").setLevel(logging.DEBUG)
@@ -131,17 +172,21 @@ if __name__ == "__main__":
     local_model_name = utils.create_model_name("CV", "Orin")
     local_model = XMLBIFReader(local_model_name).get_model()
 
-    s_description = {"name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '10'}}
-    estimator = SloEstimator(local_model, service_desc=s_description)
+    s_description_1 = {"id": 1, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
+    s_description_2 = {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
+    estimator = SloEstimator(local_model, service_desc=s_description_1)
 
-    target_running_s = []
-    print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
+    # target_running_s = []
+    # print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
+    #
+    # target_running_s = [s_description]
+    # print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
+    #
+    # target_running_s.append(s_description)
+    # print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
+    #
+    # target_running_s.append(s_description)
+    # print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
 
-    target_running_s = [s_description]
-    print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
-
-    target_running_s.append(s_description)
-    print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
-
-    target_running_s.append(s_description)
-    print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
+    target_running_s = [s_description_1, s_description_2]
+    print(estimator.infer_local_slo_f(target_running_s, "Laptop", origin_s_desc=s_description_1))

@@ -46,9 +46,6 @@ class ServiceWrapper(threading.Thread):
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(SLO_HISTORY_BUFFER_SIZE)
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)
-        # self.under_unknown_config = not utils.verify_all_parameters_known(model,
-        #                                                                   pd.DataFrame([self.s_desc['constraints']]),
-        #                                                                   list(self.s_desc['constraints'].keys()))
         self.isolated = isolated
         self.slo_estimator = SloEstimator(self.model, self.s_desc)
         self.platoon_members = platoon_members
@@ -104,21 +101,33 @@ class ServiceWrapper(threading.Thread):
                 evidence_to_load_off = (expectation - reality) + (1 - reality)
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
 
+                # TODO: I must split this off again, its getting too big
                 if evidence_to_load_off >= OFFLOADING_RATE and self.slo_hist.already_x_values(SLO_COLDSTART_DELAY):
-                    for vehicle_address in utils.get_all_other_members(self.platoon_members):
+                    other_members = utils.get_all_other_members(self.platoon_members)
+
+                    # How would the local SLO-F be changed if we load off
+                    if other_members:
+                        local_running_services = utils.get_running_services_for_host(self.service_assignment, utils.get_local_ip())
+                        # target_model_name = utils.create_model_name(self.type, DEVICE_NAME)
+                        slo_local_estimated_initial = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME, self.s_desc)
+                        slo_local_estimated_offload = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME)
+                    for vehicle_address in other_members:
                         target_running_services = utils.get_running_services_for_host(self.service_assignment, vehicle_address)
-                        target_model_name = utils.create_model_name(self.type, utils.conv_ip_to_host_type(vehicle_address))
+                        target_device_type = utils.conv_ip_to_host_type(vehicle_address)
+                        target_model_name = utils.create_model_name(self.type, target_device_type)
 
                         prometheus_instance_name = vehicle_address
                         if vehicle_address == "192.168.31.20":
                             prometheus_instance_name = "host.docker.internal"
-                        slo_target_estimated = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
-                                                                                     prometheus_instance_name)
-                        logger.debug(f"Estimated SLO fulfillment at target {slo_target_estimated}")
-                        slo_tradeoff = sum([1 - slo for slo in slo_target_estimated[2]])
+                        slo_target_estimated_offload = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
+                                                                                             prometheus_instance_name)
+                        slo_target_estimated_initial = self.slo_estimator.infer_local_slo_f(target_running_services, target_device_type)
+
+                        logger.debug(f"Estimated SLO fulfillment at origin {slo_local_estimated_initial}")
+                        logger.debug(f"Estimated SLO fulfillment at target {slo_target_estimated_offload}")
+                        slo_tradeoff = sum([1 - slo for slo in slo_target_estimated_offload[2]])
 
                         # TODO: This must get the max value before offloading
-                        # Idea: This should also consider how much the SLOs are improved locally after loading off
                         if True:  # (1 - reality) > slo_tradeoff:
                             logger.info(f"M| Thread {self.type} #{self.id} offloaded to "
                                         f"{utils.conv_ip_to_host_type(vehicle_address)} at address {vehicle_address}")
