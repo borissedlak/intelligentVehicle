@@ -62,7 +62,7 @@ def prepare_models(fill_param_tables=True):
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
 
-        model = utils.train_to_BN(filtered, service_name=service, export_file=f"{service}_{device_type}_model.xml")
+        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=f"{service}_{device_type}_model.xml")
 
         true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))
         print(f"In_time fulfilled for {int(true * 100)} %")

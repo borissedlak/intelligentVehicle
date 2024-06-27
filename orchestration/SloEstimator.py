@@ -21,10 +21,10 @@ class SloEstimator:
         self.source_model = source_model
         self.model_VE = VariableElimination(self.source_model)
 
-    def infer_local_slo_f(self, target_running_services, device_name, origin_s_desc=None):
+    def infer_local_slo_f(self, target_running_services, device_name, origin_s_offload_desc=None):
         remaining_services_o = target_running_services
-        if origin_s_desc is not None:
-            remaining_services_o = [s for s in target_running_services if s != origin_s_desc]
+        if origin_s_offload_desc is not None:
+            remaining_services_o = [s for s in target_running_services if s != origin_s_offload_desc]
         # If there is no other service locally, fine, return 1.0
         if len(remaining_services_o) == 0:
             return [1.0]
@@ -34,7 +34,7 @@ class SloEstimator:
             base_service = remaining_services_o[0]
             dest_model = XMLBIFReader(utils.create_model_name(base_service['type'], device_name)).get_model()
             dest_model_VE = VariableElimination(dest_model)
-            hw_load_p, slof_local_isolated = self.get_isolated_hw_predictions(model_VE=dest_model_VE)
+            hw_load_p, slof_local_isolated = self.get_isolated_hw_predictions(model_VE=dest_model_VE, s_desc=base_service)
             prediction_conv = self.get_conv_hw_predictions(hw_load_p, dest_model, device_name, remaining_services_o[1:])
             logger.debug(f"M| Predictions for SLO fulfillment at origin when conv with existing services {prediction_conv}")
             return prediction_conv
@@ -175,6 +175,7 @@ if __name__ == "__main__":
 
     s_description_1 = {"id": 1, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
     s_description_2 = {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
+    s_description_3 = {"id": 3, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
     estimator = SloEstimator(local_model, service_desc=s_description_1)
 
     # target_running_s = []
@@ -189,5 +190,6 @@ if __name__ == "__main__":
     # target_running_s.append(s_description)
     # print(estimator.infer_target_slo_f(local_model_name, target_running_s, "192.168.31.183"))
 
-    target_running_s = [s_description_1, s_description_2]
-    print(estimator.infer_local_slo_f(target_running_s, "Laptop", origin_s_desc=s_description_1))
+    # print(estimator.infer_local_slo_f(target_running_s, "Laptop", origin_s_desc=s_description_1))
+    print(estimator.infer_local_slo_f([s_description_1, s_description_2, s_description_3], "Laptop", origin_s_offload_desc=s_description_3))
+    print(estimator.infer_local_slo_f([s_description_1, s_description_2], "Laptop"))

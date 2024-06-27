@@ -134,6 +134,7 @@ class ServiceWrapper(threading.Thread):
                         slo_tradeoff_target_initial = sum([1 - slo for slo in slo_target_estimated_initial])
                         slo_tradeoff_target_offload = sum([1 - slo for slo in slo_target_estimated_offload[2]])
 
+                        # TODO: I'd expect the target initial/offload to perform better
                         # TODO: What about the live information?
                         if (slo_tradeoff_target_initial + slo_tradeoff_origin_initial) > (slo_tradeoff_origin_offload + slo_tradeoff_target_offload):
                             logger.info(f"M| Thread {self.type} #{self.id} offloaded to "
