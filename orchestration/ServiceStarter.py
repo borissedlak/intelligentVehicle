@@ -24,8 +24,8 @@ http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 
-RETRAINING_RATE = 999.0  # Idea: This is a hyperparameter
-OFFLOADING_RATE = - 999  # Idea: This is a hyperparameter
+RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
+OFFLOADING_RATE = 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 15  # Idea: This is a hyperparameter
@@ -105,7 +105,7 @@ class ServiceWrapper(threading.Thread):
                 if evidence_to_load_off >= OFFLOADING_RATE and self.slo_hist.already_x_values(SLO_COLDSTART_DELAY):
                     other_members = utils.get_all_other_members(self.platoon_members)
 
-                    # How would the local SLO-F be changed if we load off
+                    # How would the SLO-F at the target device change if we deploy an additional service there
                     if other_members:
                         local_running_services = utils.get_running_services_for_host(self.service_assignment, utils.get_local_ip())
                         # target_model_name = utils.create_model_name(self.type, DEVICE_NAME)
@@ -136,8 +136,9 @@ class ServiceWrapper(threading.Thread):
 
                         # TODO: I'd expect the target initial/offload to perform better
                         # TODO: What about the live information?
-                        if (slo_tradeoff_target_initial + slo_tradeoff_origin_initial) > (slo_tradeoff_origin_offload + slo_tradeoff_target_offload):
-                            logger.info(f"M| Thread {self.type} #{self.id} offloaded to "
+                        if (slo_tradeoff_target_initial + slo_tradeoff_origin_initial) > (
+                                slo_tradeoff_origin_offload + slo_tradeoff_target_offload):
+                            logger.info(f"M| Thread {self.type}-{self.id} offloaded to "
                                         f"{utils.conv_ip_to_host_type(vehicle_address)} at address {vehicle_address}")
                             http_client.start_service_remotely(self.s_desc, target_route=vehicle_address)
                             self.terminate()
