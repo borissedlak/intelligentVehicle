@@ -109,8 +109,14 @@ class ServiceWrapper(threading.Thread):
                     if other_members:
                         local_running_services = utils.get_running_services_for_host(self.service_assignment, utils.get_local_ip())
                         # target_model_name = utils.create_model_name(self.type, DEVICE_NAME)
-                        slo_local_estimated_initial = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME, self.s_desc)
-                        slo_local_estimated_offload = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME)
+                        slo_local_estimated_initial = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME)
+                        slo_local_estimated_offload = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME, self.s_desc)
+                        logger.debug(f"Estimated SLO fulfillment at origin without offload {slo_local_estimated_initial}")
+                        logger.debug(f"Estimated SLO fulfillment at origin after offload {slo_local_estimated_offload}")
+
+                        slo_tradeoff_origin_initial = sum([1 - slo for slo in slo_local_estimated_initial])
+                        slo_tradeoff_origin_offload = sum([1 - slo for slo in slo_local_estimated_offload])
+
                     for vehicle_address in other_members:
                         target_running_services = utils.get_running_services_for_host(self.service_assignment, vehicle_address)
                         target_device_type = utils.conv_ip_to_host_type(vehicle_address)
@@ -122,13 +128,14 @@ class ServiceWrapper(threading.Thread):
                         slo_target_estimated_offload = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
                                                                                              prometheus_instance_name)
                         slo_target_estimated_initial = self.slo_estimator.infer_local_slo_f(target_running_services, target_device_type)
+                        logger.debug(f"Estimated SLO fulfillment at target without offload {slo_target_estimated_initial}")
+                        logger.debug(f"Estimated SLO fulfillment at target after offload {slo_target_estimated_offload}")
 
-                        logger.debug(f"Estimated SLO fulfillment at origin {slo_local_estimated_initial}")
-                        logger.debug(f"Estimated SLO fulfillment at target {slo_target_estimated_offload}")
-                        slo_tradeoff = sum([1 - slo for slo in slo_target_estimated_offload[2]])
+                        slo_tradeoff_target_initial = sum([1 - slo for slo in slo_target_estimated_initial])
+                        slo_tradeoff_target_offload = sum([1 - slo for slo in slo_target_estimated_offload[2]])
 
-                        # TODO: This must get the max value before offloading
-                        if True:  # (1 - reality) > slo_tradeoff:
+                        # TODO: What about the live information?
+                        if (slo_tradeoff_target_initial + slo_tradeoff_origin_initial) > (slo_tradeoff_origin_offload + slo_tradeoff_target_offload):
                             logger.info(f"M| Thread {self.type} #{self.id} offloaded to "
                                         f"{utils.conv_ip_to_host_type(vehicle_address)} at address {vehicle_address}")
                             http_client.start_service_remotely(self.s_desc, target_route=vehicle_address)

@@ -52,6 +52,7 @@ class SloEstimator:
         prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, prometheus_instance)
         logger.debug(f"M| Predictions for SLO fulfillment at target once load shifted {prediction_shifted}")
 
+        # TODO: I might need to split up the methods so that I can also evaluate their runtime more closely
         if target_running_services is None:
             target_running_services = []
             raise RuntimeError("If never called, remove this")

@@ -62,11 +62,11 @@ def update_other_members(service_d, localhost):
     other_members = utils.get_all_other_members(current_platoon)
 
     if len(other_members) == 0:
-        logger.info("No other platoon members to inform about start")
+        logger.debug("M| No other platoon members to inform about start")
     else:
         for vehicle_address in other_members:
             http_client.update_service_assignment(str(service_d), localhost, vehicle_address)
-        logger.info(f"Informed {len(other_members)} platoon members about service start")
+        logger.debug(f"M| Informed {len(other_members)} platoon members about service start")
 
 
 def update_wrapper_service_assignments():
