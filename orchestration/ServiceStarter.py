@@ -41,16 +41,16 @@ class ServiceWrapper(threading.Thread):
         self.reality_metrics = None
         self._running = True
         self.inf_service = inf_service
-        self.s_description = description
-        self.model = model  # TODO: Filter MB with utils.get_mbs_as_bn(model, self.s_description['slo_vars'])
+        self.s_desc = description
+        self.model = model  # TODO: Filter MB with utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(SLO_HISTORY_BUFFER_SIZE)
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)
         # self.under_unknown_config = not utils.verify_all_parameters_known(model,
-        #                                                                   pd.DataFrame([self.s_description['constraints']]),
-        #                                                                   list(self.s_description['constraints'].keys()))
+        #                                                                   pd.DataFrame([self.s_desc['constraints']]),
+        #                                                                   list(self.s_desc['constraints'].keys()))
         self.isolated = isolated
-        self.slo_estimator = SloEstimator(self.model, self.s_description)
+        self.slo_estimator = SloEstimator(self.model, self.s_desc)
         self.platoon_members = platoon_members
         self.service_assignment = {}
 
@@ -73,12 +73,12 @@ class ServiceWrapper(threading.Thread):
 
     def isolated_service(self):
         while self._running:
-            self.reality_metrics = self.inf_service.process_one_iteration(self.s_description['constraints'])
+            self.reality_metrics = self.inf_service.process_one_iteration(self.s_desc['constraints'])
             self.reality_metrics['isolated'] = self.isolated
             self.inf_service.report_to_mongo(self.reality_metrics)
             self.metrics_buffer.append(self.reality_metrics)
 
-        logger.info(f"M| Thread {self.inf_service} exited gracefully")
+        logger.info(f"M| Thread {self.type}-{self.id} exited gracefully")
 
     def run(self):
         service_thread = threading.Thread(target=self.isolated_service, daemon=True)
@@ -97,7 +97,7 @@ class ServiceWrapper(threading.Thread):
                 if evidence_to_retrain >= RETRAINING_RATE:
                     logger.info(f"M| Asking leader to retrain on {self.metrics_buffer.get_number_items()} samples")
                     df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
-                    model_file = utils.create_model_name(self.s_description['type'], DEVICE_NAME)
+                    model_file = utils.create_model_name(self.s_desc['type'], DEVICE_NAME)
                     http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
                     self.metrics_buffer.clear()
 
@@ -107,7 +107,7 @@ class ServiceWrapper(threading.Thread):
                 if evidence_to_load_off >= OFFLOADING_RATE and self.slo_hist.already_x_values(SLO_COLDSTART_DELAY):
                     for vehicle_address in utils.get_all_other_members(self.platoon_members):
                         target_running_services = utils.get_running_services_for_host(self.service_assignment, vehicle_address)
-                        target_model_name = utils.create_model_name(self.s_description['type'], utils.conv_ip_to_host_type(vehicle_address))
+                        target_model_name = utils.create_model_name(self.type, utils.conv_ip_to_host_type(vehicle_address))
 
                         prometheus_instance_name = vehicle_address
                         if vehicle_address == "192.168.31.20":
@@ -120,9 +120,9 @@ class ServiceWrapper(threading.Thread):
                         # TODO: This must get the max value before offloading
                         # Idea: This should also consider how much the SLOs are improved locally after loading off
                         if True:  # (1 - reality) > slo_tradeoff:
-                            logger.info(f"M| Thread {self.s_description['type']} #{self.s_description['id']} offloaded to "
+                            logger.info(f"M| Thread {self.type} #{self.id} offloaded to "
                                         f"{utils.conv_ip_to_host_type(vehicle_address)} at address {vehicle_address}")
-                            http_client.start_service_remotely(self.s_description, target_route=vehicle_address)
+                            http_client.start_service_remotely(self.s_desc, target_route=vehicle_address)
                             self.terminate()
                             return
 
@@ -137,17 +137,17 @@ class ServiceWrapper(threading.Thread):
 
     def evaluate_slos(self, reality_metrics):
         # TODO: Must also support multiple SLOs
-        for var in self.s_description['slo_vars']:
+        for var in self.s_desc['slo_vars']:
             # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
             current_slo_f = utils.calculate_slo_fulfillment(var, reality_metrics)
             self.slo_hist.append(current_slo_f)
             rebalanced_slo_f = round(self.slo_hist.average(), 2)
             reality = rebalanced_slo_f
 
-        expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_description['slo_vars'],
-                                                                 self.s_description['constraints'] | {
+        expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'],
+                                                                 self.s_desc['constraints'] | {
                                                                      "isolated": f'{self.isolated}'}))
-        # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_description['slo_vars'])
+        # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_desc['slo_vars'])
         # print(f"M| Absolute surprise for sample {surprise}")
 
         return expectation, reality
@@ -163,6 +163,6 @@ def start_service(s_desc, platoon_members, isolated=False):
         raise RuntimeError(f"What is this {s_desc['type']}?")
 
     service_wrapper.start()
-    logger.info(f"M| New thread for {s_desc['type']} #{s_desc['id']} started detached")
+    logger.info(f"M| New thread for {s_desc['type']}-{s_desc['id']} started detached")
 
     return service_wrapper
