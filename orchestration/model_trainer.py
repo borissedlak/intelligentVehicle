@@ -102,8 +102,8 @@ def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"]):
             latest_value = metric_data[0]['values'][-1]
             metrics_lib = metrics_lib | {m: latest_value[1]}
         else:
-            print("No data found for the given query.")
-            metrics_lib = metrics_lib | {m: None}
+            logger.error(f"Prometheus does not have access to {instance}, defaulting to 100 % occupied")
+            metrics_lib = metrics_lib | {m: 100.0}
 
     return metrics_lib
 

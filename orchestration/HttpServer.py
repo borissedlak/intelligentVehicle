@@ -99,13 +99,12 @@ def override_model():
     for f_key in request.files.keys():
         file = request.files[f_key]
         file.save(file.filename)
-        # logger.info(f"M| Receiving model file '{file.filename}'")
 
         for wrapper in thread_lib:
             if file.filename == utils.create_model_name(wrapper.s_desc['type'], DEVICE_NAME):
                 model = XMLBIFReader(file.filename).get_model()
                 wrapper.update_model(model)
-                logger.info(f"M| Update model for {wrapper}")
+                logger.info(f"M| Update model for {wrapper.s_desc['type']}-{wrapper.s_desc['id']}")
 
     return utils.log_and_return(logger, logging.INFO, "M| All files received successfully")
 

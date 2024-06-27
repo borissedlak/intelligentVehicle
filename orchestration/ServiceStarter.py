@@ -25,7 +25,7 @@ MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 
 RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
-OFFLOADING_RATE = 0.2  # Idea: This is a hyperparameter
+OFFLOADING_RATE = -999 # 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 15  # Idea: This is a hyperparameter
@@ -105,7 +105,7 @@ class ServiceWrapper(threading.Thread):
                     other_members = utils.get_all_other_members(self.platoon_members)
 
                     if len(other_members) == 0:
-                        logger.info(f"M| Thread {self.type}-{self.id} would like to offload, but no other members")
+                        logger.info(f"M| Thread {self.type}-{self.id} would like to offload, but no other members in platoon")
                         continue
 
                     offload_gains = self.estimate_slos_offload(other_members)
