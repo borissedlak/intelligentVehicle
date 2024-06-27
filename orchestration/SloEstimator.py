@@ -53,9 +53,6 @@ class SloEstimator:
         logger.debug(f"M| Predictions for SLO fulfillment at target once load shifted {prediction_shifted}")
 
         # TODO: I might need to split up the methods so that I can also evaluate their runtime more closely
-        if target_running_services is None:
-            target_running_services = []
-            raise RuntimeError("If never called, remove this")
         prediction_conv = self.get_conv_hw_predictions(hw_load_p, dest_model, dest_device, target_running_services)
         logger.debug(f"M| Predictions for SLO fulfillment at origin when conv with existing services {prediction_conv}")
 
@@ -79,19 +76,6 @@ class SloEstimator:
                         utils.infer_slo_fulfillment(dest_model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
                                                     {'cpu': f'{cpu_index}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
                                                      'isolated': isolated}))
-                    # print(slo_f_i)
-                    # print(utils.get_true(
-                    #     utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
-                    #                                 {'cpu': f'{1}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
-                    #                                  'isolated': isolated})))
-                    # print(utils.get_true(
-                    #     utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
-                    #                                 {'cpu': f'{2}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
-                    #                                  'isolated': isolated})))
-                    # print(utils.get_true(
-                    #     utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
-                    #                                 {'cpu': f'{3}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
-                    #                                  'isolated': isolated})))
                     weighted_p = p_cumm * slo_f_i
                     sum_slo_f[i, j, k] = weighted_p
 

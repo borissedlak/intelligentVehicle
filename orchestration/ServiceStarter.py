@@ -101,48 +101,23 @@ class ServiceWrapper(threading.Thread):
                 evidence_to_load_off = (expectation - reality) + (1 - reality)
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
 
-                # TODO: I must split this off again, its getting too big
                 if evidence_to_load_off >= OFFLOADING_RATE and self.slo_hist.already_x_values(SLO_COLDSTART_DELAY):
                     other_members = utils.get_all_other_members(self.platoon_members)
 
-                    # How would the SLO-F at the target device change if we deploy an additional service there
-                    if other_members:
-                        local_running_services = utils.get_running_services_for_host(self.service_assignment, utils.get_local_ip())
-                        # target_model_name = utils.create_model_name(self.type, DEVICE_NAME)
-                        slo_local_estimated_initial = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME)
-                        slo_local_estimated_offload = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME, self.s_desc)
-                        logger.debug(f"Estimated SLO fulfillment at origin without offload {slo_local_estimated_initial}")
-                        logger.debug(f"Estimated SLO fulfillment at origin after offload {slo_local_estimated_offload}")
+                    if len(other_members) == 0:
+                        logger.info(f"M| Thread {self.type}-{self.id} would like to offload, but no other members")
+                        continue
 
-                        slo_tradeoff_origin_initial = sum([1 - slo for slo in slo_local_estimated_initial])
-                        slo_tradeoff_origin_offload = sum([1 - slo for slo in slo_local_estimated_offload])
+                    offload_gains = self.estimate_slos_offload(other_members)
+                    target, gain = max(offload_gains, key=lambda x: x[1])
+                    # TODO: What about the live information?
+                    if gain > 0:
+                        logger.info(f"M| Thread {self.type}-{self.id} offloaded to {utils.conv_ip_to_host_type(target)} at {target}")
+                        http_client.start_service_remotely(self.s_desc, target_route=target)
+                        self.terminate()
+                        return
 
-                    for vehicle_address in other_members:
-                        target_running_services = utils.get_running_services_for_host(self.service_assignment, vehicle_address)
-                        target_device_type = utils.conv_ip_to_host_type(vehicle_address)
-                        target_model_name = utils.create_model_name(self.type, target_device_type)
-
-                        prometheus_instance_name = vehicle_address
-                        if vehicle_address == "192.168.31.20":
-                            prometheus_instance_name = "host.docker.internal"
-                        slo_target_estimated_offload = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
-                                                                                             prometheus_instance_name)
-                        slo_target_estimated_initial = self.slo_estimator.infer_local_slo_f(target_running_services, target_device_type)
-                        logger.debug(f"Estimated SLO fulfillment at target without offload {slo_target_estimated_initial}")
-                        logger.debug(f"Estimated SLO fulfillment at target after offload {slo_target_estimated_offload}")
-
-                        slo_tradeoff_target_initial = sum([1 - slo for slo in slo_target_estimated_initial])
-                        slo_tradeoff_target_offload = sum([1 - slo for slo in slo_target_estimated_offload[2]])
-
-                        # TODO: I'd expect the target initial/offload to perform better
-                        # TODO: What about the live information?
-                        if (slo_tradeoff_target_initial + slo_tradeoff_origin_initial) > (
-                                slo_tradeoff_origin_offload + slo_tradeoff_target_offload):
-                            logger.info(f"M| Thread {self.type}-{self.id} offloaded to "
-                                        f"{utils.conv_ip_to_host_type(vehicle_address)} at address {vehicle_address}")
-                            http_client.start_service_remotely(self.s_desc, target_route=vehicle_address)
-                            self.terminate()
-                            return
+                    logger.info(f"M| Thread {self.type}-{self.id} did not find a beneficial hosting destination")
 
             except Exception as e:
 
@@ -169,6 +144,40 @@ class ServiceWrapper(threading.Thread):
         # print(f"M| Absolute surprise for sample {surprise}")
 
         return expectation, reality
+
+    def estimate_slos_offload(self, other_members):
+        # How would the SLO-F at the target device change if we deploy an additional service there
+        local_running_services = utils.get_running_services_for_host(self.service_assignment, utils.get_local_ip())
+
+        slo_local_estimated_initial = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME)
+        slo_local_estimated_offload = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME, self.s_desc)
+        logger.debug(f"Estimated SLO fulfillment at origin without offload {slo_local_estimated_initial}")
+        logger.debug(f"Estimated SLO fulfillment at origin after offload {slo_local_estimated_offload}")
+
+        slo_tradeoff_origin_initial = sum([1 - slo for slo in slo_local_estimated_initial])
+        slo_tradeoff_origin_offload = sum([1 - slo for slo in slo_local_estimated_offload])
+
+        target_slo_f = []
+        for vehicle_address in other_members:
+            target_running_services = utils.get_running_services_for_host(self.service_assignment, vehicle_address)
+            target_device_type = utils.conv_ip_to_host_type(vehicle_address)
+            target_model_name = utils.create_model_name(self.type, target_device_type)
+
+            prometheus_instance_name = vehicle_address if vehicle_address != "192.168.31.20" else "host.docker.internal"
+            slo_target_estimated_offload = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
+                                                                                 prometheus_instance_name)
+            slo_target_estimated_initial = self.slo_estimator.infer_local_slo_f(target_running_services, target_device_type)
+            logger.debug(f"Estimated SLO fulfillment at target without offload {slo_target_estimated_initial}")
+            logger.debug(f"Estimated SLO fulfillment at target after offload {slo_target_estimated_offload}")
+
+            slo_tradeoff_target_initial = sum([1 - slo for slo in slo_target_estimated_initial])
+            slo_tradeoff_target_offload = sum([1 - slo for slo in slo_target_estimated_offload[2]])
+
+            offload_gain = ((slo_tradeoff_origin_offload + slo_tradeoff_target_offload) -
+                            (slo_tradeoff_target_initial + slo_tradeoff_origin_initial))
+            target_slo_f.append((vehicle_address, offload_gain))
+
+        return target_slo_f
 
 
 def start_service(s_desc, platoon_members, isolated=False):
