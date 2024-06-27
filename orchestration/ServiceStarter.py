@@ -117,7 +117,7 @@ class ServiceWrapper(threading.Thread):
                         self.terminate()
                         return
 
-                    logger.info(f"M| Thread {self.type}-{self.id} did not find a beneficial hosting destination")
+                    logger.info(f"M| Thread {self.type}-{self.id} found no beneficial hosting destination")
 
             except Exception as e:
                 error_traceback = traceback.format_exc()

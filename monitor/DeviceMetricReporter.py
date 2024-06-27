@@ -12,7 +12,7 @@ from utils import is_jetson_host, DB_NAME, get_ENV_PARAM
 DEVICE_NAME = get_ENV_PARAM('DEVICE_NAME', "Unknown")
 LEADER_HOST = get_ENV_PARAM('LEADER_HOST', "localhost")
 
-GPU_AVG_HISTORY_LENGTH = 50
+GPU_AVG_HISTORY_LENGTH = 50  # This is not really a hyperparameter but rather a dirty fix that is needed
 
 
 class CyclicArray:
@@ -57,8 +57,7 @@ class CyclicArray:
 
 class DeviceMetricReporter:
     def __init__(self, gpu_available=0, gpu_avg_history_n=GPU_AVG_HISTORY_LENGTH):
-        self.host = DEVICE_NAME
-        self.consumption_regression = ConsRegression(self.host)
+        self.consumption_regression = ConsRegression(DEVICE_NAME)
         self.mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
         self.gpu_available = gpu_available
         self.gpu_avg_history = None
@@ -66,7 +65,7 @@ class DeviceMetricReporter:
         if gpu_avg_history_n > 0:
             self.gpu_avg_history = CyclicArray(gpu_avg_history_n)
 
-        if is_jetson_host(self.host):
+        if is_jetson_host(DEVICE_NAME):
             from jtop.jtop import jtop
             self.jetson_metrics = jtop()
             self.jetson_metrics.start()
@@ -78,7 +77,7 @@ class DeviceMetricReporter:
         cons = self.consumption_regression.predict(cpu, self.gpu_available)
 
         gpu = 0
-        if is_jetson_host(self.host):  # Has Jetson lib defined
+        if is_jetson_host(DEVICE_NAME):  # Has Jetson lib defined
             gpu = self.jetson_metrics.stats['GPU']
 
             if self.gpu_avg_history is not None:
@@ -93,8 +92,8 @@ class DeviceMetricReporter:
             else:
                 raise RuntimeError("How come?")
 
-        return {"target": self.host,
-                "metrics": {"device_type": self.host, "cpu": cpu, "memory": mem, "consumption": cons,
+        return {"target": DEVICE_NAME,
+                "metrics": {"device_type": DEVICE_NAME, "cpu": cpu, "memory": mem, "consumption": cons,
                             "timestamp": datetime.now(), "gpu": gpu}}
 
     # @utils.print_execution_time
