@@ -32,7 +32,7 @@ SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 20  # Idea: This is a hyperparameter
 
 registry = CollectorRegistry()
-slo_fulfillment_p = Gauge('slo_f', 'Current SLO fulfillment', ['id'], registry=registry)
+slo_fulfillment_p = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host'], registry=registry)
 
 
 class ServiceWrapper(threading.Thread):
@@ -53,7 +53,8 @@ class ServiceWrapper(threading.Thread):
         self.isolated = isolated
         self.slo_estimator = SloEstimator(self.model, self.s_desc)
         self.platoon_members = platoon_members
-        self.is_leader = utils.am_I_the_leader(self.platoon_members, utils.get_local_ip())
+        self.local_ip = utils.get_local_ip()
+        self.is_leader = utils.am_I_the_leader(self.platoon_members, self.local_ip)
         self.service_assignment = {}
 
     def reset_slo_history(self):
@@ -100,7 +101,7 @@ class ServiceWrapper(threading.Thread):
                 expectation, reality = self.evaluate_slos(self.reality_metrics)
 
                 # service_load.labels(device_name=DEVICE_NAME).set(reality)
-                slo_fulfillment_p.labels(id=f"{self.type}-{self.id}").set(reality)
+                slo_fulfillment_p.labels(id=f"{self.type}-{self.id}", host=self.local_ip).set(reality)
                 # TODO: Should always point to platoon leader
                 push_to_gateway('192.168.31.20:9091', job='batch_job', registry=registry)
 
