@@ -8,6 +8,7 @@ import pandas as pd
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 from pgmpy.readwrite import XMLBIFReader
+from prometheus_client import Gauge, push_to_gateway, CollectorRegistry
 
 import utils
 from monitor.DeviceMetricReporter import CyclicArray
@@ -24,11 +25,14 @@ http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 
-RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
-OFFLOADING_RATE = 999.2  # 0.2  # Idea: This is a hyperparameter
+RETRAINING_RATE = 991.0  # Idea: This is a hyperparameter
+OFFLOADING_RATE = 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 20  # Idea: This is a hyperparameter
+
+registry = CollectorRegistry()
+slo_fulfillment_p = Gauge('slo_f', 'Current SLO fulfillment', ['id'], registry=registry)
 
 
 class ServiceWrapper(threading.Thread):
@@ -94,6 +98,12 @@ class ServiceWrapper(threading.Thread):
                 continue
             try:
                 expectation, reality = self.evaluate_slos(self.reality_metrics)
+
+                # service_load.labels(device_name=DEVICE_NAME).set(reality)
+                slo_fulfillment_p.labels(id=f"{self.type}-{self.id}").set(reality)
+                # TODO: Should always point to platoon leader
+                push_to_gateway('192.168.31.20:9091', job='batch_job', registry=registry)
+
                 evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
                 logger.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
                 logger.debug(f"For expectation {expectation} vs {reality}")
@@ -117,8 +127,7 @@ class ServiceWrapper(threading.Thread):
 
                     offload_gain_list = self.estimate_slos_offload(other_members)
                     target, gain = max(offload_gain_list, key=lambda x: x[1])
-                    # TODO: What about the live information?
-                    if True: #gain > 0:
+                    if (expectation - reality) + gain > 0:
                         logger.info(f"M| Thread {self.type}-{self.id} offloaded to {utils.conv_ip_to_host_type(target)} at {target}")
                         http_client.start_service_remotely(self.s_desc, target_route=target)
                         self.terminate()
@@ -136,7 +145,7 @@ class ServiceWrapper(threading.Thread):
         # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
         current_slo_f = utils.check_slos_fulfilled(self.s_desc['slo_vars'], reality_metrics)
         self.slo_hist.append(current_slo_f)
-        rebalanced_slo_f = self.slo_hist.average()
+        rebalanced_slo_f = self.slo_hist.average()  # TODO: Why not take arithmetic mean?
 
         expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'],
                                                                  self.s_desc['constraints'] | {"isolated": f'{self.isolated}'}))
