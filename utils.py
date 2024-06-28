@@ -31,7 +31,7 @@ class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'tra
                'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
                'scissors', 'teddy bear', 'hair drier', 'toothbrush']
 
-ENERGY_SLO_T_LEADER = 23
+ENERGY_SLO_T_LEADER = 923
 ENERGY_SLO_T_FOLLOWER = 15
 
 
