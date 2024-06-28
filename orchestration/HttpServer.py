@@ -5,12 +5,13 @@ import threading
 from io import StringIO
 
 import pandas as pd
-import utils
 from flask import Flask, request, jsonify, send_from_directory
+from pgmpy.readwrite import XMLBIFReader
+
+import utils
 from orchestration import model_trainer
 from orchestration.HttpClient import HttpClient
 from orchestration.ServiceStarter import start_service
-from pgmpy.readwrite import XMLBIFReader
 
 app = Flask(__name__)
 
@@ -80,7 +81,7 @@ def update_wrapper_service_assignments():
 def stop_all():
     global thread_lib
     if len(thread_lib) <= 0:
-        return utils.log_and_return(logger, logging.INFO, f"M| No service threads running locally")
+        return utils.log_and_return(logger, logging.INFO, f"M| No service threads running locally that can be stopped")
 
     logger.info(f"M| Going to stop {len(thread_lib)} threads")
 
@@ -106,7 +107,7 @@ def override_model():
                 wrapper.update_model(model)
                 logger.info(f"M| Update model for {wrapper.s_desc['type']}-{wrapper.s_desc['id']}")
 
-    return utils.log_and_return(logger, logging.INFO, "M| All files received successfully")
+    return utils.log_and_return(logger, logging.INFO, "M| All models received successfully")
 
 
 @app.route('/update_platoon_members', methods=['POST'])

@@ -15,7 +15,7 @@ import pgmpy
 from matplotlib import pyplot as plt
 from networkx.drawing.nx_pydot import graphviz_layout
 from pgmpy.base import DAG
-from pgmpy.estimators import AICScore, HillClimbSearch, MaximumLikelihoodEstimator, BDeuScore
+from pgmpy.estimators import HillClimbSearch, MaximumLikelihoodEstimator, BDeuScore
 from pgmpy.factors.discrete import DiscreteFactor
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
@@ -31,7 +31,8 @@ class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'tra
                'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
                'scissors', 'teddy bear', 'hair drier', 'toothbrush']
 
-ENERGY_SLO_T = 100
+ENERGY_SLO_T_LEADER = 20
+ENERGY_SLO_T_FOLLOWER = 15
 
 
 def instantiate_advanced_logger(package):
@@ -402,6 +403,12 @@ def compress_into_n_bins(p_dist):
     return binned_P
 
 
+def switch_thresh_depending_device(row):
+    energy_thresholds = {True: ENERGY_SLO_T_LEADER, False: ENERGY_SLO_T_FOLLOWER}
+    threshold = energy_thresholds[row['is_leader']]
+    return row['consumption'] < threshold
+
+
 # @print_execution_time
 def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None, conversion=True):
     if conversion:
@@ -409,8 +416,8 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
         samples["memory"] = samples["memory"].apply(np.floor).astype(int)
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
-        # TODO: Add two SLOs for the energy consumption, one for Laptop/Orin leader, the othe for member
-        samples['energy_saved'] = samples['consumption'] <= ENERGY_SLO_T
+        samples['energy_saved'] = samples.apply(switch_thresh_depending_device, axis=1)
+        # samples['energy_saved'] = samples['consumption'] <= ENERGY_SLO_T
 
         samples['cpu'] = pd.cut(samples['cpu'], bins=split_into_bins(NUMBER_OF_BINS),
                                 labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
@@ -427,6 +434,7 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
     samples['in_time'] = samples['in_time'].astype(str)
     samples['energy_saved'] = samples['energy_saved'].astype(str)
     samples['isolated'] = samples['isolated'].astype(str)
+    samples['is_leader'] = samples['is_leader'].astype(str)
 
     if hasattr(samples, '_id'):
         del samples['_id']
@@ -617,19 +625,30 @@ def log_and_return(lg, severity, msg):
     return msg
 
 
-# TODO: Use this function in model training with 1 slo_var
-# @print_execution_time
+# TODO: This approach only works if there are different device types and Laptop is unique.
+#  As soon as the leader is one among multiple Orin devices we must add the IP also. Just inform over HTTP from Postman
+def is_leader(device_name, ip=None):
+    return device_name == "Laptop"
+
+
 def check_slos_fulfilled(slo_vars, row):
     for var in slo_vars:
         if var == "in_time":
             if row['delta'] > (1000 / row['fps']):
                 return False
         elif var == "energy_saved":
-            if row['consumption'] > ENERGY_SLO_T:
+            if row['is_leader'] == 'True' and row['consumption'] > ENERGY_SLO_T_LEADER:
+                return False
+            elif row['is_leader'] == 'False' and row['consumption'] > ENERGY_SLO_T_FOLLOWER:
                 return False
         else:
             raise RuntimeError(f"SLO type {var} is unknown")
     return True
+
+
+def convert_prometheus_to_category(current_load):
+    current_load_list = list(map(float, list(current_load.values())))
+    return np.digitize(list(current_load_list), split_into_bins(NUMBER_OF_BINS)) - 1
 
 
 def conv_ip_to_host_type(ip):
