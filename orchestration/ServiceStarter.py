@@ -24,8 +24,8 @@ http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 
-RETRAINING_RATE = 991.0  # Idea: This is a hyperparameter
-OFFLOADING_RATE = -999.2  # 0.2  # Idea: This is a hyperparameter
+RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
+OFFLOADING_RATE = 999.2  # 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 20  # Idea: This is a hyperparameter
