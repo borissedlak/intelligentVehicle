@@ -24,8 +24,8 @@ http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
 MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
 
-RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
-OFFLOADING_RATE = 999.2  # 0.2  # Idea: This is a hyperparameter
+RETRAINING_RATE = 991.0  # Idea: This is a hyperparameter
+OFFLOADING_RATE = -999.2  # 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 20  # Idea: This is a hyperparameter
@@ -49,6 +49,7 @@ class ServiceWrapper(threading.Thread):
         self.isolated = isolated
         self.slo_estimator = SloEstimator(self.model, self.s_desc)
         self.platoon_members = platoon_members
+        self.is_leader = utils.am_I_the_leader(self.platoon_members, utils.get_local_ip())
         self.service_assignment = {}
 
     def reset_slo_history(self):
@@ -70,11 +71,14 @@ class ServiceWrapper(threading.Thread):
 
     def update_platoon(self, platoon):
         self.platoon_members = platoon
+        self.is_leader = utils.am_I_the_leader(self.platoon_members, utils.get_local_ip())
 
     def isolated_service(self):
         while self._running:
             self.reality_metrics = self.inf_service.process_one_iteration(self.s_desc['constraints'])
             self.reality_metrics['isolated'] = self.isolated
+            # Write: This changes the local perception of how well I'm performing or what I'm supposed to do
+            self.reality_metrics['is_leader'] = self.is_leader
             self.inf_service.report_to_mongo(self.reality_metrics)
             self.metrics_buffer.append(self.reality_metrics)
 
@@ -114,7 +118,7 @@ class ServiceWrapper(threading.Thread):
                     offload_gain_list = self.estimate_slos_offload(other_members)
                     target, gain = max(offload_gain_list, key=lambda x: x[1])
                     # TODO: What about the live information?
-                    if gain > 0:
+                    if True: #gain > 0:
                         logger.info(f"M| Thread {self.type}-{self.id} offloaded to {utils.conv_ip_to_host_type(target)} at {target}")
                         http_client.start_service_remotely(self.s_desc, target_route=target)
                         self.terminate()

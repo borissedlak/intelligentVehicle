@@ -31,7 +31,7 @@ class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'tra
                'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
                'scissors', 'teddy bear', 'hair drier', 'toothbrush']
 
-ENERGY_SLO_T_LEADER = 20
+ENERGY_SLO_T_LEADER = 23
 ENERGY_SLO_T_FOLLOWER = 15
 
 
@@ -406,7 +406,7 @@ def compress_into_n_bins(p_dist):
 def switch_thresh_depending_device(row):
     energy_thresholds = {True: ENERGY_SLO_T_LEADER, False: ENERGY_SLO_T_FOLLOWER}
     threshold = energy_thresholds[row['is_leader']]
-    return row['consumption'] < threshold
+    return row['consumption'] <= threshold
 
 
 # @print_execution_time
@@ -637,9 +637,9 @@ def check_slos_fulfilled(slo_vars, row):
             if row['delta'] > (1000 / row['fps']):
                 return False
         elif var == "energy_saved":
-            if row['is_leader'] == 'True' and row['consumption'] > ENERGY_SLO_T_LEADER:
+            if row['is_leader'] and row['consumption'] > ENERGY_SLO_T_LEADER:
                 return False
-            elif row['is_leader'] == 'False' and row['consumption'] > ENERGY_SLO_T_FOLLOWER:
+            elif not row['is_leader'] and row['consumption'] > ENERGY_SLO_T_FOLLOWER:
                 return False
         else:
             raise RuntimeError(f"SLO type {var} is unknown")
@@ -679,3 +679,9 @@ def get_running_services_for_host(service_host_map, target_host):
         if value['host'] == target_host:
             desc_list.append(value['desc'])
     return desc_list
+
+
+def am_I_the_leader(platoon, ip):
+    if len(platoon) == 1 and platoon[0] == 'localhost':
+        return True
+    return platoon[0] == ip
