@@ -5,13 +5,14 @@ import traceback
 
 import numpy as np
 import pandas as pd
+from pgmpy.inference import VariableElimination
+from pgmpy.models import BayesianNetwork
+from pgmpy.readwrite import XMLBIFReader
+
 import utils
 from monitor.DeviceMetricReporter import CyclicArray
 from orchestration.HttpClient import HttpClient
 from orchestration.SloEstimator import SloEstimator
-from pgmpy.inference import VariableElimination
-from pgmpy.models import BayesianNetwork
-from pgmpy.readwrite import XMLBIFReader
 from services.CV.VideoDetector import VideoDetector
 from services.VehicleService import VehicleService
 
@@ -27,7 +28,7 @@ RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
 OFFLOADING_RATE = 999.2  # 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 70  # Idea: This is a hyperparameter
-SLO_COLDSTART_DELAY = 15  # Idea: This is a hyperparameter
+SLO_COLDSTART_DELAY = 20  # Idea: This is a hyperparameter
 
 
 class ServiceWrapper(threading.Thread):
@@ -49,6 +50,9 @@ class ServiceWrapper(threading.Thread):
         self.slo_estimator = SloEstimator(self.model, self.s_desc)
         self.platoon_members = platoon_members
         self.service_assignment = {}
+
+    def reset_slo_history(self):
+        self.slo_hist = CyclicArray(SLO_HISTORY_BUFFER_SIZE)
 
     def terminate(self):
         self._running = False

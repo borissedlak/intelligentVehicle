@@ -67,11 +67,13 @@ def update_other_members(service_d, localhost):
         logger.debug(f"M| Informed {len(other_members)} platoon members about service start")
 
 
+# Write: This resets their SLO history to avoid making decisions while the new assignment is not reflected yet
 def update_wrapper_service_assignments():
     global service_host_map, thread_lib
 
     for thread in thread_lib:
         thread.update_service_assignment(service_host_map)
+        thread.reset_slo_history()
 
 
 @app.route("/stop_all_services", methods=['POST'])

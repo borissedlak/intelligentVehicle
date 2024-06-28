@@ -52,15 +52,18 @@ class SloEstimator:
         prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, prometheus_instance)
         logger.debug(f"M| Predictions for SLO fulfillment at target once load shifted {prediction_shifted}")
 
-        # TODO: I might need to split up the methods so that I can also evaluate their runtime more closely
+        # Write: I might need to split up the methods so that I can also evaluate their runtime more closely
         prediction_conv = self.get_conv_hw_predictions(hw_load_p, dest_model, dest_device, target_running_services)
         logger.debug(f"M| Predictions for SLO fulfillment at origin when conv with existing services {prediction_conv}")
 
         return slof_local_isolated, prediction_shifted, prediction_conv
 
+    # TODO: Depending on the target, the slo_vars would have to change
+    #  I know, e.g., when no dest_model is supplied, that its for remote, and then we must
     # @utils.print_execution_time  # takes 120ms
     def calc_weighted_slo_f(self, p_dist_hw, dest_model_VE=None, isolated="False", shift=[0, 0, 0]):
         if dest_model_VE is None:
+            raise RuntimeError("Ever comes?") # TODO: Remove, is always set
             dest_model_VE = VariableElimination(self.source_model)
 
         sum_slo_f = np.zeros((4, 4, 4))

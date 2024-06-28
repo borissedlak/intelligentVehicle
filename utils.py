@@ -409,6 +409,7 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
         samples["memory"] = samples["memory"].apply(np.floor).astype(int)
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
+        # TODO: Add two SLOs for the energy consumption, one for Laptop/Orin leader, the othe for member
         samples['energy_saved'] = samples['consumption'] <= ENERGY_SLO_T
 
         samples['cpu'] = pd.cut(samples['cpu'], bins=split_into_bins(NUMBER_OF_BINS),
