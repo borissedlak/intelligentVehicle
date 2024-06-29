@@ -13,3 +13,4 @@ GPUtil~=1.4.0
 requests~=2.31.0
 Flask~=3.0.0
 netifaces~=0.11.0
+pyzbar~=0.1.9

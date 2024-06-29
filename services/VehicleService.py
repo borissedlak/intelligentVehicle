@@ -3,4 +3,4 @@ class VehicleService:
         pass
 
     def report_to_mongo(self, metrics):
-        pass
+        self.device_metric_reporter.report_metrics(utils.COLLECTION_NAME, metrics)

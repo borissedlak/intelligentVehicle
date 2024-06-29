@@ -58,14 +58,8 @@ class SloEstimator:
 
         return slof_local_isolated, prediction_shifted, prediction_conv
 
-    # TODO: Depending on the target, the slo_vars would have to change
-    #  I know, e.g., when no dest_model is supplied, that its for remote, and then we must
     # @utils.print_execution_time  # takes 120ms
-    def calc_weighted_slo_f(self, p_dist_hw, dest_model_VE=None, isolated="False", shift=[0, 0, 0]):
-        if dest_model_VE is None:
-            raise RuntimeError("Ever comes?") # TODO: Remove, is always set
-            dest_model_VE = VariableElimination(self.source_model)
-
+    def calc_weighted_slo_f(self, p_dist_hw, dest_model_VE, isolated="False", shift=[0, 0, 0]):
         sum_slo_f = np.zeros((4, 4, 4))
         for i, _ in enumerate(p_dist_hw['cpu']):
             cpu_index = (i + shift[0]) if i + shift[0] <= utils.NUMBER_OF_BINS - 1 else utils.NUMBER_OF_BINS - 1
@@ -75,6 +69,8 @@ class SloEstimator:
                     mem_index = (k + shift[2]) if k + shift[2] <= utils.NUMBER_OF_BINS - 1 else utils.NUMBER_OF_BINS - 1
 
                     p_cumm = p_dist_hw['cpu'][i] * p_dist_hw['gpu'][j] * p_dist_hw['memory'][k]
+
+                    # TODO: To this function I must supply whether the destination would be leader or not
                     slo_f_i = utils.get_true(
                         utils.infer_slo_fulfillment(dest_model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
                                                     {'cpu': f'{cpu_index}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
@@ -128,7 +124,7 @@ class SloEstimator:
 
         target_slo_f = []
         for model in target_models:
-            target_slo_f.append(self.calc_weighted_slo_f(target_conv_load, dest_model_VE=VariableElimination(model), isolated="False"))
+            target_slo_f.append(self.calc_weighted_slo_f(target_conv_load, VariableElimination(model), isolated="False"))
 
         return target_slo_f
 

@@ -156,6 +156,21 @@ def xywh2xyxy(x):
     return y
 
 
+def highlight_qr_codes(frame, decoded_objects):
+    for obj in decoded_objects:
+        points = obj.polygon
+        if len(points) == 4:
+            pts = np.array(points, dtype=np.int32)
+            pts = pts.reshape((-1, 1, 2))
+            cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
+
+        qr_data = obj.data.decode('utf-8')
+        qr_type = obj.type
+        text = f"{qr_type}: {qr_data}"
+        cv2.putText(frame, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    return frame
+
+
 def merge_image_with_overlay(image, boxes, scores, class_ids, mask_alpha=0.4):
     det_img = image.copy()
 
