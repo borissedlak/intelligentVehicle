@@ -14,7 +14,8 @@ import utils
 from monitor.DeviceMetricReporter import CyclicArray
 from orchestration.HttpClient import HttpClient
 from orchestration.SloEstimator import SloEstimator
-from services.CV.VideoDetector import VideoDetector
+from services.CV.YoloDetector import YoloDetector
+from services.QR.QrDetector import QrDetector
 from services.VehicleService import VehicleService
 
 LEADER_HOST = utils.get_ENV_PARAM('LEADER_HOST', "127.0.0.1")
@@ -102,7 +103,7 @@ class ServiceWrapper(threading.Thread):
 
                 # service_load.labels(device_name=DEVICE_NAME).set(reality)
                 slo_fulfillment_p.labels(id=f"{self.type}-{self.id}", host=self.local_ip).set(reality)
-                # TODO: Should always point to platoon leader
+                # TODO: Should always point to the platoon leader
                 push_to_gateway('192.168.31.20:9091', job='batch_job', registry=registry)
 
                 evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
@@ -146,7 +147,7 @@ class ServiceWrapper(threading.Thread):
         # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
         current_slo_f = utils.check_slos_fulfilled(self.s_desc['slo_vars'], reality_metrics)
         self.slo_hist.append(current_slo_f)
-        rebalanced_slo_f = self.slo_hist.average()  # TODO: Why not take arithmetic mean?
+        rebalanced_slo_f = self.slo_hist.average()
 
         expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'],
                                                                  self.s_desc['constraints'] | {"isolated": f'{self.isolated}'}))
@@ -195,7 +196,9 @@ def start_service(s_desc, platoon_members, isolated=False):
     model = XMLBIFReader(model_path).get_model()
 
     if s_desc['type'] == "CV":
-        service_wrapper = ServiceWrapper(VideoDetector(), s_desc, model, platoon_members, isolated)
+        service_wrapper = ServiceWrapper(YoloDetector(), s_desc, model, platoon_members, isolated)
+    elif s_desc['type'] == "QR":
+        service_wrapper = ServiceWrapper(QrDetector(), s_desc, model, platoon_members, isolated)
     else:
         raise RuntimeError(f"What is this {s_desc['type']}?")
 

@@ -11,7 +11,7 @@ from pgmpy.readwrite import XMLBIFReader
 import utils
 from orchestration import model_trainer
 from orchestration.HttpClient import HttpClient
-from orchestration.ServiceStarter import start_service
+from orchestration.ServiceWrapper import start_service
 
 app = Flask(__name__)
 

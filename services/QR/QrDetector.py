@@ -19,6 +19,7 @@ class QrDetector(VehicleService):
             self.source_fps = source_fps
 
     def __init__(self, show_results=False):
+        super().__init__()
         ROOT = os.path.dirname(__file__)
         self.video_path = ROOT + "/data/pamela_reif_cut.mp4"
         self.simulate_fps = True

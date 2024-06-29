@@ -1,4 +1,10 @@
+import utils
+
+
 class VehicleService:
+    def __init__(self):
+        self.device_metric_reporter = None
+
     def process_one_iteration(self, params):
         pass
 

@@ -2,7 +2,6 @@ import itertools
 import logging
 from datetime import datetime, timedelta
 
-import numpy as np
 import pandas as pd
 import pymongo
 from pandas.errors import EmptyDataError
@@ -41,7 +40,7 @@ def prepare_models(fill_cpt_all_values=True):
     dag_cv.add_edges_from([("pixel", "cpu"), ("pixel", "in_time"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"), ("isolated", "cpu"),
                            ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"), ("isolated", "energy_saved"),
                            ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
-    dag_services = {'CV': dag_cv}
+    dag_services = {'CV': dag_cv, 'QR': dag_cv}
 
     try:
         df = pd.read_csv(sample_file)
@@ -57,7 +56,7 @@ def prepare_models(fill_cpt_all_values=True):
         line_param = []
         bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
         for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, isolated, leader) in (
-                itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV'], ['Laptop', 'Orin'], bin_values, bin_values, bin_values,
+                itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV', 'QR'], ['Laptop', 'Orin'], bin_values, bin_values, bin_values,
                                   [1, 999], [1, 999], [True, False], [True, False])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu, 'delta': delta,
                                'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated, 'is_leader': leader})
@@ -118,7 +117,6 @@ def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"]):
             metrics_lib = metrics_lib | {m: 100.0}
 
     return metrics_lib
-
 
 
 if __name__ == "__main__":
