@@ -5,7 +5,7 @@ from pgmpy.inference import VariableElimination
 from pgmpy.readwrite import XMLBIFReader
 
 import utils
-from orchestration import model_trainer
+from orchestration.models import model_trainer
 
 logger = logging.getLogger("vehicle")
 logging.getLogger("vehicle").setLevel(logging.DEBUG)
@@ -32,7 +32,7 @@ class SloEstimator:
         # Otherwise return the conv of the remaining services
         else:
             base_service = remaining_services_o[0]
-            dest_model = XMLBIFReader(utils.create_model_name(base_service['type'], device_name)).get_model()
+            dest_model = XMLBIFReader("models/" + utils.create_model_name(base_service['type'], device_name)).get_model()
             dest_model_VE = VariableElimination(dest_model)
             hw_load_p, slof_local_isolated = self.get_isolated_hw_predictions(model_VE=dest_model_VE, s_desc=base_service)
             prediction_conv = self.get_conv_hw_predictions(hw_load_p, dest_model, device_name, remaining_services_o[1:])
@@ -41,7 +41,7 @@ class SloEstimator:
 
     # @utils.print_execution_time  # takes 400ms
     def infer_target_slo_f(self, target_model_name, target_running_services, prometheus_instance):
-        dest_model = XMLBIFReader(target_model_name).get_model()
+        dest_model = XMLBIFReader("models/" + target_model_name).get_model()
         dest_model_VE = VariableElimination(dest_model)
         dest_device = utils.conv_ip_to_host_type(prometheus_instance)
         # Write: I might create a cube representation of the solution space
@@ -114,7 +114,7 @@ class SloEstimator:
         target_conv_load = origin_load_p
         target_models = [target_model_is]
         for s_desc in target_running_services:
-            target_model = XMLBIFReader(utils.create_model_name(s_desc['type'], target_device)).get_model()
+            target_model = XMLBIFReader("models/" + utils.create_model_name(s_desc['type'], target_device)).get_model()
             target_models.append(target_model)
             s_load_p, _ = self.get_isolated_hw_predictions(VariableElimination(target_model), s_desc)
 
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     logging.getLogger("vehicle").setLevel(logging.DEBUG)
 
     local_model_name = utils.create_model_name("CV", "Orin")
-    local_model = XMLBIFReader(local_model_name).get_model()
+    local_model = XMLBIFReader("models/" + local_model_name).get_model()
 
     s_description_1 = {"id": 1, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
     s_description_2 = {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}

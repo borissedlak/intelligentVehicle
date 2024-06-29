@@ -9,9 +9,9 @@ from flask import Flask, request, jsonify, send_from_directory
 from pgmpy.readwrite import XMLBIFReader
 
 import utils
-from orchestration import model_trainer
 from orchestration.HttpClient import HttpClient
 from orchestration.ServiceWrapper import start_service
+from orchestration.models import model_trainer
 
 app = Flask(__name__)
 
@@ -103,7 +103,7 @@ def override_model():
 
         for wrapper in thread_lib:
             if file.filename == utils.create_model_name(wrapper.s_desc['type'], DEVICE_NAME):
-                model = XMLBIFReader(file.filename).get_model()
+                model = XMLBIFReader("models/" + file.filename).get_model()
                 wrapper.update_model(model)
                 logger.info(f"M| Update model for {wrapper.s_desc['type']}-{wrapper.s_desc['id']}")
 

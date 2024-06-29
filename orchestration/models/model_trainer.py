@@ -81,7 +81,7 @@ def prepare_models(fill_cpt_all_values=True):
 
 @utils.print_execution_time  # takes roughly 45ms for 1 sample
 def update_models_new_samples(model_name, samples):
-    model = XMLBIFReader(model_name).get_model()
+    model = XMLBIFReader("models/" + model_name).get_model()
 
     samples = utils.prepare_samples(samples)
     del samples['device_type']
