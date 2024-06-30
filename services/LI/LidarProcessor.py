@@ -59,7 +59,7 @@ class LidarProcessor(VehicleService):
 
         processing_time = (time.time() - start_time) * 1000.0
 
-        service_blanket = self.service_metric_reporter.create_metrics(processing_time, source_fps, 0)
+        service_blanket = self.service_metric_reporter.create_metrics(processing_time, source_fps, source_pixel)
         device_blanket = self.device_metric_reporter.create_metrics()
         merged_metrics = utils.merge_single_dicts(service_blanket["metrics"], device_blanket["metrics"])
 
