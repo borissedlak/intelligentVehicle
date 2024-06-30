@@ -40,7 +40,8 @@ class LidarProcessor(VehicleService):
         self.sample_index = 0
 
     def process_one_iteration(self, params):
-        source_pixel, source_fps, proc_mode = int(params['pixel']), int(params['fps']), params['mode']
+        # TODO: Must pass parameter from outside
+        source_pixel, source_fps, proc_mode = int(params['pixel']), int(params['fps']), 'double'  # params['mode']
 
         available_time_frame = (1000 / source_fps)
         start_time = time.time()
@@ -74,10 +75,10 @@ class LidarProcessor(VehicleService):
         download_and_unzip(self.configs.dataset_dir, download_url)
 
         self.model = create_model(self.configs)
-        print('\n\n' + '-*=' * 30 + '\n\n')
+        # print('\n\n' + '-*=' * 30 + '\n\n')
         assert os.path.isfile(self.configs.pretrained_path), "No file at {}".format(self.configs.pretrained_path)
         self.model.load_state_dict(torch.load(self.configs.pretrained_path, map_location='cpu'))
-        print('Loaded weights from {}\n'.format(self.configs.pretrained_path))
+        # print('Loaded weights from {}\n'.format(self.configs.pretrained_path))
 
         self.configs.device = torch.device('cpu' if self.configs.no_cuda else 'cuda:{}'.format(self.configs.gpu_idx))
         self.model = self.model.to(device=self.configs.device)

@@ -15,6 +15,7 @@ from monitor.DeviceMetricReporter import CyclicArray
 from orchestration.HttpClient import HttpClient
 from orchestration.SloEstimator import SloEstimator
 from services.CV.YoloDetector import YoloDetector
+from services.LI.LidarProcessor import LidarProcessor
 from services.QR.QrDetector import QrDetector
 from services.VehicleService import VehicleService
 
@@ -199,6 +200,8 @@ def start_service(s_desc, platoon_members, isolated=False):
         service_wrapper = ServiceWrapper(YoloDetector(), s_desc, model, platoon_members, isolated)
     elif s_desc['type'] == "QR":
         service_wrapper = ServiceWrapper(QrDetector(), s_desc, model, platoon_members, isolated)
+    elif s_desc['type'] == "LI":
+        service_wrapper = ServiceWrapper(LidarProcessor(), s_desc, model, platoon_members, isolated)
     else:
         raise RuntimeError(f"What is this {s_desc['type']}?")
 

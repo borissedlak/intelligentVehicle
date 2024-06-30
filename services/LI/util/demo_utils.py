@@ -40,7 +40,7 @@ def parse_demo_configs():
     parser.add_argument('-a', '--arch', type=str, default='fpn_resnet_18', metavar='ARCH',
                         help='The name of the model architecture')
     parser.add_argument('--pretrained_path', type=str,
-                        default='checkpoints/fpn_resnet_18/fpn_resnet_18_epoch_300.pth', metavar='PATH',
+                        default='../services/LI/checkpoints/fpn_resnet_18/fpn_resnet_18_epoch_300.pth', metavar='PATH',
                         help='the path of the pretrained checkpoint')
     parser.add_argument('--foldername', type=str, default='2011_09_26_drive_0014_sync', metavar='FN',
                         help='Folder name for demostration dataset')
@@ -84,7 +84,7 @@ def parse_demo_configs():
     ####################################################################
     ##############Dataset, Checkpoints, and results dir configs#########
     ####################################################################
-    configs.root_dir = ''
+    configs.root_dir = '../services/LI'
     configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'kitti', 'demo')
     configs.calib_path = os.path.join(configs.root_dir, 'dataset', 'kitti', 'demo', 'calib.txt')
     configs.results_dir = os.path.join(configs.root_dir, 'results', configs.saved_fn)
@@ -97,7 +97,7 @@ def download_and_unzip(demo_dataset_dir, download_url):
     filename = download_url.split('/')[-1]
     filepath = os.path.join(demo_dataset_dir, filename)
     if os.path.isfile(filepath):
-        print('The dataset have been downloaded')
+        # print('The dataset have been downloaded')
         return
     print('\nDownloading data for demonstration...')
     wget.download(download_url, filepath)

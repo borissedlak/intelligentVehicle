@@ -31,7 +31,7 @@ def create_model(configs):
     except:
         raise ValueError
     if 'fpn_resnet' in configs.arch:
-        print('using ResNet architecture with feature pyramid')
+        # print('using ResNet architecture with feature pyramid')
         model = fpn_resnet.get_pose_net(num_layers=num_layers, heads=configs.heads, head_conv=configs.head_conv,
                                         imagenet_pretrained=configs.imagenet_pretrained)
     elif 'resnet' in configs.arch:
