@@ -5,3 +5,4 @@ model_*.sav
 venv/
 *_model.xml
 samples.csv
+dataset/

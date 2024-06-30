@@ -151,7 +151,7 @@ def provide_model(model_name):
 
 @app.route('/model/update/<model_name>', methods=['POST'])
 def update_model_immediately(model_name):
-    logger.info(f"L| Start updating '{model_name}'")
+    # logger.info(f"L| Start updating '{model_name}'")
     csv_string = request.data.decode('utf-8')
     df = pd.read_csv(StringIO(csv_string))
 

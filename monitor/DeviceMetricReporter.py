@@ -7,7 +7,7 @@ import psutil
 import pymongo
 
 from consumption.ConsRegression import ConsRegression
-from utils import is_jetson_host, DB_NAME, get_ENV_PARAM
+from utils import get_ENV_PARAM, DB_NAME, is_jetson_host
 
 DEVICE_NAME = get_ENV_PARAM('DEVICE_NAME', "Unknown")
 LEADER_HOST = get_ENV_PARAM('LEADER_HOST', "localhost")

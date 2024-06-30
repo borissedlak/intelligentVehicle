@@ -111,7 +111,7 @@ class ServiceWrapper(threading.Thread):
                 logger.debug(f"For expectation {expectation} vs {reality}")
 
                 if evidence_to_retrain >= RETRAINING_RATE:
-                    logger.info(f"M| Asking leader to retrain {self.id}-{self.type} on {self.metrics_buffer.get_number_items()} samples")
+                    logger.info(f"M| Asking leader to retrain {self.type}-{self.id} on {self.metrics_buffer.get_number_items()} samples")
                     df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
                     model_file = utils.create_model_name(self.s_desc['type'], DEVICE_NAME)
                     http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
