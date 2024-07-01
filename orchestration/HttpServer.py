@@ -158,14 +158,20 @@ def update_model_immediately(model_name):
     # logger.info(f"L| Start updating '{model_name}'")
     csv_string = request.data.decode('utf-8')
     df = pd.read_csv(StringIO(csv_string))
+    asynchronous = utils.str_to_bool(request.args.get('asynchronous'))
 
-    # TOD: This should run in a new thread in the bg
-    # TOD: What if another process requests to retrain while retrain is still running?
+    if asynchronous:
+        threading.Thread(target=train_and_inform, args=(model_name, df)).start()
+        return utils.log_and_return(logger, logging.INFO, "L| Started retrain asynchronously.")
+
+    train_and_inform(model_name, df)
+    return utils.log_and_return(logger, logging.INFO, "L| Updated model successfully")
+
+
+def train_and_inform(model_name, df):
     model_trainer.update_models_new_samples(model_name, df)
     for client_ip in current_platoon:
         http_client.push_files_to_member([model_name], target_route=client_ip)
-
-    return utils.log_and_return(logger, logging.INFO, "L| Updated model successfully")
 
 
 # @app.route('/retrain_models', methods=['POST'])

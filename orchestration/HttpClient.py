@@ -34,12 +34,13 @@ class HttpClient:
         response = self.SESSION.post(url, files=files)
         response.raise_for_status()  # Raise an exception for non-2xx status codes
 
-    def push_metrics_retrain(self, service_name, df: pd.DataFrame):
+    def push_metrics_retrain(self, service_name, df: pd.DataFrame, asynchronous=False):
         csv_string = df.to_csv(index=False)
 
         headers = {'Content-Type': 'text/csv'}
         url = f"http://{self.HOST}:{self.PORT}{self.MODEL_UPDATE_PATH}/{service_name}"
-        response = self.SESSION.post(url, data=csv_string, headers=headers)
+        query_params = {"asynchronous": asynchronous}
+        response = self.SESSION.post(url, data=csv_string, headers=headers, params=query_params)
         response.raise_for_status()  # Raise an exception for non-2xx status codes
 
     def update_service_assignment(self, s_desc, s_host, target_route):

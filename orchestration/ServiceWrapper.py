@@ -30,7 +30,7 @@ logger = logging.getLogger("vehicle")
 
 RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
 OFFLOADING_RATE = 0.2  # Idea: This is a hyperparameter
-TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
+TRAINING_BUFFER_SIZE = 120  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 75  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 30 + random.randint(0, 9)  # Idea: This is a hyperparameter
 
@@ -114,10 +114,7 @@ class ServiceWrapper(threading.Thread):
 
                 if evidence_to_retrain >= RETRAINING_RATE:
                     logger.info(f"M| Asking leader to retrain {self.type}-{self.id} on {self.metrics_buffer.get_number_items()} samples")
-                    df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
-                    model_file = utils.create_model_name(self.s_desc['type'], DEVICE_NAME)
-                    http_client.push_metrics_retrain(model_file, df)  # Metrics are still raw!
-                    self.metrics_buffer.clear()
+                    self.train_remotely()
 
                 evidence_to_load_off = (expectation - reality) + (1 - reality)
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
@@ -132,6 +129,8 @@ class ServiceWrapper(threading.Thread):
                     offload_gain_list = self.estimate_slos_offload(other_members)
                     target, gain = max(offload_gain_list, key=lambda x: x[1])
                     if (expectation - reality) + gain > 0:
+                        logger.info(f"M| Push metrics for thread {self.type}-{self.id} before loading off")
+                        self.train_remotely(asynchronous=True)
                         logger.info(f"M| Thread {self.type}-{self.id} offloaded to {utils.conv_ip_to_host_type(target)} at {target}")
                         http_client.start_service_remotely(self.s_desc, target_route=target)
                         self.terminate()
@@ -144,6 +143,12 @@ class ServiceWrapper(threading.Thread):
                 print("Error Traceback:")
                 print(error_traceback)
                 utils.print_in_red(f"ACI Background thread encountered an exception:{e}")
+
+    def train_remotely(self, asynchronous=False):
+        df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
+        model_file = utils.create_model_name(self.s_desc['type'], DEVICE_NAME)
+        http_client.push_metrics_retrain(model_file, df, asynchronous=asynchronous)  # Metrics are still raw!
+        self.metrics_buffer.clear()
 
     def evaluate_slos(self, reality_metrics):
         # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
