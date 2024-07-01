@@ -41,7 +41,7 @@ volumes:
   grafana-storage:
 #  mongo-data:
 
-# TODO: There is some issue with the network, even without the latter lines
+# TOD: There is some issue with the network, even without the latter lines
 networks:
   my_network:
     driver: bridge
