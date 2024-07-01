@@ -445,11 +445,12 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
     samples['memory'] = samples['memory'].astype(str)
     samples['gpu'] = samples['gpu'].astype(str)
     samples['fps'] = samples['fps'].astype(str)
-    samples['pixel'] = samples['pixel'].astype(str)
     samples['in_time'] = samples['in_time'].astype(str)
     samples['energy_saved'] = samples['energy_saved'].astype(str)
     samples['isolated'] = samples['isolated'].astype(str)
     samples['is_leader'] = samples['is_leader'].astype(str)
+    if hasattr(samples, 'pixel'):
+        samples['pixel'] = samples['pixel'].astype(str)
 
     if hasattr(samples, '_id'):
         del samples['_id']
