@@ -101,6 +101,12 @@ def update_models_new_samples(model_name, samples, call_direct=False):
     samples = utils.prepare_samples(samples)
     del samples['device_type']
     del samples['service']
+
+    if not hasattr(samples, 'pixel'):
+        samples['pixel'] = None
+    if not hasattr(samples, 'mode'):
+        samples['mode'] = None
+
     model.fit_update(samples, n_prev_samples=PREV_SAMPLES_LENGTH)
     utils.export_model_to_path(model, "models/" + model_name)
 

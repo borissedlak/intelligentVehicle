@@ -166,5 +166,5 @@ if __name__ == "__main__":
 
     # print(estimator.infer_local_slo_f(target_running_s, "Laptop", origin_s_desc=s_description_1))
     # print(estimator.infer_local_slo_f([s_description_1, s_description_2, s_description_3], "Orin", origin_s_offload_desc=s_description_3))
-    print(estimator.infer_local_slo_f([s_desc_1], "Orin", target_is_leader=True))
     print(estimator.infer_local_slo_f([s_desc_1], "Orin", target_is_leader=False))
+    print(estimator.infer_local_slo_f([s_desc_1], "Orin", target_is_leader=True))
