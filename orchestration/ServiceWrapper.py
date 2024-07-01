@@ -35,7 +35,7 @@ SLO_HISTORY_BUFFER_SIZE = 75  # Idea: This is a hyperparameter
 SLO_COLDSTART_DELAY = 30 + random.randint(0, 9)  # Idea: This is a hyperparameter
 
 registry = CollectorRegistry()
-slo_fulfillment_p = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 'device_name'], registry=registry)
+prom_slo_fulfillment = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 'device_name'], registry=registry)
 
 
 class ServiceWrapper(threading.Thread):
@@ -49,7 +49,7 @@ class ServiceWrapper(threading.Thread):
 
         self.reality_metrics = None
         self.s_desc = description
-        self.model = utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])  # Write: improves inference time
+        self.model = utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])  # Write: improves time for inference etc
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(SLO_HISTORY_BUFFER_SIZE)
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)
@@ -84,9 +84,9 @@ class ServiceWrapper(threading.Thread):
     def isolated_service(self):
         while self._running:
             self.reality_metrics = self.inf_service.process_one_iteration(self.s_desc['constraints'])
-            self.reality_metrics['isolated'] = self.isolated
             # Write: This changes the local perception of how well I'm performing or what I'm supposed to do
             self.reality_metrics['is_leader'] = self.is_leader
+            self.reality_metrics['isolated'] = self.isolated
             self.inf_service.report_to_mongo(self.reality_metrics)
             self.metrics_buffer.append(self.reality_metrics)
 
@@ -104,7 +104,7 @@ class ServiceWrapper(threading.Thread):
                 expectation, reality = self.evaluate_slos(self.reality_metrics)
 
                 # service_load.labels(device_name=DEVICE_NAME).set(reality)
-                slo_fulfillment_p.labels(id=f"{self.type}-{self.id}", host=self.local_ip, device_name=DEVICE_NAME).set(reality)
+                prom_slo_fulfillment.labels(id=f"{self.type}-{self.id}", host=self.local_ip, device_name=DEVICE_NAME).set(reality)
                 push_to_gateway(f'{self.platoon_members[0]}:9091', job='batch_job', registry=registry)
 
                 evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)

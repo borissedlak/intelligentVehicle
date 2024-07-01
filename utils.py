@@ -287,7 +287,7 @@ def get_mb_name(service, host):
     return service + '-' + host
 
 
-@print_execution_time
+# @print_execution_time
 def infer_slo_fulfillment(bn_model_VE: VariableElimination, slo_variables, constraints=None):
     if constraints is None:
         constraints = {}
