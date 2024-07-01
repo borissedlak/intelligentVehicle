@@ -99,7 +99,7 @@ def override_model():
     global thread_lib
     for f_key in request.files.keys():
         file = request.files[f_key]
-        file.save(file.filename)
+        file.save("models/" + file.filename)
 
         for wrapper in thread_lib:
             if file.filename == utils.create_model_name(wrapper.s_desc['type'], DEVICE_NAME):
