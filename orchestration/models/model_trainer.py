@@ -26,6 +26,10 @@ PREV_SAMPLES_LENGTH = 300  # Idea: This is also a hyperparameter, initially I sh
 def retrieve_full_data():
     mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
     df = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
+    # df['pixel'] = df['pixel'].astype(str)
+    # df['pixel'] = pd.to_numeric(df['pixel'], errors='coerce')
+    df['pixel'] = df['pixel'].apply(lambda x: 720 if pd.isna(x) else x)
+    df['pixel'] = df['pixel'].astype(int)
 
     utils.export_samples(df, sample_file)
     print(f"Reading {df.shape[0]} samples from mongoDB")
@@ -36,12 +40,12 @@ def retrieve_full_data():
 
 def prepare_models(fill_cpt_all_values=True):
     dag_cv = DAG()
-    dag_cv.add_nodes_from(["pixel", "mode", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
+    dag_cv.add_nodes_from(["pixel", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
     dag_cv.add_edges_from([("pixel", "cpu"), ("pixel", "in_time"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"), ("isolated", "cpu"),
                            ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"), ("isolated", "energy_saved"),
                            ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
     dag_li = DAG()
-    dag_li.add_nodes_from(["pixel", "mode", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
+    dag_li.add_nodes_from(["mode", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
     dag_li.add_edges_from([("mode", "cpu"), ("mode", "gpu"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"),
                            ("isolated", "cpu"), ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"),
                            ("isolated", "energy_saved"), ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
@@ -75,10 +79,10 @@ def prepare_models(fill_cpt_all_values=True):
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
 
-        # if service == 'LI':
-        #     del filtered['pixel']
-        # elif service in ['CV', 'QR']:
-        #     del filtered['mode']
+        if service == 'LI':
+            del filtered['pixel']
+        elif service in ['CV', 'QR']:
+            del filtered['mode']
 
         del filtered['device_type']
         del filtered['service']
@@ -102,10 +106,10 @@ def update_models_new_samples(model_name, samples, call_direct=False):
     del samples['device_type']
     del samples['service']
 
-    if not hasattr(samples, 'pixel'):
-        samples['pixel'] = None
-    if not hasattr(samples, 'mode'):
-        samples['mode'] = None
+    # if 'pixel' not in samples.columns:
+    #     samples['pixel'] = None
+    # if 'mode' not in samples.columns:
+    #     samples['mode'] = None
 
     model.fit_update(samples, n_prev_samples=PREV_SAMPLES_LENGTH)
     utils.export_model_to_path(model, "models/" + model_name)

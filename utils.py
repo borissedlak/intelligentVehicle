@@ -432,7 +432,6 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples["memory"] = samples["memory"].apply(np.floor).astype(int)
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
         samples['energy_saved'] = samples.apply(switch_thresh_depending_device, axis=1)
-        # samples['energy_saved'] = samples['consumption'] <= ENERGY_SLO_T
 
         samples['cpu'] = pd.cut(samples['cpu'], bins=split_into_bins(NUMBER_OF_BINS),
                                 labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
