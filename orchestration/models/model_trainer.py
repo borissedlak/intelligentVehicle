@@ -36,12 +36,12 @@ def retrieve_full_data():
 
 def prepare_models(fill_cpt_all_values=True):
     dag_cv = DAG()
-    dag_cv.add_nodes_from(["pixel", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
+    dag_cv.add_nodes_from(["pixel", "mode", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
     dag_cv.add_edges_from([("pixel", "cpu"), ("pixel", "in_time"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"), ("isolated", "cpu"),
                            ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"), ("isolated", "energy_saved"),
                            ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
     dag_li = DAG()
-    dag_li.add_nodes_from(["mode", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
+    dag_li.add_nodes_from(["pixel", "mode", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
     dag_li.add_edges_from([("mode", "cpu"), ("mode", "gpu"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"),
                            ("isolated", "cpu"), ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"),
                            ("isolated", "energy_saved"), ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
@@ -75,16 +75,16 @@ def prepare_models(fill_cpt_all_values=True):
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
 
-        if service == 'LI':
-            del filtered['pixel']
-        elif service in ['CV', 'QR']:
-            del filtered['mode']
+        # if service == 'LI':
+        #     del filtered['pixel']
+        # elif service in ['CV', 'QR']:
+        #     del filtered['mode']
 
         del filtered['device_type']
         del filtered['service']
 
         model_name = f"{service}_{device_type}_model.xml"
-        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=model_name)
+        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=model_name, dag=dag_services[service])
         # update_models_new_samples(model_name, filtered, call_direct=True)
 
         true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))
