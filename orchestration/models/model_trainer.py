@@ -42,7 +42,7 @@ def prepare_models(fill_cpt_all_values=True):
                            ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
     dag_li = DAG()
     dag_li.add_nodes_from(["mode", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
-    dag_li.add_edges_from([("mode", "cpu"), ("mode", "gpu"), ("mode", "energy_saved"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"),
+    dag_li.add_edges_from([("mode", "cpu"), ("mode", "gpu"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"),
                            ("isolated", "cpu"), ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"),
                            ("isolated", "energy_saved"), ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
     dag_services = {'CV': dag_cv, 'QR': dag_cv, 'LI': dag_li}

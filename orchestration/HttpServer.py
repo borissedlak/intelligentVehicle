@@ -72,6 +72,8 @@ def update_other_members(service_d, localhost):
 def update_wrapper_service_assignments():
     global service_host_map, thread_lib
 
+    thread_lib = [thread for thread in thread_lib if thread.is_alive()]
+
     for thread in thread_lib:
         thread.update_service_assignment(service_host_map)
         thread.reset_slo_history()
@@ -124,11 +126,13 @@ def update_platoon_members():
 
 @app.route('/update_service_assignment', methods=['POST'])
 def update_service_assignment():
-    global service_host_map
+    global service_host_map, thread_lib
     s_desc = ast.literal_eval(request.args.get('service_description'))
     s_host = request.args.get('service_host')
     s_id_type = f"{s_desc['type']}-{s_desc['id']}"
     service_host_map[s_id_type] = {'desc': s_desc, 'host': s_host}
+
+    # TODO: If I get a service incoming that should still be here, remove from thread lib
 
     update_wrapper_service_assignments()
     return utils.log_and_return(logger, logging.DEBUG, f"M| Updated service assignment for {s_id_type}")

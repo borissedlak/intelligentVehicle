@@ -1,4 +1,5 @@
 import logging
+import random
 import threading
 import time
 import traceback
@@ -31,7 +32,7 @@ RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
 OFFLOADING_RATE = 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 150  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 75  # Idea: This is a hyperparameter
-SLO_COLDSTART_DELAY = 35  # Idea: This is a hyperparameter
+SLO_COLDSTART_DELAY = 30 + random.randint(0, 9)  # Idea: This is a hyperparameter
 
 registry = CollectorRegistry()
 slo_fulfillment_p = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 'device_name'], registry=registry)
@@ -43,10 +44,10 @@ class ServiceWrapper(threading.Thread):
         self.daemon = True
         self.id = description['id']
         self.type = description['type']
+        self.inf_service = inf_service
+        self._running = True
 
         self.reality_metrics = None
-        self._running = True
-        self.inf_service = inf_service
         self.s_desc = description
         self.model = model  # TODO: Filter MB with utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])
         self.model_VE = VariableElimination(self.model)
