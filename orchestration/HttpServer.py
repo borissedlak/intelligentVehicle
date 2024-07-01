@@ -102,6 +102,7 @@ def override_model():
         file.save("models/" + file.filename)
 
         for wrapper in thread_lib:
+            print(file.filename, utils.create_model_name(wrapper.s_desc['type'], DEVICE_NAME), file.filename == utils.create_model_name(wrapper.s_desc['type'], DEVICE_NAME))
             if file.filename == utils.create_model_name(wrapper.s_desc['type'], DEVICE_NAME):
                 model = XMLBIFReader("models/" + file.filename).get_model()
                 wrapper.update_model(model)
