@@ -87,11 +87,9 @@ def stop_all():
 
     logger.info(f"M| Going to stop {len(thread_lib)} threads")
 
+    thread_lib = []
     for wrapper in thread_lib:
         wrapper.terminate()
-    # service_d = ast.literal_eval(request.args.get('service_description'))
-    # start_service(service_d)
-    thread_lib = []
 
     return utils.log_and_return(logger, logging.INFO, "M| Stopped all threads")
 
@@ -131,8 +129,6 @@ def update_service_assignment():
     s_host = request.args.get('service_host')
     s_id_type = f"{s_desc['type']}-{s_desc['id']}"
     service_host_map[s_id_type] = {'desc': s_desc, 'host': s_host}
-
-    # TODO: If I get a service incoming that should still be here, remove from thread lib
 
     update_wrapper_service_assignments()
     return utils.log_and_return(logger, logging.DEBUG, f"M| Updated service assignment for {s_id_type}")
@@ -190,7 +186,6 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-# TOD: Must add mode as factor if it makes a difference
 services = []  # [{"id": 1, "type": 'LI', 'slo_vars': ["in_time", "energy_saved"], 'constraints': {'fps': '5', 'mode': 'single'}}]  # ,
 # {"id": 2, "name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 

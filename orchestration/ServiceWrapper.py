@@ -105,8 +105,7 @@ class ServiceWrapper(threading.Thread):
 
                 # service_load.labels(device_name=DEVICE_NAME).set(reality)
                 slo_fulfillment_p.labels(id=f"{self.type}-{self.id}", host=self.local_ip, device_name=DEVICE_NAME).set(reality)
-                # TODO: Should always point to the platoon leader
-                push_to_gateway('192.168.31.20:9091', job='batch_job', registry=registry)
+                push_to_gateway(f'{self.platoon_members[0]}:9091', job='batch_job', registry=registry)
 
                 evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
                 logger.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")

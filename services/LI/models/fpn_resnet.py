@@ -215,7 +215,7 @@ class PoseResNet(nn.Module):
 
     def init_weights(self, num_layers, pretrained=True):
         if pretrained:
-            # TODO: Check initial weights for head later
+            # TOD Check initial weights for head later
             for fpn_idx in [0, 1, 2]:  # 3 FPN layers
                 for head in self.heads:
                     final_layer = self.__getattr__('fpn{}_{}'.format(fpn_idx, head))

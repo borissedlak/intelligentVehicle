@@ -132,7 +132,6 @@ class Calibration(object):
 
         Ref (KITTI paper): http://www.cvlibs.net/publications/Geiger2013IJRR.pdf
 
-        TODO(rqi): do matrix multiplication only once for each projection.
     '''
 
     def __init__(self, calib_filepath):
@@ -230,7 +229,7 @@ def gen_hm_radius(heatmap, center, radius, k=1):
 
     masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
     masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:radius + right]
-    if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:  # TODO debug
+    if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:
         np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
 
     return heatmap

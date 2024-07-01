@@ -126,7 +126,7 @@ def post_processing(detections, num_classes=3, down_ratio=4, peak_thresh=0.2):
     # (scores-0:1, xs-1:2, ys-2:3, z_coor-3:4, dim-4:7, direction-7:9, clses-9:10)
     :return:
     """
-    # TODO: Need to consider rescale to the original scale: x, y
+    # TOD Need to consider rescale to the original scale: x, y
 
     ret = []
     for i in range(detections.shape[0]):

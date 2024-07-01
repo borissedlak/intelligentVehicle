@@ -40,7 +40,6 @@ class LidarProcessor(VehicleService):
         self.sample_index = 0
 
     def process_one_iteration(self, params):
-        # TODO: Must pass parameter from outside
         source_fps, proc_mode = int(params['fps']), params['mode']
 
         available_time_frame = (1000 / source_fps)

@@ -641,12 +641,6 @@ def log_and_return(lg, severity, msg):
     return msg
 
 
-# TODO: This approach only works if there are different device types and Laptop is unique.
-#  As soon as the leader is one among multiple Orin devices we must add the IP also. Just inform over HTTP from Postman
-def is_leader(device_name, ip=None):
-    return device_name == "Laptop"
-
-
 def check_slos_fulfilled(slo_vars, row):
     for var in slo_vars:
         if var == "in_time":
