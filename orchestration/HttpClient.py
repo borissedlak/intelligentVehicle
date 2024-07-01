@@ -27,7 +27,7 @@ class HttpClient:
             target_route = self.HOST
         files = []
         for index, m in enumerate(model_names):
-            files.append((f'file{index + 1}', (m, open(m, 'rb'), 'application/xml')))
+            files.append((f'file{index + 1}', (m, open("models/" + m, 'rb'), 'application/xml')))
 
         # headers = {'Content-Type': 'application/xml'}  # Set the content type
         url = f"http://{target_route}:{self.PORT}{self.MODEL_UPLOAD_PATH}"

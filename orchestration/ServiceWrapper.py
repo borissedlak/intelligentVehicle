@@ -166,8 +166,10 @@ class ServiceWrapper(threading.Thread):
         # How would the SLO-F at the target device change if we deploy an additional service there
         local_running_services = utils.get_running_services_for_host(self.service_assignment, utils.get_local_ip())
 
-        slo_local_estimated_initial = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME)
-        slo_local_estimated_offload = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME, self.s_desc)
+        slo_local_estimated_initial = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME,
+                                                                           target_is_leader=self.is_leader)
+        slo_local_estimated_offload = self.slo_estimator.infer_local_slo_f(local_running_services, DEVICE_NAME, self.s_desc,
+                                                                           target_is_leader=self.is_leader)
         logger.debug(f"Estimated SLO fulfillment at origin without offload {slo_local_estimated_initial}")
         logger.debug(f"Estimated SLO fulfillment at origin after offload {slo_local_estimated_offload}")
 
@@ -176,14 +178,16 @@ class ServiceWrapper(threading.Thread):
 
         target_slo_f = []
         for vehicle_address in other_members:
+            target_is_leader = vehicle_address == self.platoon_members[0]
             target_running_services = utils.get_running_services_for_host(self.service_assignment, vehicle_address)
             target_device_type = utils.conv_ip_to_host_type(vehicle_address)
             target_model_name = utils.create_model_name(self.type, target_device_type)
 
             prometheus_instance_name = vehicle_address if vehicle_address != "192.168.31.20" else "host.docker.internal"
             slo_target_estimated_offload = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
-                                                                                 prometheus_instance_name)
-            slo_target_estimated_initial = self.slo_estimator.infer_local_slo_f(target_running_services, target_device_type)
+                                                                                 prometheus_instance_name, target_is_leader)
+            slo_target_estimated_initial = self.slo_estimator.infer_local_slo_f(target_running_services, target_device_type,
+                                                                                target_is_leader)
             logger.debug(f"Estimated SLO fulfillment at target without offload {slo_target_estimated_initial}")
             logger.debug(f"Estimated SLO fulfillment at target after offload {slo_target_estimated_offload}")
 

@@ -65,7 +65,7 @@ def prepare_models(fill_cpt_all_values=True):
                                   bin_values, [1, 999], [1, 999], [True, False], [True, False], ['single', 'double'])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu, 'delta': delta,
                                'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated, 'is_leader': leader,
-                              'mode': mode})
+                               'mode': mode})
         df_param_fill = utils.prepare_samples(pd.DataFrame(line_param))
         df = pd.concat([df, df_param_fill], ignore_index=True)
 
@@ -93,7 +93,7 @@ def update_models_new_samples(model_name, samples):
     del samples['device_type']
     del samples['service']
     model.fit_update(samples, n_prev_samples=PREV_SAMPLES_LENGTH)
-    utils.export_model_to_path(model, model_name)
+    utils.export_model_to_path(model, "models/" + model_name)
 
 
 # @utils.print_execution_time
