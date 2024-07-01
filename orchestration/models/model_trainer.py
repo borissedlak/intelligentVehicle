@@ -40,7 +40,13 @@ def prepare_models(fill_cpt_all_values=True):
     dag_cv.add_edges_from([("pixel", "cpu"), ("pixel", "in_time"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"), ("isolated", "cpu"),
                            ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"), ("isolated", "energy_saved"),
                            ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
-    dag_services = {'CV': dag_cv, 'QR': dag_cv, 'LI': dag_cv}
+    dag_li = DAG()
+    dag_li.add_nodes_from(["mode", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
+    # TODO: Missing edges from node
+    dag_li.add_edges_from([("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"), ("isolated", "cpu"),
+                           ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"), ("isolated", "energy_saved"),
+                           ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
+    dag_services = {'CV': dag_cv, 'QR': dag_cv, 'LI': dag_li}
 
     try:
         df = pd.read_csv(sample_file)
@@ -55,11 +61,12 @@ def prepare_models(fill_cpt_all_values=True):
     if fill_cpt_all_values:
         line_param = []
         bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
-        for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, isolated, leader) in (
-                itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV', 'QR', 'LI'], ['Laptop', 'Orin'], bin_values, bin_values, bin_values,
-                                  [1, 999], [1, 999], [True, False], [True, False])):
+        for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, isolated, leader, mode) in (
+                itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV', 'QR', 'LI'], ['Laptop', 'Orin'], bin_values, bin_values,
+                                  bin_values, [1, 999], [1, 999], [True, False], [True, False], ['single', 'double'])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu, 'delta': delta,
-                               'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated, 'is_leader': leader})
+                               'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated, 'is_leader': leader,
+                              'mode': mode})
         df_param_fill = utils.prepare_samples(pd.DataFrame(line_param))
         df = pd.concat([df, df_param_fill], ignore_index=True)
 

@@ -181,7 +181,7 @@ def run_server():
 
 
 # TODO: Must add mode as factor if it makes a difference
-services = [{"id": 1, "type": 'LI', 'slo_vars': ["in_time", "energy_saved"], 'constraints': {'pixel': '480', 'fps': '5'}}]  # ,
+services = [{"id": 1, "type": 'LI', 'slo_vars': ["in_time", "energy_saved"], 'constraints': {'fps': '5', 'mode': 'single'}}]  # ,
 # {"id": 2, "name": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:
