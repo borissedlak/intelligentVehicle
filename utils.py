@@ -267,13 +267,13 @@ def export_BN_to_graph(bn: BayesianNetwork or pgmpy.base.DAG, root=None, try_vis
             plt.show()
 
 
-def get_mbs_as_bn(model: DAG or BayesianNetwork, center: [str]):
+def get_mbs_as_bn(model: DAG or BayesianNetwork, mb_nodes: [str]):
     mb_list = []
-    for node in center:
+    for node in mb_nodes:
         mb_list.extend(model.get_markov_blanket(node))
     mb = copy.deepcopy(model)
 
-    mb_list.extend(center)
+    mb_list.extend(mb_nodes)
     for n in model.nodes:
         if n not in mb_list:
             mb.remove_node(n)
@@ -287,10 +287,11 @@ def get_mb_name(service, host):
     return service + '-' + host
 
 
+@print_execution_time
 def infer_slo_fulfillment(bn_model_VE: VariableElimination, slo_variables, constraints=None):
     if constraints is None:
         constraints = {}
-    evidence = constraints  # | {'device_type': device_type}
+    evidence = constraints
     result = bn_model_VE.query(variables=slo_variables, evidence=evidence)
 
     return result

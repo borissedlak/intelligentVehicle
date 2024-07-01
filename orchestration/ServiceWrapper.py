@@ -49,7 +49,7 @@ class ServiceWrapper(threading.Thread):
 
         self.reality_metrics = None
         self.s_desc = description
-        self.model = model  # TODO: Filter MB with utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])
+        self.model = utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])  # Write: improves inference time
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(SLO_HISTORY_BUFFER_SIZE)
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)

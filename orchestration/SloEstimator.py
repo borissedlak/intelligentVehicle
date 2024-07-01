@@ -70,7 +70,6 @@ class SloEstimator:
 
                     p_cumm = p_dist_hw['cpu'][i] * p_dist_hw['gpu'][j] * p_dist_hw['memory'][k]
 
-                    # TODO: To this function I must supply whether the destination would be leader or not
                     pass_is_leader = {'is_leader': f'{is_leader}'} if is_leader is not None else {}
                     slo_f_i = utils.get_true(
                         utils.infer_slo_fulfillment(dest_model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
@@ -131,43 +130,23 @@ class SloEstimator:
 
         return target_slo_f
 
-    # def get_conv_hw_predictions_local(self, origin_load_p, target_device, target_running_services):
-    #     if not target_running_services:
-    #         return [1.0]
-    #
-    #     target_conv_load = origin_load_p
-    #     target_models = [target_model_is]
-    #     for s_desc in target_running_services:
-    #         target_model = XMLBIFReader(utils.create_model_name(s_desc['type'], target_device)).get_model()
-    #         target_models.append(target_model)
-    #         s_load_p, _ = self.get_isolated_hw_predictions(VariableElimination(target_model), s_desc)
-    #
-    #         for var in ['cpu', 'gpu', 'memory']:
-    #             var_conv = utils.compress_into_n_bins(np.convolve(target_conv_load[var], s_load_p[var]))
-    #             target_conv_load[var] = var_conv
-    #
-    #     target_slo_f = []
-    #     for model in target_models:
-    #         target_slo_f.append(self.calc_weighted_slo_f(target_conv_load, dest_model_VE=VariableElimination(model), isolated="False"))
-    #
-    #     return target_slo_f
-
 
 if __name__ == "__main__":
     logging.getLogger("vehicle").setLevel(logging.DEBUG)
 
     local_model_name = utils.create_model_name("CV", "Laptop")
     local_model = XMLBIFReader("models/" + local_model_name).get_model()
+    local_model_mb = utils.get_mbs_as_bn(local_model, ['in_time', 'energy_saved'])
 
-    s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'fps': '5', 'pixel': '480'}}
+    # s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["in_time", "energy_saved"], 'constraints': {'fps': '5', 'pixel': '480'}}
     # s_desc_2 = {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
     # s_desc_3 = {"id": 3, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
-    estimator = SloEstimator(local_model, service_desc=s_desc_1)
+    # estimator = SloEstimator(local_model, service_desc=s_desc_1)
 
     print(utils.get_true(utils.infer_slo_fulfillment(VariableElimination(local_model), ['in_time'], {'is_leader': 'True', 'pixel': "480", 'fps': '5'})))
-    print(utils.get_true(utils.infer_slo_fulfillment(VariableElimination(local_model), ['in_time'], {'is_leader': 'False'})))
+    print(utils.get_true(utils.infer_slo_fulfillment(VariableElimination(local_model_mb), ['in_time'], {'is_leader': 'True', 'pixel': "480", 'fps': '5'})))
     # print(true)
     # print(estimator.infer_local_slo_f(target_running_s, "Laptop", origin_s_desc=s_description_1))
     # print(estimator.infer_local_slo_f([s_description_1, s_description_2, s_description_3], "Orin", origin_s_offload_desc=s_description_3))
-    print(estimator.infer_local_slo_f([s_desc_1], "Laptop", target_is_leader=True))
-    print(estimator.infer_local_slo_f([s_desc_1], "Laptop", target_is_leader=False))
+    # print(estimator.infer_local_slo_f([s_desc_1], "Laptop", target_is_leader=True))
+    # print(estimator.infer_local_slo_f([s_desc_1], "Laptop", target_is_leader=False))

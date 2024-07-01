@@ -26,8 +26,7 @@ PREV_SAMPLES_LENGTH = 300  # Idea: This is also a hyperparameter, initially I sh
 def retrieve_full_data():
     mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
     df = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
-    # df['pixel'] = df['pixel'].astype(str)
-    # df['pixel'] = pd.to_numeric(df['pixel'], errors='coerce')
+
     df['pixel'] = df['pixel'].apply(lambda x: 720 if pd.isna(x) else x)
     df['pixel'] = df['pixel'].astype(int)
 
@@ -71,7 +70,6 @@ def prepare_models(fill_cpt_all_values=True):
                                'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated, 'is_leader': leader,
                                'mode': mode})
         df_param_fill = utils.prepare_samples(pd.DataFrame(line_param))
-        # print(len(df_param_fill))
         df = pd.concat([df, df_param_fill], ignore_index=True)
 
     unique_pairs = utils.get_service_host_pairs(df)
