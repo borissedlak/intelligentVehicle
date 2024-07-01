@@ -34,9 +34,6 @@ def retrieve_full_data():
     utils.export_samples(df, sample_file)
     print(f"Reading {df.shape[0]} samples from mongoDB")
 
-    # unique_pairs = utils.get_service_host_pairs(df)
-    # print(f"Contains pairs for {unique_pairs}")
-
 
 def prepare_models(fill_cpt_all_values=True):
     dag_cv = DAG()
@@ -105,11 +102,6 @@ def update_models_new_samples(model_name, samples, call_direct=False):
     del samples['device_type']
     del samples['service']
 
-    # if 'pixel' not in samples.columns:
-    #     samples['pixel'] = None
-    # if 'mode' not in samples.columns:
-    #     samples['mode'] = None
-
     model.fit_update(samples, n_prev_samples=PREV_SAMPLES_LENGTH[model_name])
     PREV_SAMPLES_LENGTH[model_name] += len(samples)
     utils.export_model_to_path(model, "models/" + model_name)
@@ -147,5 +139,3 @@ def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"]):
 if __name__ == "__main__":
     retrieve_full_data()
     prepare_models()
-    # print(get_latest_load(instance="host.docker.internal"))
-    # print(get_latest_load(instance="192.168.31.183"))

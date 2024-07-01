@@ -104,6 +104,7 @@ class SloEstimator:
         logger.debug(f"M| Current load for target device classified into {dest_current_load_cat}")
         if target_host == "host.docker.internal" or target_host == "192.168.31.20":
             dest_current_load_cat[1] = -1
+        # TODO: It might very well be that its isolated there, for this add a case like below
         return self.calc_weighted_slo_f(origin_load_p, dest_model_VE=target_model_VE, shift=(dest_current_load_cat + 1), isolated="False",
                                         is_leader=target_is_leader)
 
@@ -136,15 +137,22 @@ if __name__ == "__main__":
 
     local_model_name = utils.create_model_name("CV", "Laptop")
     local_model = XMLBIFReader("models/" + local_model_name).get_model()
-    local_model_mb = utils.get_mbs_as_bn(local_model, ['in_time', 'energy_saved'])
+    target_model_name = utils.create_model_name("CV", "Laptop")
+    target_model = XMLBIFReader("models/" + local_model_name).get_model()
 
-    # s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["in_time", "energy_saved"], 'constraints': {'fps': '5', 'pixel': '480'}}
+    s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["in_time", "energy_saved"], 'constraints': {'fps': '5', 'pixel': '480'}}
     # s_desc_2 = {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
     # s_desc_3 = {"id": 3, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
-    # estimator = SloEstimator(local_model, service_desc=s_desc_1)
+    estimator = SloEstimator(local_model, service_desc=s_desc_1)
 
-    print(utils.get_true(utils.infer_slo_fulfillment(VariableElimination(local_model), ['in_time'], {'is_leader': 'True', 'pixel': "480", 'fps': '5'})))
-    print(utils.get_true(utils.infer_slo_fulfillment(VariableElimination(local_model_mb), ['in_time'], {'is_leader': 'True', 'pixel': "480", 'fps': '5'})))
+    hw_load_p, slof_local_isolated = estimator.get_isolated_hw_predictions(model_VE=VariableElimination(local_model))
+    prediction_shifted = estimator.get_shifted_hw_predictions(hw_load_p, VariableElimination(target_model),
+                                                              "host.docker.internal", True)
+    # TODO: Stress device to violate SLOs and see reflected here
+    shifted = estimator.calc_weighted_slo_f(hw_load_p, dest_model_VE=VariableElimination(target_model), shift=[2, 0, 3], isolated="True",
+                                            is_leader=True)
+    print(shifted)
+
     # print(true)
     # print(estimator.infer_local_slo_f(target_running_s, "Laptop", origin_s_desc=s_description_1))
     # print(estimator.infer_local_slo_f([s_description_1, s_description_2, s_description_3], "Orin", origin_s_offload_desc=s_description_3))

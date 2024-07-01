@@ -103,7 +103,6 @@ class ServiceWrapper(threading.Thread):
             try:
                 expectation, reality = self.evaluate_slos(self.reality_metrics)
 
-                # service_load.labels(device_name=DEVICE_NAME).set(reality)
                 prom_slo_fulfillment.labels(id=f"{self.type}-{self.id}", host=self.local_ip, device_name=DEVICE_NAME).set(reality)
                 push_to_gateway(f'{self.platoon_members[0]}:9091', job='batch_job', registry=registry)
 
