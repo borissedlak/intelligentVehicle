@@ -61,12 +61,13 @@ def prepare_models(fill_cpt_all_values=True):
         line_param = []
         bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
         for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, isolated, leader, mode) in (
-                itertools.product([480, 720, 1080], [5, 10, 15, 20], ['CV', 'QR', 'LI'], ['Laptop', 'Orin'], bin_values, bin_values,
+                itertools.product([480, 720], [5, 10, 15], ['CV', 'QR', 'LI'], ['Laptop', 'Orin'], bin_values, bin_values,
                                   bin_values, [1, 999], [1, 999], [True, False], [True, False], ['single', 'double'])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu, 'delta': delta,
                                'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated, 'is_leader': leader,
                                'mode': mode})
         df_param_fill = utils.prepare_samples(pd.DataFrame(line_param))
+        # print(len(df_param_fill))
         df = pd.concat([df, df_param_fill], ignore_index=True)
 
     unique_pairs = utils.get_service_host_pairs(df)
@@ -74,10 +75,17 @@ def prepare_models(fill_cpt_all_values=True):
         filtered = df[(df['service'] == service) & (df['device_type'] == device_type)]
         print(f"{(service, device_type)} with {filtered.shape[0]} samples")
 
+        if service == 'LI':
+            del filtered['pixel']
+        elif service in ['CV', 'QR']:
+            del filtered['mode']
+
         del filtered['device_type']
         del filtered['service']
-        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=f"{service}_{device_type}_model.xml",
-                                  dag=dag_services[service])
+
+        model_name = f"{service}_{device_type}_model.xml"
+        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=model_name)
+        # update_models_new_samples(model_name, filtered, call_direct=True)
 
         true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))
         print(f"In_time fulfilled for {int(true * 100)} %")
@@ -86,8 +94,9 @@ def prepare_models(fill_cpt_all_values=True):
 
 
 @utils.print_execution_time  # takes roughly 45ms for 1 sample
-def update_models_new_samples(model_name, samples):
-    model = XMLBIFReader("models/" + model_name).get_model()
+def update_models_new_samples(model_name, samples, call_direct=False):
+    path = ("models/" if not call_direct else "") + model_name
+    model = XMLBIFReader(path).get_model()
 
     samples = utils.prepare_samples(samples)
     del samples['device_type']

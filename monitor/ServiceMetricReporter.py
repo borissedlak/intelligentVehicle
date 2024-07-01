@@ -12,6 +12,6 @@ class ServiceMetricReporter:
         if pixel:
             metrics['metrics']['pixel'] = pixel
         if mode:
-            metrics['metrics']['mode'] = pixel
+            metrics['metrics']['mode'] = mode
 
         return metrics

@@ -109,10 +109,9 @@ class SloEstimator:
                                         is_leader=target_is_leader)
 
     # @utils.print_execution_time  # takes 100ms
-    def get_conv_hw_predictions(self, origin_load_p, target_model_is, target_device, target_running_services, target_is_leader):
+    def get_conv_hw_predictions(self, origin_load_p, target_model_is, target_device, target_running_services, target_leader):
         if not target_running_services:
-            return [self.calc_weighted_slo_f(origin_load_p, dest_model_VE=VariableElimination(target_model_is), isolated="True",
-                                             is_leader=target_is_leader)]
+            return [self.calc_weighted_slo_f(origin_load_p, VariableElimination(target_model_is), isolated="True", is_leader=target_leader)]
 
         target_conv_load = origin_load_p
         target_models = [target_model_is]
@@ -128,7 +127,7 @@ class SloEstimator:
         target_slo_f = []
         for model in target_models:
             target_slo_f.append(self.calc_weighted_slo_f(target_conv_load, VariableElimination(model), isolated="False",
-                                                         is_leader=target_is_leader))
+                                                         is_leader=target_leader))
 
         return target_slo_f
 
@@ -157,14 +156,15 @@ class SloEstimator:
 if __name__ == "__main__":
     logging.getLogger("vehicle").setLevel(logging.DEBUG)
 
-    local_model_name = utils.create_model_name("CV", "Orin")
+    local_model_name = utils.create_model_name("LI", "Orin")
     local_model = XMLBIFReader("models/" + local_model_name).get_model()
 
-    s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
-    s_desc_2 = {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
-    s_desc_3 = {"id": 3, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
+    s_desc_1 = {"id": 1, "type": 'LI', 'slo_vars': ["energy_saved"], 'constraints': {'mode': 'single', 'fps': '5'}}
+    # s_desc_2 = {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
+    # s_desc_3 = {"id": 3, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
     estimator = SloEstimator(local_model, service_desc=s_desc_1)
 
     # print(estimator.infer_local_slo_f(target_running_s, "Laptop", origin_s_desc=s_description_1))
     # print(estimator.infer_local_slo_f([s_description_1, s_description_2, s_description_3], "Orin", origin_s_offload_desc=s_description_3))
-    print(estimator.infer_local_slo_f([s_desc_1, s_desc_2], "Orin", target_is_leader=False))
+    print(estimator.infer_local_slo_f([s_desc_1], "Orin", target_is_leader=True))
+    print(estimator.infer_local_slo_f([s_desc_1], "Orin", target_is_leader=False))
