@@ -93,6 +93,8 @@ class DeviceMetricReporter:
                 gpu = int(GPUtil.getGPUs()[0].load * 100)
             else:
                 raise RuntimeError("How come?")
+        else:
+            cons = self.consumption_regression.predict(cpu, self.gpu_available)
 
         return {"target": DEVICE_NAME,
                 "metrics": {"device_type": DEVICE_NAME, "cpu": cpu, "memory": mem, "consumption": cons,

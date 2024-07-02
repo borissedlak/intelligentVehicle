@@ -158,7 +158,7 @@ class ServiceWrapper(threading.Thread):
         constraints = self.s_desc['constraints']
         constraints.update({"isolated": f'{self.isolated}'})
         constraints.update({'is_leader': f'{is_leader}'})
-        expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, constraints))
+        expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'], constraints))
         # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_desc['slo_vars'])
         # print(f"M| Absolute surprise for sample {surprise}")
 
