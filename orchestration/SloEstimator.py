@@ -140,7 +140,7 @@ if __name__ == "__main__":
     target_model_name = utils.create_model_name("CV", "Laptop")
     target_model = XMLBIFReader("models/" + local_model_name).get_model()
 
-    s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["in_time", "energy_saved"], 'constraints': {'fps': '5', 'pixel': '480'}}
+    s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["rate_75"], 'constraints': {'fps': '5', 'pixel': '720'}}
     # s_desc_2 = {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
     # s_desc_3 = {"id": 3, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}
     estimator = SloEstimator(local_model, service_desc=s_desc_1)
@@ -149,12 +149,12 @@ if __name__ == "__main__":
     prediction_shifted = estimator.get_shifted_hw_predictions(hw_load_p, VariableElimination(target_model),
                                                               "host.docker.internal", True)
     # TODO: Stress device to violate SLOs and see reflected here
-    shifted = estimator.calc_weighted_slo_f(hw_load_p, dest_model_VE=VariableElimination(target_model), shift=[2, 0, 3], isolated="True",
-                                            is_leader=True)
-    print(shifted)
+    # shifted = estimator.calc_weighted_slo_f(hw_load_p, dest_model_VE=VariableElimination(target_model), shift=[2, 0, 3], isolated="True",
+    #                                         is_leader=True)
+    # print(shifted)
 
     # print(true)
     # print(estimator.infer_local_slo_f(target_running_s, "Laptop", origin_s_desc=s_description_1))
     # print(estimator.infer_local_slo_f([s_description_1, s_description_2, s_description_3], "Orin", origin_s_offload_desc=s_description_3))
-    # print(estimator.infer_local_slo_f([s_desc_1], "Laptop", target_is_leader=True))
+    print(estimator.infer_local_slo_f([s_desc_1], "Laptop", target_is_leader=True))
     # print(estimator.infer_local_slo_f([s_desc_1], "Laptop", target_is_leader=False))

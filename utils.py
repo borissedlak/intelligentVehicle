@@ -41,7 +41,7 @@ object_count_1080 = [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5,
                      11, 13, 12, 12, 13, 13, 14, 13, 13, 14, 14, 14, 14, 15, 14, 16, 17, 16, 16, 15, 16, 15, 13, 13, 14, 13, 13, 15, 15, 15,
                      15, 14, 14, 16, 15, 15, 15, 15, 15, 15, 15, 13, 12, 13, 13, 12]
 
-ENERGY_SLO_T_LEADER = 23
+ENERGY_SLO_T_LEADER = 24
 ENERGY_SLO_T_FOLLOWER = 15
 
 
@@ -441,6 +441,7 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples["delta"] = samples["delta"].apply(np.floor).astype(int)
         samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
         samples["memory"] = samples["memory"].apply(np.floor).astype(int)
+        samples["rate"] = samples["rate"].astype(float)
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
         samples['energy_saved'] = samples.apply(switch_thresh_depending_device, axis=1)
 
@@ -450,6 +451,8 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
                                    labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
         samples['gpu'] = pd.cut(samples['gpu'], bins=split_into_bins(NUMBER_OF_BINS),
                                 labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
+        if hasattr(samples, 'rate'):
+            samples['rate_75'] = samples['rate'] >= 0.75
 
     samples['cpu'] = samples['cpu'].astype(str)
     samples['memory'] = samples['memory'].astype(str)
@@ -461,6 +464,8 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
     samples['is_leader'] = samples['is_leader'].astype(str)
     if hasattr(samples, 'pixel'):
         samples['pixel'] = samples['pixel'].astype(str)
+    if hasattr(samples, 'rate_75'):
+        samples['rate_75'] = samples['rate_75'].astype(str)
 
     if hasattr(samples, '_id'):
         del samples['_id']
@@ -470,6 +475,8 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         del samples['delta']
     if hasattr(samples, 'consumption'):
         del samples['consumption']
+    if hasattr(samples, 'rate'):
+        del samples['rate']
 
     if remove_device_metrics:
         del samples['cpu']

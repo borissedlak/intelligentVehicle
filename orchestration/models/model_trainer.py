@@ -28,8 +28,11 @@ def retrieve_full_data():
     mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
     df = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
 
-    df['pixel'] = df['pixel'].apply(lambda x: 720 if pd.isna(x) else x)
+    df['pixel'] = df['pixel'].apply(lambda x: 1080 if pd.isna(x) else x)
     df['pixel'] = df['pixel'].astype(int)
+
+    df['rate'] = df['rate'].apply(lambda x: 0.0 if pd.isna(x) else x)
+    df['rate'] = df['rate'].astype(float)
 
     utils.export_samples(df, sample_file)
     print(f"Reading {df.shape[0]} samples from mongoDB")
@@ -37,8 +40,14 @@ def retrieve_full_data():
 
 def prepare_models(fill_cpt_all_values=True):
     dag_cv = DAG()
-    dag_cv.add_nodes_from(["pixel", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
+    dag_cv.add_nodes_from(["pixel", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader", "rate_75"])
     dag_cv.add_edges_from([("pixel", "cpu"), ("pixel", "in_time"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"), ("isolated", "cpu"),
+                           ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"), ("isolated", "energy_saved"),
+                           ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved"), ("pixel", "rate_75"),
+                           ("pixel", "gpu")])
+    dag_qr = DAG()
+    dag_qr.add_nodes_from(["pixel", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
+    dag_qr.add_edges_from([("pixel", "cpu"), ("pixel", "in_time"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"), ("isolated", "cpu"),
                            ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"), ("isolated", "energy_saved"),
                            ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
     dag_li = DAG()
@@ -46,7 +55,7 @@ def prepare_models(fill_cpt_all_values=True):
     dag_li.add_edges_from([("mode", "cpu"), ("mode", "gpu"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"),
                            ("isolated", "cpu"), ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"),
                            ("isolated", "energy_saved"), ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved")])
-    dag_services = {'CV': dag_cv, 'QR': dag_cv, 'LI': dag_li}
+    dag_services = {'CV': dag_cv, 'QR': dag_qr, 'LI': dag_li}
 
     try:
         df = pd.read_csv(sample_file)
@@ -61,12 +70,12 @@ def prepare_models(fill_cpt_all_values=True):
     if fill_cpt_all_values:
         line_param = []
         bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
-        for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, isolated, leader, mode) in (
+        for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, isolated, leader, mode, rate) in (
                 itertools.product([480, 720, 1080], [5, 10, 15], ['CV', 'QR', 'LI'], ['Laptop', 'Orin'], bin_values, bin_values,
-                                  bin_values, [1, 999], [1, 999], [True, False], [True, False], ['single', 'double'])):
+                                  bin_values, [1, 999], [1, 999], [True, False], [True, False], ['single', 'double'], [0.0, 1.0])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu, 'delta': delta,
                                'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated, 'is_leader': leader,
-                               'mode': mode})
+                               'mode': mode, 'rate': rate})
         df_param_fill = utils.prepare_samples(pd.DataFrame(line_param))
         df = pd.concat([df, df_param_fill], ignore_index=True)
 
@@ -77,8 +86,10 @@ def prepare_models(fill_cpt_all_values=True):
 
         if service == 'LI':
             del filtered['pixel']
-        elif service in ['CV', 'QR']:
+        if service in ['CV', 'QR']:
             del filtered['mode']
+        if service in ['LI', 'QR']:
+            del filtered['rate_75']
 
         del filtered['device_type']
         del filtered['service']
