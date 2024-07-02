@@ -49,7 +49,7 @@ class ServiceWrapper(threading.Thread):
 
         self.reality_metrics = None
         self.s_desc = description
-        self.model = model # utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])  # Write: improves time for inference etc
+        self.model = model  # utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])  # Write: improves time for inference etc
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(SLO_HISTORY_BUFFER_SIZE)
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)
@@ -155,9 +155,10 @@ class ServiceWrapper(threading.Thread):
         self.slo_hist.append(current_slo_f)
         rebalanced_slo_f = self.slo_hist.average()
 
-        expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'],
-                                                                 self.s_desc['constraints'] | {"isolated": f'{self.isolated}'}
-                                                                 | {'is_leader': f'{is_leader}'}))
+        constraints = self.s_desc['constraints']
+        constraints.update({"isolated": f'{self.isolated}'})
+        constraints.update({'is_leader': f'{is_leader}'})
+        expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, constraints))
         # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_desc['slo_vars'])
         # print(f"M| Absolute surprise for sample {surprise}")
 

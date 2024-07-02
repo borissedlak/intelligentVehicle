@@ -139,10 +139,10 @@ def get_latest_load(prometheus_host, instance):
 
         if metric_data:
             latest_value = metric_data[0]['values'][-1]
-            metrics_lib = metrics_lib | {m: latest_value[1]}
+            metrics_lib.update({m: latest_value[1]})
         else:
             logger.error(f"Prometheus server found no instance='{instance}', defaulting to 100 % occupied")
-            metrics_lib = metrics_lib | {m: 100.0}
+            metrics_lib.update({m: 100.0})
 
     return metrics_lib
 
