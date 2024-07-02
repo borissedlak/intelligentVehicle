@@ -23,9 +23,10 @@ curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
 pip install -r requirements.txt
 pip install ./misc/onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
 
-5.) Install package dependencies
+5.) Before running
 --------------------
-install o
+cd orchestration/models
+python3 ./model_trainer.py
 
 
 --------------------------------------------------------------------------

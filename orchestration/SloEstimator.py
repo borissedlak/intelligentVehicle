@@ -73,10 +73,11 @@ class SloEstimator:
                     p_cumm = p_dist_hw['cpu'][i] * p_dist_hw['gpu'][j] * p_dist_hw['memory'][k]
 
                     pass_is_leader = {'is_leader': f'{is_leader}'} if is_leader is not None else {}
-                    slo_f_i = utils.get_true(
-                        utils.infer_slo_fulfillment(dest_model_VE, self.s_desc['slo_vars'], self.s_desc['constraints'] |
-                                                    {'cpu': f'{cpu_index}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
-                                                     'isolated': isolated} | pass_is_leader))
+                    constraint_list = self.s_desc['constraints']
+                    constraint_list.update({'cpu': f'{cpu_index}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
+                                            'isolated': isolated})
+                    constraint_list.update(pass_is_leader)
+                    slo_f_i = utils.get_true(utils.infer_slo_fulfillment(dest_model_VE, self.s_desc['slo_vars'], constraint_list))
                     weighted_p = p_cumm * slo_f_i
                     sum_slo_f[i, j, k] = weighted_p
 
@@ -89,10 +90,12 @@ class SloEstimator:
         if s_desc is None:  # No values means take the origin description
             s_desc = self.s_desc
         hw_predictions = {}
+        constraints = s_desc['constraints']
+        constraints.update({'isolated': 'True'})
         for var in ['cpu', 'gpu', 'memory']:
-            hw_expectation_isolated = utils.infer_slo_fulfillment(model_VE, [var], s_desc['constraints'] | {'isolated': 'True'})
+            hw_expectation_isolated = utils.infer_slo_fulfillment(model_VE, [var], constraints)
             hw_distribution = hw_expectation_isolated.values
-            hw_predictions = hw_predictions | {var: hw_distribution}
+            hw_predictions.update({var: hw_distribution})
 
         logger.debug(f"M| Predictions for isolated hardware consumption {hw_predictions}")
         slof_local_isolated = self.calc_weighted_slo_f(hw_predictions, dest_model_VE=model_VE, isolated="True")
