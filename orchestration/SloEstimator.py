@@ -73,7 +73,7 @@ class SloEstimator:
                     p_cumm = p_dist_hw['cpu'][i] * p_dist_hw['gpu'][j] * p_dist_hw['memory'][k]
 
                     pass_is_leader = {'is_leader': f'{is_leader}'} if is_leader is not None else {}
-                    constraint_list = self.s_desc['constraints']
+                    constraint_list = self.s_desc['constraints'].copy()
                     constraint_list.update({'cpu': f'{cpu_index}', 'gpu': f'{gpu_index}', 'memory': f'{mem_index}',
                                             'isolated': isolated})
                     constraint_list.update(pass_is_leader)
@@ -90,7 +90,7 @@ class SloEstimator:
         if s_desc is None:  # No values means take the origin description
             s_desc = self.s_desc
         hw_predictions = {}
-        constraints = s_desc['constraints']
+        constraints = s_desc['constraints'].copy()
         constraints.update({'isolated': 'True'})
         for var in ['cpu', 'gpu', 'memory']:
             # TODO: Found cpu in both var and constraints?

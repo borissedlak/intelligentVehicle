@@ -35,6 +35,7 @@ pip install ./torch-2.1.0a0+41361538.nv23.06-cp38-cp38-linux_aarch64.whl
 --------------------
 cd orchestration/models
 python3 ./model_trainer.py
+cp dataset to /services/LI
 
 --------------------------------------------------------------------------
 

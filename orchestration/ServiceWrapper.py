@@ -155,7 +155,7 @@ class ServiceWrapper(threading.Thread):
         self.slo_hist.append(current_slo_f)
         rebalanced_slo_f = self.slo_hist.average()
 
-        constraints = self.s_desc['constraints']
+        constraints = self.s_desc['constraints'].copy()
         constraints.update({"isolated": f'{self.isolated}'})
         constraints.update({'is_leader': f'{is_leader}'})
         expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'], constraints))

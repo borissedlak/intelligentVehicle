@@ -5,6 +5,7 @@ import logging
 import os
 import time
 from itertools import combinations
+from typing import Tuple
 
 import cv2
 import netifaces
@@ -17,7 +18,6 @@ from pgmpy.factors.discrete import DiscreteFactor
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 from pgmpy.readwrite import XMLBIFWriter
-from typing import Tuple
 
 class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
                'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
@@ -689,7 +689,7 @@ def convert_prometheus_to_category(current_load):
 
 def conv_ip_to_host_type(ip):
     ip_dict = {'192.168.31.20': "Laptop", "host.docker.internal": "Laptop", 'localhost': "Laptop", '192.168.31.183': "Orin",
-               '192.168.31.198': "Orin"}
+               '192.168.31.198': "Orin", '192.168.31.205': "Orin"}
     return ip_dict[ip]
 
 
