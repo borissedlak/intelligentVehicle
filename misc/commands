@@ -15,6 +15,8 @@ X.) Install Python3.10
 --------------------
 XX sudo add-apt-repository ppa:deadsnakes/ppa
 XX sudo apt install python3.10
+XX sudo apt install python3.10-distutils
+XX curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
 
 3.) Install CUDA (if missing)
 --------------------
@@ -25,11 +27,13 @@ nvcc --version
 
 4.) Install package dependencies
 --------------------
-sudo apt install python3.10-distutils
-curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
 pip install -r requirements.txt
 pip install ./misc/onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
 pip install ./torch-2.1.0a0+41361538.nv23.06-cp38-cp38-linux_aarch64.whl
+
+pip install -r requirements_3_10.txt
+pip install ./misc/onnxruntime_gpu-1.17.0-cp310-cp310-linux_aarch64.whl
+pip install ./torch-2.3.0-cp310-cp310-linux_aarch64.whl
 
 5.) Before running
 --------------------
