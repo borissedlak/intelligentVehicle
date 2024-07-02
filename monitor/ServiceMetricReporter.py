@@ -6,12 +6,14 @@ class ServiceMetricReporter:
     def __init__(self, service):
         self.service = service
 
-    def create_metrics(self, time, fps, pixel=None, mode=None):
+    def create_metrics(self, time, fps, pixel=None, mode=None, rate=None):
         metrics = {"target": self.service,
                    "metrics": {"service": self.service, "delta": time, "fps": fps, "timestamp": datetime.now()}}
         if pixel:
             metrics['metrics']['pixel'] = pixel
         if mode:
             metrics['metrics']['mode'] = mode
+        if rate:
+            metrics['metrics']['rate'] = 1.0 if rate > 1.0 else rate
 
         return metrics

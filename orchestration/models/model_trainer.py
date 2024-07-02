@@ -62,7 +62,7 @@ def prepare_models(fill_cpt_all_values=True):
         line_param = []
         bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
         for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, isolated, leader, mode) in (
-                itertools.product([480, 720], [5, 10, 15], ['CV', 'QR', 'LI'], ['Laptop', 'Orin'], bin_values, bin_values,
+                itertools.product([480, 720, 1080], [5, 10, 15], ['CV', 'QR', 'LI'], ['Laptop', 'Orin'], bin_values, bin_values,
                                   bin_values, [1, 999], [1, 999], [True, False], [True, False], ['single', 'double'])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu, 'delta': delta,
                                'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated, 'is_leader': leader,
