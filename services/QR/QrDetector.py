@@ -13,18 +13,13 @@ DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 
 
 class QrDetector(VehicleService):
-    class Parameters:
-        def __init__(self, source_pixel, source_fps):
-            self.source_pixel = source_pixel
-            self.source_fps = source_fps
-
-    def __init__(self, show_results=False):
+    def __init__(self, leader_ip, show_results=False):
         super().__init__()
         ROOT = os.path.dirname(__file__)
         self.video_path = ROOT + "/data/pamela_reif_cut.mp4"
         self.simulate_fps = True
 
-        self.device_metric_reporter = DeviceMetricReporter()
+        self.device_metric_reporter = DeviceMetricReporter(leader_ip, gpu_available=False)
         self.service_metric_reporter = ServiceMetricReporter("QR")
 
         self.show_result = show_results

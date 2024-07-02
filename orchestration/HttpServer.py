@@ -22,10 +22,9 @@ logging.getLogger('pgmpy').setLevel(logging.ERROR)
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('vehicle').setLevel(logging.INFO)
 
-HTTP_SERVER = utils.get_ENV_PARAM('HTTP_SERVER', "127.0.0.1")
 DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
-http_client = HttpClient(DEFAULT_HOST=HTTP_SERVER)
+http_client = HttpClient()
 thread_lib = []
 current_platoon = ['localhost']
 service_host_map = {}
@@ -186,7 +185,7 @@ def run_server():
     app.run(host='0.0.0.0', port=8080)
 
 
-services = [{"id": 1, "type": 'CV', 'slo_vars': ["in_time", "energy_saved"], 'constraints': {'pixel': '1080', 'fps': '5'}}]
+services = [{"id": 1, "type": 'CV', 'slo_vars': ["in_time", "energy_saved"], 'constraints': {'pixel': '480', 'fps': '5'}}]
             # {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'pixel': '480', 'fps': '5'}}]
 
 for service_description in services:

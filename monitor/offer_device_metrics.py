@@ -10,7 +10,7 @@ DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 PORT = 8000
 start_http_server(PORT)
 
-device_metric_reporter = DeviceMetricReporter(gpu_available=False, gpu_avg_history_n=50)
+device_metric_reporter = DeviceMetricReporter("localhost", gpu_available=False)
 
 # Create a Counter metric
 # registry = CollectorRegistry()

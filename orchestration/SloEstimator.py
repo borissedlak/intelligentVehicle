@@ -12,10 +12,11 @@ logging.getLogger("vehicle").setLevel(logging.DEBUG)
 
 
 class SloEstimator:
-    def __init__(self, source_model, service_desc):
+    def __init__(self, source_model, service_desc, prom_host):
         self.source_model = source_model
         self.s_desc = service_desc
         self.model_VE = VariableElimination(self.source_model)
+        self.prom_host = prom_host
 
     def reload_source_model(self, source_model):
         self.source_model = source_model
@@ -49,7 +50,8 @@ class SloEstimator:
 
         # Write: The problem is that the load does not rise linear with more services
         # Idea: So what I can do is take the one that is worse to make a conservative prediction
-        prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, prometheus_instance, target_is_leader)
+        prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, self.prom_host, prometheus_instance,
+                                                             target_is_leader)
         logger.debug(f"M| Predictions for SLO fulfillment at target once load shifted {prediction_shifted}")
 
         # Write: I might need to split up the methods so that I can also evaluate their runtime more closely
@@ -98,11 +100,11 @@ class SloEstimator:
         return hw_predictions, slof_local_isolated
 
     # @utils.print_execution_time  # takes 150ms
-    def get_shifted_hw_predictions(self, origin_load_p, target_model_VE, target_host, target_is_leader):
-        dest_current_load = model_trainer.get_latest_load(instance=target_host)
+    def get_shifted_hw_predictions(self, origin_load_p, target_model_VE, prom_host, prom_instance, target_is_leader):
+        dest_current_load = model_trainer.get_latest_load(prom_host, instance=prom_instance)
         dest_current_load_cat = utils.convert_prometheus_to_category(dest_current_load)
         logger.debug(f"M| Current load for target device classified into {dest_current_load_cat}")
-        if target_host == "host.docker.internal" or target_host == "192.168.31.20":
+        if prom_instance == "host.docker.internal" or prom_instance == "192.168.31.20":
             dest_current_load_cat[1] = -1
         # TODO: It might very well be that its isolated there, for this add a case like below
         return self.calc_weighted_slo_f(origin_load_p, dest_model_VE=target_model_VE, shift=(dest_current_load_cat + 1), isolated="False",
@@ -143,9 +145,9 @@ if __name__ == "__main__":
     s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["rate_60"], 'constraints': {'fps': '5', 'pixel': '480'}}
     s_desc_2 = {"id": 2, "type": 'CV', 'slo_vars': ["rate_60"], 'constraints': {'pixel': '720', 'fps': '5'}}
     s_desc_3 = {"id": 3, "type": 'CV', 'slo_vars': ["rate_60"], 'constraints': {'pixel': '1080', 'fps': '5'}}
-    estimator = SloEstimator(local_model, service_desc=s_desc_1)
-    estimator_2 = SloEstimator(local_model, service_desc=s_desc_2)
-    estimator_3 = SloEstimator(local_model, service_desc=s_desc_3)
+    estimator = SloEstimator(local_model, service_desc=s_desc_1, prom_host="localhost")
+    estimator_2 = SloEstimator(local_model, service_desc=s_desc_2, prom_host="localhost")
+    estimator_3 = SloEstimator(local_model, service_desc=s_desc_3, prom_host="localhost")
 
     # hw_load_p, slof_local_isolated = estimator.get_isolated_hw_predictions(model_VE=VariableElimination(local_model))
     # prediction_shifted = estimator.get_shifted_hw_predictions(hw_load_p, VariableElimination(target_model),

@@ -3,8 +3,7 @@ import requests
 
 
 class HttpClient:
-    def __init__(self, DEFAULT_HOST='localhost'):
-        self.HOST = DEFAULT_HOST
+    def __init__(self):
         self.PORT = 8080
         self.SESSION = requests.Session()
         self.http_connection = None
@@ -13,7 +12,7 @@ class HttpClient:
         self.MODEL_UPDATE_PATH = "/model/update"
         self.ASSIGNMENT_UPDATE_PATH = "/update_service_assignment"
 
-        print(f"Opening HTTP Connection with {self.HOST} and {self.PORT}")
+        print(f"Opening HTTP Connection on port {self.PORT}")
 
     def start_service_remotely(self, s_desc, target_route):
         query_params = {
@@ -22,9 +21,7 @@ class HttpClient:
         response = self.SESSION.post(f"http://{target_route}:{self.PORT}{self.START_SERVICE_PATH}", params=query_params)
         response.raise_for_status()  # Raise an exception for non-2xx status codes
 
-    def push_files_to_member(self, model_names, target_route=None):
-        if target_route is None:
-            target_route = self.HOST
+    def push_files_to_member(self, model_names, target_route):
         files = []
         for index, m in enumerate(model_names):
             files.append((f'file{index + 1}', (m, open("models/" + m, 'rb'), 'application/xml')))
@@ -34,11 +31,11 @@ class HttpClient:
         response = self.SESSION.post(url, files=files)
         response.raise_for_status()  # Raise an exception for non-2xx status codes
 
-    def push_metrics_retrain(self, service_name, df: pd.DataFrame, asynchronous=False):
+    def push_metrics_retrain(self, service_name, df: pd.DataFrame, target_route, asynchronous=False):
         csv_string = df.to_csv(index=False)
 
         headers = {'Content-Type': 'text/csv'}
-        url = f"http://{self.HOST}:{self.PORT}{self.MODEL_UPDATE_PATH}/{service_name}"
+        url = f"http://{target_route}:{self.PORT}{self.MODEL_UPDATE_PATH}/{service_name}"
         query_params = {"asynchronous": asynchronous}
         response = self.SESSION.post(url, data=csv_string, headers=headers, params=query_params)
         response.raise_for_status()  # Raise an exception for non-2xx status codes

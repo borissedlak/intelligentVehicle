@@ -24,11 +24,11 @@ DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 
 class LidarProcessor(VehicleService):
 
-    def __init__(self, show_results=False):
+    def __init__(self, leader_ip, show_results=False):
         super().__init__()
         self.simulate_fps = True
 
-        self.device_metric_reporter = DeviceMetricReporter()
+        self.device_metric_reporter = DeviceMetricReporter(gpu_available=torch.cuda.is_available(), mongo_host=leader_ip)
         self.service_metric_reporter = ServiceMetricReporter("LI")
 
         self.show_result = show_results

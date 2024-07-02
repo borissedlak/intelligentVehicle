@@ -22,12 +22,8 @@ DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 
 
 class YoloDetector(VehicleService):
-    class Parameters:
-        def __init__(self, source_pixel, source_fps):
-            self.source_pixel = source_pixel
-            self.source_fps = source_fps
 
-    def __init__(self, show_results=False):
+    def __init__(self, leader_ip, show_results=False):
         super().__init__()
         ROOT = os.path.dirname(__file__)
         self.video_path = ROOT + "/data/traffic_junction.mp4"
@@ -36,7 +32,7 @@ class YoloDetector(VehicleService):
         self.detector_1080 = YOLOv8ObjectDetector(ROOT + "/models/yolov8m.onnx", conf_threshold=0.5, iou_threshold=0.5)
         self.simulate_fps = True
 
-        self.device_metric_reporter = DeviceMetricReporter(self.detector_480.gpu_available())
+        self.device_metric_reporter = DeviceMetricReporter(leader_ip, gpu_available=self.detector_480.gpu_available())
         self.service_metric_reporter = ServiceMetricReporter("CV")
 
         self.show_result = show_results

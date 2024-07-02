@@ -17,15 +17,15 @@ logger = logging.getLogger("vehicle")
 sample_file = "samples.csv"
 
 DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
-LEADER_HOST = utils.get_ENV_PARAM("LEADER_HOST", "localhost")
+# LEADER_HOST = utils.get_ENV_PARAM("LEADER_HOST", "localhost")
 
 # PREV_SAMPLES_LENGTH = 300  # Idea: This is also a hyperparameter, initially I should be small and then larger later
 PREV_SAMPLES_LENGTH = {utils.create_model_name(service, device): 1 for service in ['CV', 'QR', 'LI'] for device in ['Laptop', 'Orin']}
 
 
 # @utils.print_execution_time
-def retrieve_full_data():
-    mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
+def retrieve_full_data(mongo_host):
+    mongo_client = pymongo.MongoClient(mongo_host)[DB_NAME]
     df = pd.DataFrame(list(mongo_client[COLLECTION_NAME].find()))
 
     df['pixel'] = df['pixel'].apply(lambda x: 1080 if pd.isna(x) else x)
@@ -119,16 +119,16 @@ def update_models_new_samples(model_name, samples, call_direct=False):
 
 
 # @utils.print_execution_time
-def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"]):
+def get_latest_load(prometheus_host, instance):
     # Connect to Prometheus
-    prom = PrometheusConnect(url=f"http://{LEADER_HOST}:9090", disable_ssl=True)
+    prom = PrometheusConnect(url=f"http://{prometheus_host}:9090", disable_ssl=True)
 
     # Query the latest value
     end_time = datetime.now()
     start_time = end_time - timedelta(minutes=5)  # Query the last 5 minutes for safety
 
     metrics_lib = {}
-    for m in metric_types:
+    for m in ["cpu", "gpu", "memory"]:
         query = m + '_load{instance="' + instance + ':8000"}'  # device_name="' + device_name + '",
 
         metric_data = prom.get_metric_range_data(
@@ -148,5 +148,5 @@ def get_latest_load(instance, metric_types=["cpu", "gpu", "memory"]):
 
 
 if __name__ == "__main__":
-    retrieve_full_data()
-    prepare_models()
+    retrieve_full_data(utils.get_local_ip())
+    # prepare_models()

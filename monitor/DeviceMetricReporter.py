@@ -10,7 +10,7 @@ from consumption.ConsRegression import ConsRegression
 from utils import get_ENV_PARAM, DB_NAME, is_jetson_host
 
 DEVICE_NAME = get_ENV_PARAM('DEVICE_NAME', "Unknown")
-LEADER_HOST = get_ENV_PARAM('LEADER_HOST', "localhost")
+# LEADER_HOST = get_ENV_PARAM('LEADER_HOST', "localhost")
 
 GPU_AVG_HISTORY_LENGTH = 50  # This is not really a hyperparameter but rather a dirty fix that is needed
 
@@ -56,11 +56,13 @@ class CyclicArray:
 
 
 class DeviceMetricReporter:
-    def __init__(self, gpu_available=0, gpu_avg_history_n=GPU_AVG_HISTORY_LENGTH):
+    def __init__(self, mongo_host, gpu_available, gpu_avg_history_n=GPU_AVG_HISTORY_LENGTH):
         self.consumption_regression = ConsRegression(DEVICE_NAME)
-        self.mongo_client = pymongo.MongoClient(LEADER_HOST)[DB_NAME]
+        self.mongo_client = None
         self.gpu_available = gpu_available
         self.gpu_avg_history = None
+        if mongo_host is not None:
+            self.mongo_client = pymongo.MongoClient(mongo_host)[DB_NAME]
 
         if gpu_avg_history_n > 0:
             self.gpu_avg_history = CyclicArray(gpu_avg_history_n)

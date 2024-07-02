@@ -628,7 +628,7 @@ def print_in_red(text):
 
 
 def is_jetson_host(host_name):
-    return host_name in ["OrinNano", "Xavier", "OrinNano", "Orin"]
+    return host_name in ["Xavier", "Orin", "NX", "AGX"]
 
 
 def get_service_host_pairs(df):

@@ -20,10 +20,10 @@ from services.LI.LidarProcessor import LidarProcessor
 from services.QR.QrDetector import QrDetector
 from services.VehicleService import VehicleService
 
-LEADER_HOST = utils.get_ENV_PARAM('LEADER_HOST', "127.0.0.1")
+# LEADER_HOST = utils.get_ENV_PARAM('LEADER_HOST', "127.0.0.1")
 DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
-http_client = HttpClient(DEFAULT_HOST=LEADER_HOST)
+http_client = HttpClient()
 
 MODEL_DIRECTORY = "./"
 logger = logging.getLogger("vehicle")
@@ -54,8 +54,8 @@ class ServiceWrapper(threading.Thread):
         self.slo_hist = CyclicArray(SLO_HISTORY_BUFFER_SIZE)
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)
         self.isolated = isolated
-        self.slo_estimator = SloEstimator(self.model, self.s_desc)
         self.platoon_members = platoon_members
+        self.slo_estimator = SloEstimator(self.model, self.s_desc, self.platoon_members[0])
         self.local_ip = utils.get_local_ip()
         self.is_leader = utils.am_I_the_leader(self.platoon_members, self.local_ip)
         self.service_assignment = {}
@@ -80,6 +80,7 @@ class ServiceWrapper(threading.Thread):
     def update_platoon(self, platoon):
         self.platoon_members = platoon
         self.is_leader = utils.am_I_the_leader(self.platoon_members, utils.get_local_ip())
+        self.slo_estimator.prom_host = self.platoon_members[0]
 
     def isolated_service(self):
         while self._running:
@@ -145,7 +146,7 @@ class ServiceWrapper(threading.Thread):
     def train_remotely(self, asynchronous=False):
         df = pd.DataFrame(self.metrics_buffer.get())  # pd.concat(self.metrics_buffer.get(), ignore_index=True)
         model_file = utils.create_model_name(self.s_desc['type'], DEVICE_NAME)
-        http_client.push_metrics_retrain(model_file, df, asynchronous=asynchronous)  # Metrics are still raw!
+        http_client.push_metrics_retrain(model_file, df, self.platoon_members[0], asynchronous=asynchronous)  # Metrics are still raw!
         self.metrics_buffer.clear()
 
     def evaluate_slos(self, reality_metrics):
@@ -203,13 +204,14 @@ class ServiceWrapper(threading.Thread):
 def start_service(s_desc, platoon_members, isolated=False):
     model_path = utils.create_model_name(s_desc['type'], DEVICE_NAME)
     model = XMLBIFReader("models/" + model_path).get_model()
+    leader_ip = platoon_members[0]
 
     if s_desc['type'] == "CV":
-        service_wrapper = ServiceWrapper(YoloDetector(), s_desc, model, platoon_members, isolated)
+        service_wrapper = ServiceWrapper(YoloDetector(leader_ip), s_desc, model, platoon_members, isolated)
     elif s_desc['type'] == "QR":
-        service_wrapper = ServiceWrapper(QrDetector(), s_desc, model, platoon_members, isolated)
+        service_wrapper = ServiceWrapper(QrDetector(leader_ip), s_desc, model, platoon_members, isolated)
     elif s_desc['type'] == "LI":
-        service_wrapper = ServiceWrapper(LidarProcessor(), s_desc, model, platoon_members, isolated)
+        service_wrapper = ServiceWrapper(LidarProcessor(leader_ip), s_desc, model, platoon_members, isolated)
     else:
         raise RuntimeError(f"What is this {s_desc['type']}?")
 
