@@ -2,7 +2,7 @@ import itertools
 
 from YoloDetector import YoloDetector
 
-yd = YoloDetector(show_results=False)
+yd = YoloDetector("localhost", show_results=False)
 
 for (source_pixel, source_fps) in itertools.product([480, 720, 1080], [5, 10, 15, 20]):
 

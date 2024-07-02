@@ -16,18 +16,25 @@ X.) Install Python3.10
 XX sudo add-apt-repository ppa:deadsnakes/ppa
 XX sudo apt install python3.10
 
+3.) Install CUDA (if missing)
+--------------------
+sudo apt-get install nvidia-cuda
+sudo apt-get install nvidia-jetpack
+sudo apt-get install libopenblas-dev
+nvcc --version
+
 4.) Install package dependencies
 --------------------
 sudo apt install python3.10-distutils
 curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
 pip install -r requirements.txt
 pip install ./misc/onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
+pip install ./torch-2.1.0a0+41361538.nv23.06-cp38-cp38-linux_aarch64.whl
 
 5.) Before running
 --------------------
 cd orchestration/models
 python3 ./model_trainer.py
-
 
 --------------------------------------------------------------------------
 

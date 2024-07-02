@@ -2,7 +2,7 @@ import itertools
 
 from QrDetector import QrDetector
 
-qd = QrDetector(show_results=True)
+qd = QrDetector("localhost", show_results=True)
 
 for (source_pixel, source_fps) in itertools.product([480, 720, 1080], [5, 10, 15, 20]):
 

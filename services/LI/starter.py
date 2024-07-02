@@ -2,7 +2,7 @@ import itertools
 
 from LidarProcessor import LidarProcessor
 
-ld = LidarProcessor()
+ld = LidarProcessor("localhost")
 
 for (source_pixel, source_fps) in itertools.product([480, 720, 1080], [5, 10, 15, 20]):
 

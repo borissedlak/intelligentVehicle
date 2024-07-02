@@ -93,6 +93,7 @@ class SloEstimator:
         constraints = s_desc['constraints']
         constraints.update({'isolated': 'True'})
         for var in ['cpu', 'gpu', 'memory']:
+            # TODO: Found cpu in both var and constraints?
             hw_expectation_isolated = utils.infer_slo_fulfillment(model_VE, [var], constraints)
             hw_distribution = hw_expectation_isolated.values
             hw_predictions.update({var: hw_distribution})
