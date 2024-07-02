@@ -4,7 +4,7 @@ sudo service mosquitto stop
 mosquitto -c mosquitto.conf
 http://delock-3259.local/
 
-
+sudo apt install python3-pydot graphviz
 docker buildx build -t basta55/workload --platform linux/arm64 --load .
 docker buildx build -t basta55/workload-gpu:latest -f ./DockerfileGPU --platform linux/arm64 --load .
 docker cp eloquent_davinci:/data/ $HOME/
