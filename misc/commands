@@ -55,6 +55,17 @@ docker run -d \
   mongo \
   --config=/etc/mongod.conf
 
+UBUNTU 20.04
+--------------------
+sudo add-apt-repository universe
+sudo apt update
+sudo apt install python3.9
+
+UBUNTU 22.04
+--------------------
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt install python3.9
+
 -------------------------------------------------------------
 
 #Set network up/down

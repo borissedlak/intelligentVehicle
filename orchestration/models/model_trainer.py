@@ -149,4 +149,4 @@ def get_latest_load(prometheus_host, instance):
 
 if __name__ == "__main__":
     retrieve_full_data(utils.get_local_ip())
-    # prepare_models()
+    prepare_models()
