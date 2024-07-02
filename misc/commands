@@ -1,3 +1,26 @@
+1.) Clone project
+--------------------
+mkdir development
+git clone http://github.com/borissedlak/intelligentVehicle
+
+2.) Set Env Variables
+--------------------
+sudo apt install nano
+sudo nano /etc/environment
+PYTHONPATH=/home/jetson/development/intelligentVehicle
+DEVICE_NAME=NX//AGX
+source /etc/environment
+
+3.) Install Python3.10
+--------------------
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt install python3.10
+
+3.) Install package dependencies
+--------------------
+sudo apt install python3.10-distutils
+curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
+
 ffmpeg -y -ss 00:00:00 -to 00:00:10 -i original.mp4 -c copy original_cut.mp4
 
 sudo service mosquitto stop
@@ -55,16 +78,6 @@ docker run -d \
   mongo \
   --config=/etc/mongod.conf
 
-UBUNTU 20.04
---------------------
-sudo add-apt-repository universe
-sudo apt update
-sudo apt install python3.9
-
-UBUNTU 22.04
---------------------
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt install python3.9
 
 -------------------------------------------------------------
 
