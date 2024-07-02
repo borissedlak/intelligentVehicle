@@ -57,7 +57,7 @@ class CyclicArray:
 
 class DeviceMetricReporter:
     def __init__(self, mongo_host, gpu_available, gpu_avg_history_n=GPU_AVG_HISTORY_LENGTH):
-        self.consumption_regression = ConsRegression(DEVICE_NAME)
+        self.consumption_regression = None
         self.mongo_client = None
         self.gpu_available = gpu_available
         self.gpu_avg_history = None
@@ -71,24 +71,24 @@ class DeviceMetricReporter:
             from jtop.jtop import jtop
             self.jetson_metrics = jtop()
             self.jetson_metrics.start()
-
+        else:
+            self.consumption_regression = ConsRegression(DEVICE_NAME)
     def create_metrics(self):
         mem_buffer = psutil.virtual_memory()
         mem = (mem_buffer.total - mem_buffer.available) / mem_buffer.total * 100
         cpu = psutil.cpu_percent()
-        cons = self.consumption_regression.predict(cpu, self.gpu_available)
 
         gpu = 0
         if is_jetson_host(DEVICE_NAME):  # Has Jetson lib defined
             gpu = self.jetson_metrics.stats['GPU']
+            cons = self.jetson_metrics.stats['Power TOT'] / 1000
+            jetson_mode = self.jetson_metrics.stats['nvp model']
 
             if self.gpu_avg_history is not None:
                 self.gpu_avg_history.append(gpu)
                 gpu = self.gpu_avg_history.average()
-
-            cons = self.jetson_metrics.stats['Power TOT'] / 1000
-            mode = self.jetson_metrics.stats['nvp model']
         elif self.gpu_available:
+            cons = self.consumption_regression.predict(cpu, self.gpu_available)
             if len(GPUtil.getGPUs()) > 0:  # Has Nvidia GPU but is no Jetson
                 gpu = int(GPUtil.getGPUs()[0].load * 100)
             else:
