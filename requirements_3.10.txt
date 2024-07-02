@@ -1,14 +1,14 @@
 opencv-python~=4.9.0.80
-numpy==1.24.4 # changed
+numpy==1.26.4
 psutil~=5.9.8
 pymongo~=4.6.1
-#networkx~=3.2.1 # disabled
-pgmpy~=0.1.24
+networkx~=3.2.1
+pgmpy~=0.1.24 # requires torch....
 matplotlib~=3.8.2
 pandas~=1.5.3
 joblib~=1.3.2
-scikit-learn~=1.5.0 # changed
-scipy~=1.14.0 # changed
+scikit-learn~=1.4.0
+scipy~=1.12.0
 GPUtil~=1.4.0
 requests~=2.31.0
 Flask~=3.0.0
