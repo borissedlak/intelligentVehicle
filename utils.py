@@ -17,6 +17,7 @@ from pgmpy.factors.discrete import DiscreteFactor
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 from pgmpy.readwrite import XMLBIFWriter
+from typing import Tuple
 
 class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
                'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
@@ -211,13 +212,13 @@ def merge_image_with_overlay(image, boxes, scores, class_ids, mask_alpha=0.4):
     return det_img
 
 
-def draw_box(image: np.ndarray, box: np.ndarray, color: tuple[int, int, int] = (0, 0, 255),
+def draw_box(image: np.ndarray, box: np.ndarray, color: Tuple[int, int, int] = (0, 0, 255),
              thickness: int = 2) -> np.ndarray:
     x1, y1, x2, y2 = box.astype(int)
     return cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness)
 
 
-def draw_text(image: np.ndarray, text: str, box: np.ndarray, color: tuple[int, int, int] = (0, 0, 255),
+def draw_text(image: np.ndarray, text: str, box: np.ndarray, color: Tuple[int, int, int] = (0, 0, 255),
               font_size: float = 0.001, text_thickness: int = 2) -> np.ndarray:
     x1, y1, x2, y2 = box.astype(int)
     (tw, th), _ = cv2.getTextSize(text=text, fontFace=cv2.FONT_HERSHEY_SIMPLEX,

@@ -13,8 +13,8 @@ source /etc/environment
 
 3.) Install Python3.10
 --------------------
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt install python3.10
+XX sudo add-apt-repository ppa:deadsnakes/ppa
+XX sudo apt install python3.10
 
 4.) Install package dependencies
 --------------------
