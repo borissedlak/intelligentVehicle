@@ -9,7 +9,8 @@ scrape_configs:
 
   - job_name: 'python_app'
     static_configs:
-      - targets: [ 'host.docker.internal:8000', '192.168.31.198:8000', '192.168.31.183:8000'] # Laptop, Orin NX, Oring AGX
+      - targets: [ 'host.docker.internal:8000', '192.168.31.198:8000', '192.168.31.183:8000',
+                   '192.168.31.205:8000' ] # Laptop, Orin NX, Oring AGX, Car_1
 
   - job_name: 'pushgateway'
     static_configs:

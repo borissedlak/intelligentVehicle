@@ -11,7 +11,7 @@ PYTHONPATH=/home/jetson/development/intelligentVehicle
 DEVICE_NAME=NX//AGX
 source /etc/environment
 
-3.) Install Python3.10
+X.) Install Python3.10
 --------------------
 XX sudo add-apt-repository ppa:deadsnakes/ppa
 XX sudo apt install python3.10
@@ -20,6 +20,15 @@ XX sudo apt install python3.10
 --------------------
 sudo apt install python3.10-distutils
 curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
+pip install -r requirements.txt
+pip install ./misc/onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
+
+5.) Install package dependencies
+--------------------
+install o
+
+
+--------------------------------------------------------------------------
 
 ffmpeg -y -ss 00:00:00 -to 00:00:10 -i original.mp4 -c copy original_cut.mp4
 
