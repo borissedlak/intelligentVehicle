@@ -452,7 +452,6 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples["delta"] = samples["delta"].apply(np.floor).astype(int)
         samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
         samples["memory"] = samples["memory"].apply(np.floor).astype(int)
-        samples["rate"] = samples["rate"].astype(float)
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
         samples['energy_saved'] = samples.apply(switch_thresh_depending_device, axis=1)
 
@@ -463,6 +462,7 @@ def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_p
         samples['gpu'] = pd.cut(samples['gpu'], bins=split_into_bins(NUMBER_OF_BINS),
                                 labels=list(range(NUMBER_OF_BINS)), include_lowest=True)
         if hasattr(samples, 'rate'):
+            samples["rate"] = samples["rate"].astype(float)
             samples['rate_60'] = samples['rate'] >= 0.60
 
     samples['cpu'] = samples['cpu'].astype(str)
