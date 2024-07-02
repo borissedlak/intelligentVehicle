@@ -40,10 +40,10 @@ def retrieve_full_data():
 
 def prepare_models(fill_cpt_all_values=True):
     dag_cv = DAG()
-    dag_cv.add_nodes_from(["pixel", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader", "rate_75"])
+    dag_cv.add_nodes_from(["pixel", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader", "rate_60"])
     dag_cv.add_edges_from([("pixel", "cpu"), ("pixel", "in_time"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"), ("isolated", "cpu"),
                            ("isolated", "in_time"), ("isolated", "gpu"), ("isolated", "memory"), ("isolated", "energy_saved"),
-                           ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved"), ("pixel", "rate_75"),
+                           ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("is_leader", "energy_saved"), ("pixel", "rate_60"),
                            ("pixel", "gpu")])
     dag_qr = DAG()
     dag_qr.add_nodes_from(["pixel", "fps", "isolated", "cpu", "in_time", "gpu", "memory", "energy_saved", "is_leader"])
@@ -89,7 +89,7 @@ def prepare_models(fill_cpt_all_values=True):
         if service in ['CV', 'QR']:
             del filtered['mode']
         if service in ['LI', 'QR']:
-            del filtered['rate_75']
+            del filtered['rate_60']
 
         del filtered['device_type']
         del filtered['service']
