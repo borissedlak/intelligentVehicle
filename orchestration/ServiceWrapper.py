@@ -49,7 +49,7 @@ class ServiceWrapper(threading.Thread):
 
         self.reality_metrics = None
         self.s_desc = description
-        self.model = utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])  # Write: improves time for inference etc
+        self.model = model # utils.get_mbs_as_bn(model, self.s_desc['slo_vars'])  # Write: improves time for inference etc
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(SLO_HISTORY_BUFFER_SIZE)
         self.metrics_buffer = CyclicArray(TRAINING_BUFFER_SIZE)
@@ -102,7 +102,7 @@ class ServiceWrapper(threading.Thread):
             if self.reality_metrics is None:
                 continue
             try:
-                expectation, reality = self.evaluate_slos(self.reality_metrics)
+                expectation, reality = self.evaluate_slos(self.reality_metrics, self.is_leader)
 
                 prom_slo_fulfillment.labels(id=f"{self.type}-{self.id}", host=self.local_ip, device_name=DEVICE_NAME).set(reality)
                 push_to_gateway(f'{self.platoon_members[0]}:9091', job='batch_job', registry=registry)
@@ -149,14 +149,15 @@ class ServiceWrapper(threading.Thread):
         http_client.push_metrics_retrain(model_file, df, self.platoon_members[0], asynchronous=asynchronous)  # Metrics are still raw!
         self.metrics_buffer.clear()
 
-    def evaluate_slos(self, reality_metrics):
+    def evaluate_slos(self, reality_metrics, is_leader):
         # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
         current_slo_f = utils.check_slos_fulfilled(self.s_desc['slo_vars'], reality_metrics)
         self.slo_hist.append(current_slo_f)
         rebalanced_slo_f = self.slo_hist.average()
 
         expectation = utils.get_true(utils.infer_slo_fulfillment(self.model_VE, self.s_desc['slo_vars'],
-                                                                 self.s_desc['constraints'] | {"isolated": f'{self.isolated}'}))
+                                                                 self.s_desc['constraints'] | {"isolated": f'{self.isolated}'}
+                                                                 | {'is_leader': f'{is_leader}'}))
         # surprise = utils.get_surprise_for_data(self.model, self.model_VE, reality_row, self.s_desc['slo_vars'])
         # print(f"M| Absolute surprise for sample {surprise}")
 
