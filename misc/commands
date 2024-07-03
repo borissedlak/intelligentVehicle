@@ -28,12 +28,12 @@ nvcc --version
 4.) Install package dependencies
 --------------------
 pip install -r requirements.txt
-pip install ./misc/onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
-pip install ./torch-2.1.0a0+41361538.nv23.06-cp38-cp38-linux_aarch64.whl
+pip install ./misc/onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl --force-reinstall
+pip install ./torch-2.1.0a0+41361538.nv23.06-cp38-cp38-linux_aarch64.whl --force-reinstall
 
 pip install -r requirements_3_10.txt
-pip install ./misc/onnxruntime_gpu-1.17.0-cp310-cp310-linux_aarch64.whl
-pip install ./torch-2.3.0-cp310-cp310-linux_aarch64.whl
+pip install ./misc/onnxruntime_gpu-1.17.0-cp310-cp310-linux_aarch64.whl --force-reinstall
+pip install ./torch-2.3.0-cp310-cp310-linux_aarch64.whl --force-reinstall
 
 5.) Before running
 --------------------

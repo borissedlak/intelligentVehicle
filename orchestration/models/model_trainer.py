@@ -20,7 +20,7 @@ DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 # LEADER_HOST = utils.get_ENV_PARAM("LEADER_HOST", "localhost")
 
 # PREV_SAMPLES_LENGTH = 300  # Idea: This is also a hyperparameter, initially I should be small and then larger later
-PREV_SAMPLES_LENGTH = {utils.create_model_name(service, device): 1 for service in ['CV', 'QR', 'LI'] for device in ['Laptop', 'Orin']}
+PREV_SAMPLES_LENGTH = {utils.create_model_name(service, device): 1 for service in ['CV', 'QR', 'LI'] for device in ['Laptop', 'NX', 'AGX']}
 
 
 # @utils.print_execution_time
@@ -71,7 +71,7 @@ def prepare_models(fill_cpt_all_values=True):
         line_param = []
         bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
         for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, isolated, leader, mode, rate) in (
-                itertools.product([480, 720, 1080], [5, 10, 15], ['CV', 'QR', 'LI'], ['Laptop', 'Orin'], bin_values, bin_values,
+                itertools.product([480, 720, 1080], [5, 10, 15], ['CV', 'QR', 'LI'], ['Laptop', 'AGX', 'NX'], bin_values, bin_values,
                                   bin_values, [1, 999], [1, 999], [True, False], [True, False], ['single', 'double'], [0.0, 1.0])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu, 'delta': delta,
                                'consumption': energy, 'service': service, 'device_type': device, 'isolated': isolated, 'is_leader': leader,
@@ -148,5 +148,5 @@ def get_latest_load(prometheus_host, instance):
 
 
 if __name__ == "__main__":
-    retrieve_full_data(utils.get_local_ip())
+    retrieve_full_data("192.168.31.20")
     prepare_models()
