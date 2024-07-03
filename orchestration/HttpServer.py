@@ -182,6 +182,7 @@ def train_and_inform(model_name, df):
 
 
 def run_server():
+    print(f"Start HttpServer at {utils.conv_ip_to_host_type(utils.get_local_ip())} with IP {utils.get_local_ip()}")
     app.run(host='0.0.0.0', port=8080)
 
 
