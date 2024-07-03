@@ -2,7 +2,6 @@ import ast
 import logging
 import os
 import threading
-from datetime import datetime
 from io import StringIO
 
 import pandas as pd
@@ -152,7 +151,7 @@ def provide_model(model_name):
 
 @app.route('/model/update/<model_name>', methods=['POST'])
 def update_model_immediately(model_name):
-    print(f"Called at {datetime.now()} for {model_name}")
+    # print(f"Called at {datetime.now()} for {model_name}")
     csv_string = request.data.decode('utf-8')
     df = pd.read_csv(StringIO(csv_string))
     asynchronous = utils.str_to_bool(request.args.get('asynchronous'))

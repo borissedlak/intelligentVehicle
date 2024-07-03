@@ -12,11 +12,13 @@ from services.VehicleService import VehicleService
 DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 
 
+# output_video = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 30, (1080, 608))
+
 class QrDetector(VehicleService):
     def __init__(self, leader_ip, show_results=False):
         super().__init__()
         ROOT = os.path.dirname(__file__)
-        self.video_path = ROOT + "/data/pamela_reif_cut.mp4"
+        self.video_path = ROOT + "/data/QR_video.mp4"
         self.simulate_fps = True
 
         self.device_metric_reporter = DeviceMetricReporter(leader_ip, gpu_available=False)
@@ -39,6 +41,8 @@ class QrDetector(VehicleService):
         if not ret:
             self.initialize_video()
             ret, original_frame = self.cap.read()
+            # output_video.release()
+            # sys.exit()
 
         start_time = time.time()
         gray = cv2.cvtColor(original_frame, cv2.COLOR_BGR2GRAY)
@@ -47,6 +51,7 @@ class QrDetector(VehicleService):
 
         if self.show_result:
             cv2.imshow("Detected Objects", combined_img)
+        # output_video.writ(combined_img)
 
         processing_time = (time.time() - start_time) * 1000.0
         pixel = combined_img.shape[0]
