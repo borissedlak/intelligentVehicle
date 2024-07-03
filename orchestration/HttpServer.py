@@ -81,7 +81,7 @@ def update_wrapper_service_assignments():
 
 @app.route("/stop_all_services", methods=['POST'])
 def stop_all():
-    global thread_lib
+    global thread_lib, service_host_map
     if len(thread_lib) <= 0:
         return utils.log_and_return(logger, logging.INFO, f"M| No service threads running locally that can be stopped")
 
@@ -90,6 +90,7 @@ def stop_all():
     for wrapper in thread_lib:
         wrapper.terminate()
 
+    service_host_map = {}  # This assumes that all the other platoon members also start from 0 now
     thread_lib = []
     return utils.log_and_return(logger, logging.INFO, "M| Stopped all threads")
 
