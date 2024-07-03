@@ -2,6 +2,7 @@ import ast
 import logging
 import os
 import threading
+from datetime import datetime
 from io import StringIO
 
 import pandas as pd
@@ -86,10 +87,10 @@ def stop_all():
 
     logger.info(f"M| Going to stop {len(thread_lib)} threads")
 
-    thread_lib = []
     for wrapper in thread_lib:
         wrapper.terminate()
 
+    thread_lib = []
     return utils.log_and_return(logger, logging.INFO, "M| Stopped all threads")
 
 
@@ -123,7 +124,7 @@ def update_platoon_members():
 
 @app.route('/update_service_assignment', methods=['POST'])
 def update_service_assignment():
-    global service_host_map, thread_lib
+    global service_host_map
     s_desc = ast.literal_eval(request.args.get('service_description'))
     s_host = request.args.get('service_host')
     s_id_type = f"{s_desc['type']}-{s_desc['id']}"
@@ -150,7 +151,7 @@ def provide_model(model_name):
 
 @app.route('/model/update/<model_name>', methods=['POST'])
 def update_model_immediately(model_name):
-    # logger.info(f"L| Start updating '{model_name}'")
+    print(f"Called at {datetime.now()} for {model_name}")
     csv_string = request.data.decode('utf-8')
     df = pd.read_csv(StringIO(csv_string))
     asynchronous = utils.str_to_bool(request.args.get('asynchronous'))
