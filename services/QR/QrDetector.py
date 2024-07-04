@@ -18,7 +18,7 @@ class QrDetector(VehicleService):
     def __init__(self, leader_ip, show_results=False):
         super().__init__()
         ROOT = os.path.dirname(__file__)
-        self.video_path = ROOT + "/data/QR_video.mp4"
+        self.video_path = ROOT + "/data/QR_Video.mp4"
         self.simulate_fps = True
 
         self.device_metric_reporter = DeviceMetricReporter(leader_ip, gpu_available=False)
@@ -44,10 +44,15 @@ class QrDetector(VehicleService):
             # output_video.release()
             # sys.exit()
 
+        original_width, original_height = original_frame.shape[1], original_frame.shape[0]
+        ratio = original_height / source_pixel
+
+        frame = cv2.resize(original_frame, (int(original_width / ratio), int(original_height / ratio)))
+
         start_time = time.time()
-        gray = cv2.cvtColor(original_frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         decoded_objects = decode(gray)
-        combined_img = utils.highlight_qr_codes(original_frame, decoded_objects)
+        combined_img = utils.highlight_qr_codes(frame, decoded_objects)
 
         if self.show_result:
             cv2.imshow("Detected Objects", combined_img)
