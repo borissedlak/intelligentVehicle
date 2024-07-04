@@ -614,12 +614,10 @@ def check_device_present_in_mb(model, device):
     return device in devices_contained
 
 
-def log_dict(service, device, variable_dict, Consumer_to_Worker_constraints, most_restrictive_consumer_latency):
-    with open("../analysis/inference/n_n_assignments.csv", 'a', newline='') as csv_file:
+def log_dict(service, ip, data):
+    with open(f"../analysis/A_1_Basic/cycle_length_{ip}.csv", 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(
-            [service] + [device] + list(Consumer_to_Worker_constraints.values()) + [most_restrictive_consumer_latency]
-            + list(variable_dict.values()))
+        csv_writer.writerow([service] + [ip] + [conv_ip_to_host_type(ip)] + [datetime.datetime.now()] + data)
 
 
 def print_in_red(text):
@@ -726,3 +724,10 @@ def am_I_the_leader(platoon, ip):
 
 def get_diff_ms(before: datetime.datetime, after: datetime.datetime):
     return int(np.abs((after - before).total_seconds() * 1000))
+
+
+def prepare_evaluation_files(evaluate, ip):
+    if evaluate['track_cycles']:
+        with open(f"../analysis/A_1_Basic/cycle_length_{ip}.csv", 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(["service", "ip", "device_type", "timestamp", "category", "time_ms", "other_members"])

@@ -122,9 +122,9 @@ class ServiceWrapper(threading.Thread):
                 evidence_to_load_off = (expectation - reality) + (1 - reality)
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
 
+                other_members = utils.get_all_other_members(self.platoon_members)
                 if (evidence_to_load_off >= OFFLOADING_RATE or self.evaluate['enter_offload']) and self.slo_hist.already_x_values(
                         SLO_COLDSTART_DELAY):
-                    other_members = utils.get_all_other_members(self.platoon_members)
 
                     if len(other_members) == 0:
                         logger.info(f"M| Thread {self.type}-{self.id} would like to offload, but no other members in platoon")
@@ -143,8 +143,10 @@ class ServiceWrapper(threading.Thread):
 
                 after_offload = datetime.now()
                 if self.evaluate['track_cycles']:
-                    print("Time for training loop", utils.get_diff_ms(timestamp_0, after_train), "ms")
-                    print("Time for offloading loop", utils.get_diff_ms(after_train, after_offload), "ms")
+                    training_time = utils.get_diff_ms(timestamp_0, after_train)
+                    offloading_time = utils.get_diff_ms(after_train, after_offload)
+                    utils.log_dict(self.s_desc['type'], self.local_ip, [training_time, "training", len(other_members)])
+                    utils.log_dict(self.s_desc['type'], self.local_ip, [offloading_time, "offloading", len(other_members)])
 
             except Exception as e:
                 error_traceback = traceback.format_exc()

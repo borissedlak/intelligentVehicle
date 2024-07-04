@@ -1,4 +1,5 @@
 import ast
+import csv
 import logging
 import os
 import threading
@@ -79,6 +80,7 @@ def update_wrapper_service_assignments():
         thread.reset_slo_history()
 
 
+
 @app.route("/stop_all_services", methods=['POST'])
 def stop_all():
     global thread_lib, service_host_map, evaluate
@@ -86,6 +88,7 @@ def stop_all():
     evaluate = ast.literal_eval(eval_dict.replace("false", "False").replace("true", "True")) if eval_dict else {}
     if len(evaluate) > 0:
         logger.info(f"M| Entering evaluation debug mode with {evaluate}")
+        utils.prepare_evaluation_files(evaluate, utils.get_local_ip())
 
     if len(thread_lib) <= 0:
         return utils.log_and_return(logger, logging.INFO, f"M| No service threads running locally that can be stopped")
