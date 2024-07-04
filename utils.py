@@ -1,5 +1,6 @@
 import copy
 import csv
+import datetime
 import fnmatch
 import logging
 import os
@@ -721,3 +722,7 @@ def am_I_the_leader(platoon, ip):
     if len(platoon) == 1 and platoon[0] == 'localhost':
         return True
     return platoon[0] == ip
+
+
+def get_diff_ms(before: datetime.datetime, after: datetime.datetime):
+    return int(np.abs((after - before).total_seconds() * 1000))

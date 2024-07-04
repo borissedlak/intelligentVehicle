@@ -3,6 +3,7 @@ import random
 import threading
 import time
 import traceback
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -38,13 +39,14 @@ prom_slo_fulfillment = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 
 
 
 class ServiceWrapper(threading.Thread):
-    def __init__(self, inf_service: VehicleService, description, model, platoon_members, isolated=False, evaluation=False):
+    def __init__(self, inf_service: VehicleService, description, model, platoon_members, evaluate, isolated=False):
         super().__init__()
         self.daemon = True
         self.id = description['id']
         self.type = description['type']
         self.inf_service = inf_service
         self._running = True
+        self.evaluate = evaluate
 
         self.reality_metrics = None
         self.s_desc = description
@@ -101,6 +103,8 @@ class ServiceWrapper(threading.Thread):
             if self.reality_metrics is None:
                 continue
             try:
+                timestamp_0 = datetime.now()
+
                 expectation, reality = self.evaluate_slos(self.reality_metrics, self.is_leader)
 
                 prom_slo_fulfillment.labels(id=f"{self.type}-{self.id}", host=self.local_ip, device_name=DEVICE_NAME).set(reality)
@@ -114,27 +118,33 @@ class ServiceWrapper(threading.Thread):
                     logger.info(f"M| Asking leader to retrain {self.type}-{self.id} on {self.metrics_buffer.get_number_items()} samples")
                     self.train_remotely()
 
+                after_train = datetime.now()
                 evidence_to_load_off = (expectation - reality) + (1 - reality)
                 logger.debug(f"Current evidence to load off {evidence_to_load_off} / {OFFLOADING_RATE}")
 
-                if evidence_to_load_off >= OFFLOADING_RATE and self.slo_hist.already_x_values(SLO_COLDSTART_DELAY):
+                if (evidence_to_load_off >= OFFLOADING_RATE or self.evaluate['enter_offload']) and self.slo_hist.already_x_values(
+                        SLO_COLDSTART_DELAY):
                     other_members = utils.get_all_other_members(self.platoon_members)
 
                     if len(other_members) == 0:
                         logger.info(f"M| Thread {self.type}-{self.id} would like to offload, but no other members in platoon")
-                        continue
+                    else:
+                        offload_gain_list = self.estimate_slos_offload(other_members)
+                        target, gain = max(offload_gain_list, key=lambda x: x[1])
+                        if (expectation - reality) + gain > 0:
+                            logger.info(f"M| Push metrics for thread {self.type}-{self.id} before loading off")
+                            self.train_remotely(asynchronous=True)
+                            logger.info(f"M| Thread {self.type}-{self.id} offloaded to {utils.conv_ip_to_host_type(target)} at {target}")
+                            http_client.start_service_remotely(self.s_desc, target_route=target)
+                            self.terminate()
+                            return
 
-                    offload_gain_list = self.estimate_slos_offload(other_members)
-                    target, gain = max(offload_gain_list, key=lambda x: x[1])
-                    if (expectation - reality) + gain > 0:
-                        logger.info(f"M| Push metrics for thread {self.type}-{self.id} before loading off")
-                        self.train_remotely(asynchronous=True)
-                        logger.info(f"M| Thread {self.type}-{self.id} offloaded to {utils.conv_ip_to_host_type(target)} at {target}")
-                        http_client.start_service_remotely(self.s_desc, target_route=target)
-                        self.terminate()
-                        return
+                        logger.info(f"M| Thread {self.type}-{self.id} found no beneficial hosting destination")
 
-                    logger.info(f"M| Thread {self.type}-{self.id} found no beneficial hosting destination")
+                after_offload = datetime.now()
+                if self.evaluate['track_cycles']:
+                    print("Time for training loop", utils.get_diff_ms(timestamp_0, after_train), "ms")
+                    print("Time for offloading loop", utils.get_diff_ms(after_train, after_offload), "ms")
 
             except Exception as e:
                 error_traceback = traceback.format_exc()
@@ -202,21 +212,21 @@ class ServiceWrapper(threading.Thread):
         return target_slo_f
 
 
-def start_service(s_desc, platoon_members, isolated=False, evaluate=False):
+def start_service(s_desc, platoon_members, evaluate, isolated=False):
     model_path = utils.create_model_name(s_desc['type'], DEVICE_NAME)
     model = XMLBIFReader("models/" + model_path).get_model()
     leader_ip = platoon_members[0]
 
     if s_desc['type'] == "CV":
-        service_wrapper = ServiceWrapper(YoloDetector(leader_ip), s_desc, model, platoon_members, isolated, evaluate)
+        service_wrapper = ServiceWrapper(YoloDetector(leader_ip), s_desc, model, platoon_members, evaluate, isolated)
     elif s_desc['type'] == "QR":
-        service_wrapper = ServiceWrapper(QrDetector(leader_ip), s_desc, model, platoon_members, isolated, evaluate)
+        service_wrapper = ServiceWrapper(QrDetector(leader_ip), s_desc, model, platoon_members, evaluate, isolated)
     elif s_desc['type'] == "LI":
-        service_wrapper = ServiceWrapper(LidarProcessor(leader_ip), s_desc, model, platoon_members, isolated, evaluate)
+        service_wrapper = ServiceWrapper(LidarProcessor(leader_ip), s_desc, model, platoon_members, evaluate, isolated)
     else:
         raise RuntimeError(f"What is this {s_desc['type']}?")
 
     service_wrapper.start()
-    logger.info(f"M| New thread for {s_desc['type']}-{s_desc['id']} started {'in evaluation mode' if evaluate else ''}")
+    logger.info(f"M| New thread for {s_desc['type']}-{s_desc['id']} started {'in evaluation mode' if len(evaluate) > 0 else ''}")
 
     return service_wrapper

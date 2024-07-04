@@ -32,7 +32,7 @@ class QrDetector(VehicleService):
             return
 
     def process_one_iteration(self, params):
-        source_pixel, source_fps = int(params['pixel']), int(params['fps'])
+        target_height, source_fps = int(params['pixel']), int(params['fps'])
 
         # print(f"Now processing: {params.source_pixel} p, {params.source_fps} FPS")
         available_time_frame = (1000 / source_fps)
@@ -45,7 +45,7 @@ class QrDetector(VehicleService):
             # sys.exit()
 
         original_width, original_height = original_frame.shape[1], original_frame.shape[0]
-        ratio = original_height / source_pixel
+        ratio = original_height / target_height
 
         frame = cv2.resize(original_frame, (int(original_width / ratio), int(original_height / ratio)))
 

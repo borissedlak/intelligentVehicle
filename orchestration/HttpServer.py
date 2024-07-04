@@ -28,7 +28,7 @@ http_client = HttpClient()
 thread_lib = []
 current_platoon = ['localhost']
 service_host_map = {}
-evaluate_all = False
+evaluate = {}
 
 
 # MEMBER ROUTES ######################################
@@ -36,7 +36,7 @@ evaluate_all = False
 @utils.print_execution_time
 @app.route("/start_service", methods=['POST'])
 def start():
-    global thread_lib, current_platoon, service_host_map, evaluate_all
+    global thread_lib, current_platoon, service_host_map, evaluate
     service_d = ast.literal_eval(request.args.get('service_description'))
     isolated = not len(thread_lib) > 0
 
@@ -44,7 +44,7 @@ def start():
         for wrapper in thread_lib:
             wrapper.update_isolation(False)
 
-    thread_ref = start_service(service_d, current_platoon, isolated, evaluate_all)
+    thread_ref = start_service(service_d, current_platoon, evaluate, isolated)
     thread_lib.append(thread_ref)
     localhost = utils.get_local_ip()
     s_id_type = f"{service_d['type']}-{service_d['id']}"
@@ -81,11 +81,11 @@ def update_wrapper_service_assignments():
 
 @app.route("/stop_all_services", methods=['POST'])
 def stop_all():
-    global thread_lib, service_host_map, evaluate_all
-    evaluate = request.args.get('evaluate')
-    evaluate_all = utils.str_to_bool(evaluate) if evaluate else False
-    if evaluate_all:
-        logger.info("M| Entering evaluation debug more, logging all outcomes")
+    global thread_lib, service_host_map, evaluate
+    eval_dict = request.args.get('evaluate')
+    evaluate = ast.literal_eval(eval_dict.replace("false", "False").replace("true", "True")) if eval_dict else {}
+    if len(evaluate) > 0:
+        logger.info(f"M| Entering evaluation debug mode with {evaluate}")
 
     if len(thread_lib) <= 0:
         return utils.log_and_return(logger, logging.INFO, f"M| No service threads running locally that can be stopped")
