@@ -1,3 +1,1 @@
 service,ip,device_type,timestamp,category,time_ms,other_members
-QR,192.168.31.20,Laptop,2024-07-04 18:15:57.241345,422,training,2
-QR,192.168.31.20,Laptop,2024-07-04 18:15:57.241493,1141,offloading,2

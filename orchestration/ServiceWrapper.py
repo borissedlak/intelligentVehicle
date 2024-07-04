@@ -89,7 +89,8 @@ class ServiceWrapper(threading.Thread):
             # Write: This changes the local perception of how well I'm performing or what I'm supposed to do
             self.reality_metrics['is_leader'] = self.is_leader
             self.reality_metrics['isolated'] = self.isolated
-            self.inf_service.report_to_mongo(self.reality_metrics)
+            if not self.evaluate['disable_metrics_push']:
+                self.inf_service.report_to_mongo(self.reality_metrics)
             self.metrics_buffer.append(self.reality_metrics)
 
         logger.info(f"M| Thread {self.type}-{self.id} exited gracefully")
@@ -107,8 +108,9 @@ class ServiceWrapper(threading.Thread):
 
                 expectation, reality = self.evaluate_slos(self.reality_metrics, self.is_leader)
 
-                prom_slo_fulfillment.labels(id=f"{self.type}-{self.id}", host=self.local_ip, device_name=DEVICE_NAME).set(reality)
-                push_to_gateway(f'{self.platoon_members[0]}:9091', job='batch_job', registry=registry)
+                if not self.evaluate['disable_metrics_push']:
+                    prom_slo_fulfillment.labels(id=f"{self.type}-{self.id}", host=self.local_ip, device_name=DEVICE_NAME).set(reality)
+                    push_to_gateway(f'{self.platoon_members[0]}:9091', job='batch_job', registry=registry)
 
                 evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
                 logger.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
