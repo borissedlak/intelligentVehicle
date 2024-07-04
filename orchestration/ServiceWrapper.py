@@ -7,7 +7,6 @@ import traceback
 import numpy as np
 import pandas as pd
 from pgmpy.inference import VariableElimination
-from pgmpy.models import BayesianNetwork
 from pgmpy.readwrite import XMLBIFReader
 from prometheus_client import Gauge, push_to_gateway, CollectorRegistry
 
@@ -39,7 +38,7 @@ prom_slo_fulfillment = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 
 
 
 class ServiceWrapper(threading.Thread):
-    def __init__(self, inf_service: VehicleService, description, model: BayesianNetwork, platoon_members, isolated=False):
+    def __init__(self, inf_service: VehicleService, description, model, platoon_members, isolated=False, evaluation=False):
         super().__init__()
         self.daemon = True
         self.id = description['id']
@@ -203,21 +202,21 @@ class ServiceWrapper(threading.Thread):
         return target_slo_f
 
 
-def start_service(s_desc, platoon_members, isolated=False):
+def start_service(s_desc, platoon_members, isolated=False, evaluate=False):
     model_path = utils.create_model_name(s_desc['type'], DEVICE_NAME)
     model = XMLBIFReader("models/" + model_path).get_model()
     leader_ip = platoon_members[0]
 
     if s_desc['type'] == "CV":
-        service_wrapper = ServiceWrapper(YoloDetector(leader_ip), s_desc, model, platoon_members, isolated)
+        service_wrapper = ServiceWrapper(YoloDetector(leader_ip), s_desc, model, platoon_members, isolated, evaluate)
     elif s_desc['type'] == "QR":
-        service_wrapper = ServiceWrapper(QrDetector(leader_ip), s_desc, model, platoon_members, isolated)
+        service_wrapper = ServiceWrapper(QrDetector(leader_ip), s_desc, model, platoon_members, isolated, evaluate)
     elif s_desc['type'] == "LI":
-        service_wrapper = ServiceWrapper(LidarProcessor(leader_ip), s_desc, model, platoon_members, isolated)
+        service_wrapper = ServiceWrapper(LidarProcessor(leader_ip), s_desc, model, platoon_members, isolated, evaluate)
     else:
         raise RuntimeError(f"What is this {s_desc['type']}?")
 
     service_wrapper.start()
-    logger.info(f"M| New thread for {s_desc['type']}-{s_desc['id']} started detached")
+    logger.info(f"M| New thread for {s_desc['type']}-{s_desc['id']} started {'in evaluation mode' if evaluate else ''}")
 
     return service_wrapper

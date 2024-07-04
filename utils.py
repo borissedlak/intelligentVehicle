@@ -636,9 +636,9 @@ def get_service_host_pairs(df):
 
 
 def str_to_bool(s):
-    if s == 'True':
+    if s == 'True' or s == 'true':
         return True
-    elif s == 'False':
+    elif s == 'False' or s == 'false':
         return False
     else:
         raise ValueError(f"Cannot parse '{s}' as a boolean")
