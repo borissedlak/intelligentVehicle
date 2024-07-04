@@ -93,7 +93,6 @@ class SloEstimator:
         constraints = s_desc['constraints'].copy()
         constraints.update({'isolated': 'True'})
         for var in ['cpu', 'gpu', 'memory']:
-            # TODO: Found cpu in both var and constraints?
             hw_expectation_isolated = utils.infer_slo_fulfillment(model_VE, [var], constraints)
             hw_distribution = hw_expectation_isolated.values
             hw_predictions.update({var: hw_distribution})
@@ -156,7 +155,7 @@ if __name__ == "__main__":
     # hw_load_p, slof_local_isolated = estimator.get_isolated_hw_predictions(model_VE=VariableElimination(local_model))
     # prediction_shifted = estimator.get_shifted_hw_predictions(hw_load_p, VariableElimination(target_model),
     #                                                           "host.docker.internal", True)
-    # TODO: Stress device to violate SLOs and see reflected here
+
     # shifted = estimator.calc_weighted_slo_f(hw_load_p, dest_model_VE=VariableElimination(target_model), shift=[2, 0, 3], isolated="True",
     #                                         is_leader=True)
     # print(shifted)
