@@ -33,7 +33,6 @@ RETRAINING_RATE = 1.0  # Idea: This is a hyperparameter
 OFFLOADING_RATE = 0.2  # Idea: This is a hyperparameter
 TRAINING_BUFFER_SIZE = 120  # Idea: This is a hyperparameter
 SLO_HISTORY_BUFFER_SIZE = 75  # Idea: This is a hyperparameter
-SLO_COLDSTART_DELAY = 30 + random.randint(0, 9)  # Idea: This is a hyperparameter
 
 registry = CollectorRegistry()
 prom_slo_fulfillment = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 'device_name'], registry=registry)
@@ -42,6 +41,7 @@ prom_slo_fulfillment = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 
 class ServiceWrapper(threading.Thread):
     def __init__(self, inf_service: VehicleService, description, model, platoon_members, evaluate, isolated=False):
         super().__init__()
+        self.SLO_COLDSTART_DELAY = 30 + random.randint(0, 9)  # Idea: This is a hyperparameter
         self.daemon = True
         self.id = description['id']
         self.type = description['type']
@@ -122,7 +122,8 @@ class ServiceWrapper(threading.Thread):
                 logger.debug(f"For expectation {expectation} vs {reality}")
 
                 if self.evaluate['track_slo_f']:
-                    utils.log_dict("slo_f", self.s_desc['type'], self.local_ip, [expectation, reality, evidence_to_retrain])
+                    utils.log_dict("slo_f", f"{self.s_desc['type']}-{self.s_desc['id']}", self.local_ip,
+                                   [expectation, reality, evidence_to_retrain])
 
                 if evidence_to_retrain >= RETRAINING_RATE and not self.evaluate['disable_train']:
                     logger.info(f"M| Asking leader to retrain {self.type}-{self.id} on {self.metrics_buffer.get_number_items()} samples")
@@ -134,7 +135,7 @@ class ServiceWrapper(threading.Thread):
 
                 other_members = utils.get_all_other_members(self.platoon_members)
                 if (evidence_to_load_off >= OFFLOADING_RATE or self.evaluate['enter_offload']) and self.slo_hist.already_x_values(
-                        SLO_COLDSTART_DELAY):
+                        self.SLO_COLDSTART_DELAY):
 
                     if len(other_members) == 0:
                         logger.info(f"M| Thread {self.type}-{self.id} would like to offload, but no other members in platoon")
@@ -222,9 +223,10 @@ class ServiceWrapper(threading.Thread):
             target_slo_f.append((vehicle_address, offload_tradeoff_gain))
 
             if self.evaluate['track_slo_f']:
-                utils.log_dict("slo_f", self.s_desc['type'], self.local_ip, [target_model_name, slo_local_estimated_initial,
-                                                                             slo_local_estimated_offload,
-                                                                             slo_target_estimated_initial, slo_target_estimated_offload[2]])
+                utils.log_dict("slo_f", f"{self.s_desc['type']}-{self.s_desc['id']}", self.local_ip,
+                               [target_model_name, slo_local_estimated_initial,
+                                slo_local_estimated_offload,
+                                slo_target_estimated_initial, slo_target_estimated_offload[2]])
 
         return target_slo_f
 
