@@ -5,7 +5,6 @@ import time
 import traceback
 from datetime import datetime
 
-import numpy as np
 import pandas as pd
 from pgmpy.inference import VariableElimination
 from pgmpy.readwrite import XMLBIFReader
@@ -15,6 +14,7 @@ import utils
 from monitor.DeviceMetricReporter import CyclicArray
 from orchestration.HttpClient import HttpClient
 from orchestration.SloEstimator import SloEstimator
+from orchestration.models import model_trainer
 from services.CV.YoloDetector import YoloDetector
 from services.LI.LidarProcessor import LidarProcessor
 from services.QR.QrDetector import QrDetector
@@ -103,7 +103,7 @@ class ServiceWrapper(threading.Thread):
         service_thread.start()
 
         while self._running:
-            time.sleep(1)
+            time.sleep(0.5)
             if self.reality_metrics is None or self.evaluate['disable_cycle']:
                 continue
             try:
@@ -115,9 +115,13 @@ class ServiceWrapper(threading.Thread):
                     prom_slo_fulfillment.labels(id=f"{self.type}-{self.id}", host=self.local_ip, device_name=DEVICE_NAME).set(reality)
                     push_to_gateway(f'{self.platoon_members[0]}:9091', job='batch_job', registry=registry)
 
-                evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality)
+                existing_samples_boost = min(1 / model_trainer.PREV_SAMPLES_LENGTH[utils.create_model_name(self.type, DEVICE_NAME)], 0.5)
+                evidence_to_retrain = self.metrics_buffer.get_percentage_filled()  # TODO: + np.abs(expectation - reality) + existing_samples_boost
                 logger.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
                 logger.debug(f"For expectation {expectation} vs {reality}")
+
+                if self.evaluate['track_slo_f']:
+                    utils.log_dict("slo_f", self.s_desc['type'], self.local_ip, [expectation, reality, evidence_to_retrain])
 
                 if evidence_to_retrain >= RETRAINING_RATE:
                     logger.info(f"M| Asking leader to retrain {self.type}-{self.id} on {self.metrics_buffer.get_number_items()} samples")
@@ -136,7 +140,7 @@ class ServiceWrapper(threading.Thread):
                     else:
                         offload_gain_list = self.estimate_slos_offload(other_members)
                         target, gain = max(offload_gain_list, key=lambda x: x[1])
-                        if (expectation - reality) + gain > 0:
+                        if gain > 0:
                             logger.info(f"M| Push metrics for thread {self.type}-{self.id} before loading off")
                             self.train_remotely(asynchronous=True)
                             logger.info(f"M| Thread {self.type}-{self.id} offloaded to {utils.conv_ip_to_host_type(target)} at {target}")
@@ -168,6 +172,7 @@ class ServiceWrapper(threading.Thread):
     def evaluate_slos(self, reality_metrics, is_leader):
         # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
         current_slo_f = utils.check_slos_fulfilled(self.s_desc['slo_vars'], reality_metrics)
+        print(current_slo_f)
         self.slo_hist.append(current_slo_f)
         rebalanced_slo_f = self.slo_hist.average()
 
@@ -220,8 +225,9 @@ class ServiceWrapper(threading.Thread):
 
 
 def start_service(s_desc, platoon_members, evaluate, isolated=False):
+    from_scratch = "empty/" if evaluate['from_scratch'] else ""
     model_path = utils.create_model_name(s_desc['type'], DEVICE_NAME)
-    model = XMLBIFReader("models/" + model_path).get_model()
+    model = XMLBIFReader("models/" + from_scratch + model_path).get_model()
     leader_ip = platoon_members[0]
 
     if s_desc['type'] == "CV":

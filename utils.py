@@ -736,3 +736,7 @@ def prepare_evaluation_files(evaluate, ip):
         with open(f"../analysis/A_1_Basic/device_load_{ip}.csv", 'w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(["service", "ip", "device_type", "timestamp", "cpu"])
+    if evaluate['track_slo_f']:
+        with open(f"../analysis/A_1_Basic/slo_f_{ip}.csv", 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(["service", "ip", "device_type", "timestamp", "expected", "reality", "evidence"])

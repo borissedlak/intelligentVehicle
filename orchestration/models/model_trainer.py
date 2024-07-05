@@ -21,7 +21,7 @@ DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 # LEADER_HOST = utils.get_ENV_PARAM("LEADER_HOST", "localhost")
 
 # PREV_SAMPLES_LENGTH = 300  # Idea: This is also a hyperparameter, initially I should be small and then larger later
-PREV_SAMPLES_LENGTH = {utils.create_model_name(service, device): 1 for service in ['CV', 'QR', 'LI'] for device in ['Laptop', 'NX', 'AGX']}
+PREV_SAMPLES_LENGTH = {utils.create_model_name(service, device): 100 for service in ['CV', 'QR', 'LI'] for device in ['Laptop', 'NX', 'AGX']}
 
 
 # @utils.print_execution_time
