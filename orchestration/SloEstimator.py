@@ -129,6 +129,8 @@ class SloEstimator:
                 var_conv = utils.compress_into_n_bins(np.convolve(target_conv_load[var], s_load_p[var]))
                 target_conv_load[var] = var_conv
 
+        utils.log_dict("slo_f", self.s_desc['type'], "192.168.31.21", [target_device, target_running_services, origin_load_p, target_conv_load])
+
         target_slo_f = []
         for model in target_models:
             target_slo_f.append(self.calc_weighted_slo_f(target_conv_load, VariableElimination(model), isolated="False",

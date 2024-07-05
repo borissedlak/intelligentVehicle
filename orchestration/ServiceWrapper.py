@@ -5,6 +5,7 @@ import time
 import traceback
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 from pgmpy.inference import VariableElimination
 from pgmpy.readwrite import XMLBIFReader
@@ -116,14 +117,14 @@ class ServiceWrapper(threading.Thread):
                     push_to_gateway(f'{self.platoon_members[0]}:9091', job='batch_job', registry=registry)
 
                 existing_samples_boost = min(1 / model_trainer.PREV_SAMPLES_LENGTH[utils.create_model_name(self.type, DEVICE_NAME)], 0.5)
-                evidence_to_retrain = self.metrics_buffer.get_percentage_filled()  # TODO: + np.abs(expectation - reality) + existing_samples_boost
+                evidence_to_retrain = self.metrics_buffer.get_percentage_filled() + np.abs(expectation - reality) + existing_samples_boost
                 logger.debug(f"Current evidence to retrain {evidence_to_retrain} / {RETRAINING_RATE}")
                 logger.debug(f"For expectation {expectation} vs {reality}")
 
                 if self.evaluate['track_slo_f']:
                     utils.log_dict("slo_f", self.s_desc['type'], self.local_ip, [expectation, reality, evidence_to_retrain])
 
-                if evidence_to_retrain >= RETRAINING_RATE:
+                if evidence_to_retrain >= RETRAINING_RATE and not self.evaluate['disable_train']:
                     logger.info(f"M| Asking leader to retrain {self.type}-{self.id} on {self.metrics_buffer.get_number_items()} samples")
                     self.train_remotely()
 
@@ -172,7 +173,6 @@ class ServiceWrapper(threading.Thread):
     def evaluate_slos(self, reality_metrics, is_leader):
         # Idea: This should be able to use a fuzzy classifier if the SLOs are fulfilled
         current_slo_f = utils.check_slos_fulfilled(self.s_desc['slo_vars'], reality_metrics)
-        print(current_slo_f)
         self.slo_hist.append(current_slo_f)
         rebalanced_slo_f = self.slo_hist.average()
 
@@ -207,10 +207,10 @@ class ServiceWrapper(threading.Thread):
             target_model_name = utils.create_model_name(self.type, target_device_type)
 
             prometheus_instance_name = vehicle_address if vehicle_address != "192.168.31.21" else "host.docker.internal"
-            slo_target_estimated_offload = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
-                                                                                 prometheus_instance_name, target_is_leader)
             slo_target_estimated_initial = self.slo_estimator.infer_local_slo_f(target_running_services, target_device_type,
                                                                                 target_is_leader)
+            slo_target_estimated_offload = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
+                                                                                 prometheus_instance_name, target_is_leader)
             logger.debug(f"Estimated SLO fulfillment at target without offload {slo_target_estimated_initial}")
             logger.debug(f"Estimated SLO fulfillment at target after offload {slo_target_estimated_offload}")
 
@@ -220,6 +220,11 @@ class ServiceWrapper(threading.Thread):
             offload_tradeoff_gain = ((slo_tradeoff_target_initial + slo_tradeoff_origin_initial) -
                                      (slo_tradeoff_origin_offload + slo_tradeoff_target_offload))
             target_slo_f.append((vehicle_address, offload_tradeoff_gain))
+
+            if self.evaluate['track_slo_f']:
+                utils.log_dict("slo_f", self.s_desc['type'], self.local_ip, [target_model_name, slo_local_estimated_initial,
+                                                                             slo_local_estimated_offload,
+                                                                             slo_target_estimated_initial, slo_target_estimated_offload[2]])
 
         return target_slo_f
 
