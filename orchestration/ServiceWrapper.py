@@ -198,7 +198,7 @@ class ServiceWrapper(threading.Thread):
             target_device_type = utils.conv_ip_to_host_type(vehicle_address)
             target_model_name = utils.create_model_name(self.type, target_device_type)
 
-            prometheus_instance_name = vehicle_address if vehicle_address != "192.168.31.20" else "host.docker.internal"
+            prometheus_instance_name = vehicle_address if vehicle_address != "192.168.31.21" else "host.docker.internal"
             slo_target_estimated_offload = self.slo_estimator.infer_target_slo_f(target_model_name, target_running_services,
                                                                                  prometheus_instance_name, target_is_leader)
             slo_target_estimated_initial = self.slo_estimator.infer_local_slo_f(target_running_services, target_device_type,

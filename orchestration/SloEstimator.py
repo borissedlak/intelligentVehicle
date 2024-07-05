@@ -107,7 +107,7 @@ class SloEstimator:
         dest_current_load = model_trainer.get_latest_load(prom_host, instance=prom_instance)
         dest_current_load_cat = utils.convert_prometheus_to_category(dest_current_load)
         logger.debug(f"M| Current load for target device classified into {dest_current_load_cat}")
-        if prom_instance == "host.docker.internal" or prom_instance == "192.168.31.20":
+        if prom_instance == "host.docker.internal" or prom_instance == "192.168.31.21":
             dest_current_load_cat[1] = -1
         # TODO: It might very well be that its isolated there, for this add a case like below
         return self.calc_weighted_slo_f(origin_load_p, dest_model_VE=target_model_VE, shift=(dest_current_load_cat + 1), isolated="False",
