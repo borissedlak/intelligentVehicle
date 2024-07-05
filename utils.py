@@ -614,8 +614,8 @@ def check_device_present_in_mb(model, device):
     return device in devices_contained
 
 
-def log_dict(service, ip, data):
-    with open(f"../analysis/A_1_Basic/cycle_length_{ip}.csv", 'a', newline='') as csv_file:
+def log_dict(file, service, ip, data):
+    with open(f"../analysis/A_1_Basic/{file}_{ip}.csv", 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file)
         csv_writer.writerow([service] + [ip] + [conv_ip_to_host_type(ip)] + [datetime.datetime.now()] + data)
 
@@ -731,3 +731,7 @@ def prepare_evaluation_files(evaluate, ip):
         with open(f"../analysis/A_1_Basic/cycle_length_{ip}.csv", 'w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(["service", "ip", "device_type", "timestamp", "category", "time_ms", "other_members"])
+    if evaluate['track_load']:
+        with open(f"../analysis/A_1_Basic/device_load_{ip}.csv", 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(["service", "ip", "device_type", "timestamp", "cpu"])

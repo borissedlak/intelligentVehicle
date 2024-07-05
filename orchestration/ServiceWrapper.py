@@ -86,6 +86,9 @@ class ServiceWrapper(threading.Thread):
     def isolated_service(self):
         while self._running:
             self.reality_metrics = self.inf_service.process_one_iteration(self.s_desc['constraints'])
+            if self.evaluate['track_load']:
+                utils.log_dict("device_load", self.s_desc['type'], self.local_ip, [self.reality_metrics['cpu']])
+
             # Write: This changes the local perception of how well I'm performing or what I'm supposed to do
             self.reality_metrics['is_leader'] = self.is_leader
             self.reality_metrics['isolated'] = self.isolated
@@ -101,7 +104,7 @@ class ServiceWrapper(threading.Thread):
 
         while self._running:
             time.sleep(1)
-            if self.reality_metrics is None:
+            if self.reality_metrics is None or self.evaluate['disable_cycle']:
                 continue
             try:
                 timestamp_0 = datetime.now()
@@ -147,8 +150,8 @@ class ServiceWrapper(threading.Thread):
                 if self.evaluate['track_cycles']:
                     training_time = utils.get_diff_ms(timestamp_0, after_train)
                     offloading_time = utils.get_diff_ms(after_train, after_offload)
-                    utils.log_dict(self.s_desc['type'], self.local_ip, [training_time, "training", len(other_members)])
-                    utils.log_dict(self.s_desc['type'], self.local_ip, [offloading_time, "offloading", len(other_members)])
+                    utils.log_dict("cycle_length", self.s_desc['type'], self.local_ip, [training_time, "training", len(other_members)])
+                    utils.log_dict("cycle_length", self.s_desc['type'], self.local_ip, [offloading_time, "offloading", len(other_members)])
 
             except Exception as e:
                 error_traceback = traceback.format_exc()
