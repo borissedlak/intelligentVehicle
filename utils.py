@@ -672,6 +672,7 @@ def check_slos_fulfilled(slo_vars, row):
             if row['delta'] > (1000 / row['fps']):
                 return False
         elif var == "energy_saved":
+            # TODO: This throws key_error for 'is_leader' from time to time
             if row['is_leader'] and row['consumption'] > ENERGY_SLO_T_LEADER:
                 return False
             elif not row['is_leader'] and row['consumption'] > ENERGY_SLO_T_FOLLOWER:
