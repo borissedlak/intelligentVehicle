@@ -41,7 +41,7 @@ prom_slo_fulfillment = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 
 class ServiceWrapper(threading.Thread):
     def __init__(self, inf_service: VehicleService, description, model, platoon_members, evaluate, isolated=False):
         super().__init__()
-        self.SLO_COLDSTART_DELAY = 30 + random.randint(0, 9)  # Idea: This is a hyperparameter
+        self.SLO_COLDSTART_DELAY = 30 + random.randint(0, 15)  # Idea: This is a hyperparameter
         self.daemon = True
         self.id = description['id']
         self.type = description['type']
@@ -143,8 +143,9 @@ class ServiceWrapper(threading.Thread):
                         offload_gain_list = self.estimate_slos_offload(other_members)
                         target, gain = max(offload_gain_list, key=lambda x: x[1])
                         if gain > 0:
-                            logger.info(f"M| Push metrics for thread {self.type}-{self.id} before loading off")
-                            self.train_remotely(asynchronous=True)
+                            if not self.evaluate['disable_train']:
+                                logger.info(f"M| Push metrics for thread {self.type}-{self.id} before loading off")
+                                self.train_remotely(asynchronous=True)
                             logger.info(f"M| Thread {self.type}-{self.id} offloaded to {utils.conv_ip_to_host_type(target)} at {target}")
                             http_client.start_service_remotely(self.s_desc, target_route=target)
                             self.terminate()
