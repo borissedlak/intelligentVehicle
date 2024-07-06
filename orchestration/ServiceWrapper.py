@@ -41,7 +41,7 @@ prom_slo_fulfillment = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 
 class ServiceWrapper(threading.Thread):
     def __init__(self, inf_service: VehicleService, description, model, platoon_members, evaluate, isolated=False):
         super().__init__()
-        self.SLO_COLDSTART_DELAY = 30 + random.randint(0, 15)  # Idea: This is a hyperparameter
+        self.SLO_COLDSTART_DELAY = 30 + random.randint(0, 20)  # Idea: This is a hyperparameter
         self.daemon = True
         self.id = description['id']
         self.type = description['type']

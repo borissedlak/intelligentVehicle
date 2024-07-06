@@ -104,7 +104,7 @@ class SloEstimator:
 
     # @utils.print_execution_time  # takes 150ms
     def get_shifted_hw_predictions(self, origin_load_p, target_model_VE, prom_host, prom_instance, target_is_leader):
-        dest_current_load = model_trainer.get_latest_load(prom_host, instance=prom_instance)
+        dest_current_load = model_trainer.get_latest_load("192.168.31.21", instance=prom_instance)
         dest_current_load_cat = utils.convert_prometheus_to_category(dest_current_load)
         logger.debug(f"M| Current load for target device classified into {dest_current_load_cat}")
         if prom_instance == "host.docker.internal" or prom_instance == "192.168.31.21":
