@@ -100,6 +100,7 @@ def stop_all():
 
     service_host_map = {}  # This assumes that all the other platoon members also start from 0 now
     thread_lib = []
+    model_trainer.reset_trained_hist()
     return utils.log_and_return(logger, logging.INFO, "M| Stopped all threads")
 
 

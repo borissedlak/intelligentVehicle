@@ -24,6 +24,10 @@ DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
 PREV_SAMPLES_LENGTH = {utils.create_model_name(service, device): 100 for service in ['CV', 'QR', 'LI'] for device in ['Laptop', 'NX', 'AGX']}
 
 
+def reset_trained_hist():
+    global PREV_SAMPLES_LENGTH
+    PREV_SAMPLES_LENGTH = {utils.create_model_name(service, device): 100 for service in ['CV', 'QR', 'LI'] for device in ['Laptop', 'NX', 'AGX']}
+
 # @utils.print_execution_time
 def retrieve_full_data(mongo_host):
     mongo_client = pymongo.MongoClient(mongo_host)[DB_NAME]
@@ -146,6 +150,7 @@ def get_latest_load(prometheus_host, instance):
             metrics_lib.update({m: 100.0})
 
     return metrics_lib
+
 
 
 if __name__ == "__main__":
