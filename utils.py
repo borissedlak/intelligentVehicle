@@ -689,7 +689,7 @@ def convert_prometheus_to_category(current_load):
 
 def conv_ip_to_host_type(ip):
     ip_dict = {'192.168.31.21': "Laptop", "host.docker.internal": "Laptop", 'localhost': "Laptop", '192.168.31.183': "AGX",
-               '192.168.31.198': "NX", '192.168.31.205': "NX", '192.168.31.10': "NX"}
+               '192.168.31.198': "NX", '192.168.31.205': "NX", '192.168.31.10': "NX", '192.168.31.11': "NX"}
     return ip_dict[ip]
 
 
