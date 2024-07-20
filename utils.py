@@ -10,9 +10,12 @@ from typing import Tuple
 
 import cv2
 import netifaces
+import networkx as nx
 import numpy as np
 import pandas as pd
 import pgmpy
+from matplotlib import pyplot as plt
+from networkx.drawing.nx_pydot import graphviz_layout
 from pgmpy.base import DAG
 from pgmpy.estimators import HillClimbSearch, MaximumLikelihoodEstimator, BDeuScore
 from pgmpy.factors.discrete import DiscreteFactor
@@ -260,31 +263,31 @@ def merge_single_dicts(dict1, dict2):
     return {**dict1, **dict2}
 
 
-# def export_BN_to_graph(bn: BayesianNetwork or pgmpy.base.DAG, root=None, try_visualization=False, vis_ls=None,
-#                        save=False,
-#                        name=None, show=True, color_map=None):
-#     if vis_ls is None:
-#         vis_ls = ["fdp"]
-#     else:
-#         vis_ls = vis_ls
-#
-#     if name is None:
-#         name = root
-#
-#     if try_visualization:
-#         vis_ls = ['neato', 'dot', 'twopi', 'fdp', 'sfdp', 'circo']
-#
-#     for s in vis_ls:
-#         pos = graphviz_layout(bn, root=root, prog=s)
-#         nx.draw(
-#             bn, pos, with_labels=True, arrowsize=20, node_size=1500,  # alpha=1.0, font_weight="bold",
-#             node_color=color_map
-#         )
-#         if save:
-#             plt.box(False)
-#             plt.savefig(f"{name}.png", dpi=400, bbox_inches="tight")  # default dpi is 100
-#         if show:
-#             plt.show()
+def export_BN_to_graph(bn: BayesianNetwork or pgmpy.base.DAG, root=None, try_visualization=False, vis_ls=None,
+                       save=False,
+                       name=None, show=True, color_map=None):
+    if vis_ls is None:
+        vis_ls = ["fdp"]
+    else:
+        vis_ls = vis_ls
+
+    if name is None:
+        name = root
+
+    if try_visualization:
+        vis_ls = ['neato', 'dot', 'twopi', 'fdp', 'sfdp', 'circo']
+
+    for s in vis_ls:
+        pos = graphviz_layout(bn, root=root, prog=s)
+        nx.draw(
+            bn, pos, with_labels=True, arrowsize=20, node_size=1500,  # alpha=1.0, font_weight="bold",
+            node_color=color_map
+        )
+        if save:
+            plt.box(False)
+            plt.savefig(f"{name}.png", dpi=400, bbox_inches="tight")  # default dpi is 100
+        if show:
+            plt.show()
 
 
 def get_mbs_as_bn(model: DAG or BayesianNetwork, mb_nodes: [str]):
@@ -519,7 +522,7 @@ def train_to_BN(samples, service_name, export_file=None, samples_path=None, dag=
             scoring_method="bicscore", max_indegree=4, epsilon=10,
         )
 
-    # export_BN_to_graph(dag, vis_ls=['circo'], save=False, name="raw_model", show=True)
+    export_BN_to_graph(dag, vis_ls=['circo'], save=False, name="raw_model", show=True)
     model = BayesianNetwork(ebunch=dag)
     model.name = service_name
     model.fit(data=samples, estimator=MaximumLikelihoodEstimator)

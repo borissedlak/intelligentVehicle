@@ -154,5 +154,5 @@ def get_latest_load(prometheus_host, instance):
 
 
 if __name__ == "__main__":
-    retrieve_full_data("192.168.31.21")
+    retrieve_full_data("localhost")
     prepare_models()
