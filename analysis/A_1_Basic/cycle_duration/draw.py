@@ -1,7 +1,6 @@
 import pandas as pd
 from matplotlib import pyplot as plt
 
-
 plt.rcParams.update({'font.size': 12})
 
 for (file, device) in [("./cycle_length_192.168.31.183.csv", "AGX"), ("./cycle_length_192.168.31.205.csv", "NX")]:
@@ -16,7 +15,12 @@ for (file, device) in [("./cycle_length_192.168.31.183.csv", "AGX"), ("./cycle_l
     plt.plot(df_T.index, df_T['time_ms'], marker='x', linestyle='--', label='Training')
     plt.plot(df_O.index, df_O['time_ms'], marker='o', linestyle='-', label='Check Offload')
 
-    # Set plot title and labels
+    plt.vlines([50, 100, 150], ymin=0, ymax=1000,
+               color='grey',
+               linestyle=':',
+               linewidth=1.8,
+               alpha=0.5)
+
     # plt.title(f'Cycle Duration for {device}')
     plt.xlabel('Cycle Iteration')
     plt.ylabel('Time consumed (ms)')
