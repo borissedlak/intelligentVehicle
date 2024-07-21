@@ -24,7 +24,6 @@ for (file, device) in [("./cycle_length_192.168.31.183.csv", "AGX"), ("./cycle_l
     # plt.title(f'Cycle Duration for {device}')
     plt.xlabel('Cycle Iteration')
     plt.ylabel('Time consumed (ms)')
-    plt.xticks(rotation=45)
     plt.xlim(0, 200)
     plt.ylim(0, 900)
     plt.legend()
