@@ -1,13 +1,15 @@
 import pandas as pd
 from matplotlib import pyplot as plt
+from pgmpy.readwrite import XMLBIFReader
+
+import utils
+from orchestration.SloEstimator import SloEstimator
 
 plt.rcParams.update({'font.size': 12})
 
-color_service_dict = {"QR-1": 'red', "CV-2": 'green', "CV-3": 'blue', "CV-4": 'orange'}
+color_service_dict = {"QR-1": 'red', "CV-2": 'green', "LI-3": 'blue', "CV-4": 'orange'}
 
-marker_service_dict = {"QR-1": '.', "CV-2": '|', "CV-3": '+', "CV-4": '_'}
-
-plt.figure(figsize=(6, 3.5))
+marker_service_dict = {"QR-1": '.', "CV-2": '|', "LI-3": '+', "CV-4": '.'}
 
 for (file, device) in [("./slo_f_192.168.31.183.csv", "AGX"), ("./slo_f_192.168.31.21.csv", "NX_1"),
                        ("./slo_f_192.168.31.205.csv", "NX_2"), ("./slo_f_192.168.31.198.csv", "NX_3")]:
@@ -36,12 +38,13 @@ for (file, device) in [("./slo_f_192.168.31.183.csv", "AGX"), ("./slo_f_192.168.
     df_slo_f = pd.read_csv(f"{device}.csv")
     df_slo_f['timestamp'] = pd.to_datetime(df_slo_f['timestamp'])
 
+    plt.figure(figsize=(6, 3.5))
 
     grouped = df_slo_f.groupby('service')
     subsets = {category: group for category, group in grouped}
     for service_id, subset in subsets.items():
-        plt.plot(subset['timestamp'], subset['reality'], marker=marker_service_dict[service_id], linestyle='-',
-                 label=service_id + '($\mathit{W_\phi}$)', color=color_service_dict[service_id])
+        plt.plot(subset['timestamp'], subset['reality'], marker=marker_service_dict[service_id], linestyle='--',
+                 label=service_id, color=color_service_dict[service_id])
 
     # plt.vlines([pd.to_datetime('2024-07-05 23:15:52'),
     #             pd.to_datetime('2024-07-05 23:17:32')], ymin=0, ymax=1000,
@@ -50,28 +53,29 @@ for (file, device) in [("./slo_f_192.168.31.183.csv", "AGX"), ("./slo_f_192.168.
     #            linewidth=1.8,
     #            alpha=0.9)
 
-    # start_date = pd.to_datetime('2024-07-05 23:15:00')
-    # end_date = pd.to_datetime('2024-07-05 23:19:16')
-    # plt.xlim(start_date, end_date)
-    #
-    # plt.ylabel('SLO fulfillment ($\mathit{W_\phi}$)')
-    # plt.xticks(ticks=[start_date, pd.to_datetime('2024-07-05 23:15:52'), pd.to_datetime('2024-07-05 23:17:32'),
-    #                   pd.to_datetime('2024-07-05 23:18:33')], labels=['0s', '30s', '90s', '120s'])
-    # plt.ylim(0.0, 1.05)
-    # plt.legend()
-    #
+    start_date = pd.to_datetime('2024-07-05 23:15:00')
+    end_date = pd.to_datetime('2024-07-05 23:19:16')
+    plt.xlim(start_date, end_date)
+
+    plt.ylabel('SLO fulfillment ($\mathit{W_\phi}$)')
+    plt.xticks(ticks=[start_date, pd.to_datetime('2024-07-05 23:15:52'), pd.to_datetime('2024-07-05 23:17:32'),
+                      pd.to_datetime('2024-07-05 23:18:33')], labels=['0s', '30s', '90s', '120s'])
+    plt.ylim(0.0, 1.05)
+    plt.legend()
+
     # plt.savefig(f"./slo_f_{device}.eps", dpi=300, bbox_inches="tight", format="eps")  # default dpi is 100
     # plt.show()
 
-start_date = pd.to_datetime('2024-07-05 23:15:00')
-end_date = pd.to_datetime('2024-07-05 23:19:16')
-plt.xlim(start_date, end_date)
-
-plt.ylabel('SLO fulfillment ($\mathit{W_\phi}$)')
-plt.xticks(ticks=[start_date, pd.to_datetime('2024-07-05 23:15:52'), pd.to_datetime('2024-07-05 23:17:32'),
-                  pd.to_datetime('2024-07-05 23:18:33')], labels=['0s', '30s', '90s', '120s'])
-plt.ylim(0.0, 1.05)
-# plt.legend()
-
-plt.savefig(f"./slo_f_global.eps", dpi=300, bbox_inches="tight", format="eps")  # default dpi is 100
-plt.show()
+# plt.figure(figsize=(6, 3.5))
+# start_date = pd.to_datetime('2024-07-05 23:15:00')
+# end_date = pd.to_datetime('2024-07-05 23:19:16')
+# plt.xlim(start_date, end_date)
+#
+# plt.ylabel('SLO fulfillment ($\mathit{W_\phi}$)')
+# plt.xticks(ticks=[start_date, pd.to_datetime('2024-07-05 23:15:52'), pd.to_datetime('2024-07-05 23:17:32'),
+#                   pd.to_datetime('2024-07-05 23:18:33')], labels=['0s', '30s', '90s', '120s'])
+# plt.ylim(0.0, 1.05)
+# # plt.legend()
+#
+# plt.savefig(f"./slo_f_global.eps", dpi=300, bbox_inches="tight", format="eps")  # default dpi is 100
+# plt.show()

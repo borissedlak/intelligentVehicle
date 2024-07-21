@@ -50,8 +50,8 @@ class SloEstimator:
 
         # Write: The problem is that the load does not rise linear with more services
         # Idea: So what I can do is take the one that is worse to make a conservative prediction
-        prediction_shifted = self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, self.prom_host, prometheus_instance,
-                                                             target_is_leader)
+        prediction_shifted = 0 #self.get_shifted_hw_predictions(hw_load_p, dest_model_VE, self.prom_host, prometheus_instance,
+                                                             #target_is_leader)
         logger.debug(f"M| Predictions for SLO fulfillment at target once load shifted {prediction_shifted}")
 
         # Write: I might need to split up the methods so that I can also evaluate their runtime more closely
@@ -130,6 +130,7 @@ class SloEstimator:
                 target_conv_load[var] = var_conv
 
             # utils.log_dict("slo_f", f"{self.s_desc['type']}-{self.s_desc['id']}", "192.168.31.21", [target_device, target_running_services, origin_load_p, target_conv_load])
+        logger.debug(f"M| Target convolutional load {target_conv_load}")
 
         target_slo_f = []
         for model in target_models:
@@ -142,17 +143,39 @@ class SloEstimator:
 if __name__ == "__main__":
     logging.getLogger("vehicle").setLevel(logging.DEBUG)
 
-    local_model_name = utils.create_model_name("CV", "Laptop")
-    local_model = XMLBIFReader("models/" + local_model_name).get_model()
-    target_model_name = utils.create_model_name("CV", "Laptop")
-    target_model = XMLBIFReader("models/" + local_model_name).get_model()
+    # local_model_name = utils.create_model_name("CV", "Laptop")
+    # local_model = XMLBIFReader("models/" + local_model_name).get_model()
+    # target_model_name = utils.create_model_name("CV", "Laptop")
+    # target_model = XMLBIFReader("models/" + local_model_name).get_model()
+    #
+    # s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["rate_60"], 'constraints': {'fps': '5', 'pixel': '480'}}
+    # s_desc_2 = {"id": 2, "type": 'CV', 'slo_vars': ["rate_60"], 'constraints': {'pixel': '720', 'fps': '5'}}
+    # s_desc_3 = {"id": 3, "type": 'CV', 'slo_vars': ["rate_60"], 'constraints': {'pixel': '1080', 'fps': '5'}}
+    # estimator = SloEstimator(local_model, service_desc=s_desc_1, prom_host="localhost")
+    # estimator_2 = SloEstimator(local_model, service_desc=s_desc_2, prom_host="localhost")
+    # estimator_3 = SloEstimator(local_model, service_desc=s_desc_3, prom_host="localhost")
+    #
+    # # hw_load_p, slof_local_isolated = estimator.get_isolated_hw_predictions(model_VE=VariableElimination(local_model))
+    # # prediction_shifted = estimator.get_shifted_hw_predictions(hw_load_p, VariableElimination(target_model),
+    # #                                                           "host.docker.internal", True)
+    #
+    # # shifted = estimator.calc_weighted_slo_f(hw_load_p, dest_model_VE=VariableElimination(target_model), shift=[2, 0, 3], isolated="True",
+    # #                                         is_leader=True)
+    # # print(shifted)
+    #
+    # print(estimator.infer_local_slo_f([s_desc_1], "Laptop", target_is_leader=True))
+    # print(estimator_2.infer_local_slo_f([s_desc_2], "Laptop", target_is_leader=True))
+    # print(estimator_3.infer_local_slo_f([s_desc_3], "Laptop", target_is_leader=True))
 
-    s_desc_1 = {"id": 1, "type": 'CV', 'slo_vars': ["rate_60"], 'constraints': {'fps': '5', 'pixel': '480'}}
-    s_desc_2 = {"id": 2, "type": 'CV', 'slo_vars': ["rate_60"], 'constraints': {'pixel': '720', 'fps': '5'}}
-    s_desc_3 = {"id": 3, "type": 'CV', 'slo_vars': ["rate_60"], 'constraints': {'pixel': '1080', 'fps': '5'}}
-    estimator = SloEstimator(local_model, service_desc=s_desc_1, prom_host="localhost")
-    estimator_2 = SloEstimator(local_model, service_desc=s_desc_2, prom_host="localhost")
-    estimator_3 = SloEstimator(local_model, service_desc=s_desc_3, prom_host="localhost")
+    local_model_name = utils.create_model_name("CV", "AGX")
+    local_model = XMLBIFReader("models/" + local_model_name).get_model()
+
+    cv_2 = {"id": 2, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'fps': '10', 'pixel': '480'}}
+    cv_4 = {"id": 4, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'fps': '10', 'pixel': '720'}}
+    li_3 = {"id": 3, "type": 'CV', 'slo_vars': ["in_time"], 'constraints': {'fps': '5', 'pixel': '480'}}
+    estimator = SloEstimator(local_model, service_desc=cv_4, prom_host="localhost")
+
+    qr_1 = {"id": 1, "type": 'QR', 'slo_vars': ["in_time"], 'constraints': {'fps': '5', 'pixel': '480'}}
 
     # hw_load_p, slof_local_isolated = estimator.get_isolated_hw_predictions(model_VE=VariableElimination(local_model))
     # prediction_shifted = estimator.get_shifted_hw_predictions(hw_load_p, VariableElimination(target_model),
@@ -162,6 +185,6 @@ if __name__ == "__main__":
     #                                         is_leader=True)
     # print(shifted)
 
-    print(estimator.infer_local_slo_f([s_desc_1], "Laptop", target_is_leader=True))
-    print(estimator_2.infer_local_slo_f([s_desc_2], "Laptop", target_is_leader=True))
-    print(estimator_3.infer_local_slo_f([s_desc_3], "Laptop", target_is_leader=True))
+    print(estimator.infer_local_slo_f([cv_2, cv_4, li_3], "Laptop", target_is_leader=True))
+    print(estimator.infer_target_slo_f(utils.create_model_name("CV", "NX"), [], target_is_leader=True, prometheus_instance="192.168.31.205"))
+    print(estimator.infer_target_slo_f(utils.create_model_name("CV", "NX"), [qr_1], target_is_leader=True, prometheus_instance="192.168.31.205"))
