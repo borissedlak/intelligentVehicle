@@ -8,22 +8,24 @@ for (file, type) in [("./slo_f_192.168.31.21_chunky.csv", "chunky"), ("./slo_f_1
     df = pd.read_csv(file)  # .iloc[:200]
 
     plt.figure(figsize=(6, 3.2))
-    plt.vlines([250], ymin=0, ymax=1000,
+    plt.vlines([251], ymin=0, ymax=1000,
                color='red',
                linestyle='-',
                linewidth=1.5,
-               alpha=1)
+               alpha=1,
+               label='Stress CPU')
 
     df_train_points = list(df[df['evidence'] >= 1.0].index)
     plt.vlines([df_train_points], ymin=0, ymax=1000,
                color='grey',
                linestyle='-',
                linewidth=0.5,
-               alpha=0.5)
+               alpha=0.5,
+               label='Retrain')
 
     # plt.plot(df.index, df['evidence'], marker='x', linestyle='--', label=r'Evidence ($\mathit{e_r}$)', alpha=0.5)
     plt.plot(df.index, df['expected'], marker='x', linestyle='--', label='Expected ($\mathit{p_\phi}$)')
-    plt.plot(df.index, df['reality'], marker='x', linestyle='--', label='Reality ($\mathit{W_\phi}$)')
+    plt.plot(df.index, df['reality'], marker='x', linestyle='--', label='Actual ($\mathit{W_\phi}$)')
     # plt.plot(df_O.index, df_O['time_ms'], marker='o', linestyle='-', label='Check Offload')
 
     # plt.title(f'Cycle Duration for {device}')
