@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
@@ -6,17 +7,24 @@ plt.rcParams.update({'font.size': 12})
 for (file, type) in [("./slo_f_192.168.31.21_chunky.csv", "chunky"), ("./slo_f_192.168.31.21_smooth.csv", "smooth")]:
     df = pd.read_csv(file)  # .iloc[:200]
 
-    plt.figure(figsize=(6, 3.5))
-    plt.plot(df.index, df['evidence'], marker='x', linestyle='--', label=r'Evidence ($\mathit{e_r}$)', alpha=0.5)
+    plt.figure(figsize=(6, 3.2))
+    plt.vlines([250], ymin=0, ymax=1000,
+               color='red',
+               linestyle='-',
+               linewidth=1.5,
+               alpha=1)
+
+    df_train_points = list(df[df['evidence'] >= 1.0].index)
+    plt.vlines([df_train_points], ymin=0, ymax=1000,
+               color='grey',
+               linestyle='-',
+               linewidth=0.5,
+               alpha=0.5)
+
+    # plt.plot(df.index, df['evidence'], marker='x', linestyle='--', label=r'Evidence ($\mathit{e_r}$)', alpha=0.5)
     plt.plot(df.index, df['expected'], marker='x', linestyle='--', label='Expected ($\mathit{p_\phi}$)')
     plt.plot(df.index, df['reality'], marker='x', linestyle='--', label='Reality ($\mathit{W_\phi}$)')
     # plt.plot(df_O.index, df_O['time_ms'], marker='o', linestyle='-', label='Check Offload')
-
-    plt.vlines([250], ymin=0, ymax=1000,
-               color='grey',
-               linestyle='-',
-               linewidth=1.8,
-               alpha=1)
 
     # plt.title(f'Cycle Duration for {device}')
     plt.xlabel('Cycle Iteration')
@@ -29,3 +37,5 @@ for (file, type) in [("./slo_f_192.168.31.21_chunky.csv", "chunky"), ("./slo_f_1
     plt.savefig(f"./eager_learning_{type}.eps", dpi=300, bbox_inches="tight", format="eps")  # default dpi is 100
     plt.show()
 
+    mse = np.mean((df['expected'] - df['reality']) ** 2)
+    print(f"MSE for {type}: {mse}")
