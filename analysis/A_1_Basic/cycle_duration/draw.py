@@ -29,5 +29,6 @@ for (file, device) in [("./cycle_length_192.168.31.183.csv", "AGX"), ("./cycle_l
     plt.legend()
     # plt.tight_layout()
 
+    plt.subplots_adjust(top=0.95, bottom=0.18)
     plt.savefig(f"./cycle_overhead_{device}.eps", dpi=300, format="eps")  # default dpi is 100
     plt.show()

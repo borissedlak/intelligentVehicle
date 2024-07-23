@@ -36,6 +36,7 @@ for (file, type) in [("./slo_f_192.168.31.21_chunky.csv", "chunky"), ("./slo_f_1
     plt.legend()
     # plt.tight_layout()
 
+    plt.subplots_adjust(top=0.95, bottom=0.18)
     plt.savefig(f"./eager_learning_{type}.eps", dpi=300, format="eps")  # default dpi is 100
     plt.show()
 
