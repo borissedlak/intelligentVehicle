@@ -2,12 +2,12 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-plt.rcParams.update({'font.size': 12})
+plt.rcParams.update({'font.size': 15})
 
 for (file, type) in [("./slo_f_192.168.31.21_chunky.csv", "chunky"), ("./slo_f_192.168.31.21_smooth.csv", "smooth")]:
     df = pd.read_csv(file)  # .iloc[:200]
 
-    plt.figure(figsize=(6, 3.2))
+    plt.figure(figsize=(6.4, 3.2))
     plt.vlines([251], ymin=0, ymax=1000,
                color='red',
                linestyle='-',
@@ -36,7 +36,7 @@ for (file, type) in [("./slo_f_192.168.31.21_chunky.csv", "chunky"), ("./slo_f_1
     plt.legend()
     # plt.tight_layout()
 
-    plt.savefig(f"./eager_learning_{type}.eps", dpi=300, bbox_inches="tight", format="eps")  # default dpi is 100
+    plt.savefig(f"./eager_learning_{type}.eps", dpi=300, format="eps")  # default dpi is 100
     plt.show()
 
     mse = np.mean((df['expected'] - df['reality']) ** 2)

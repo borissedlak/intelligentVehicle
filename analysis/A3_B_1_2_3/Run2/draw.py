@@ -1,11 +1,7 @@
 import pandas as pd
 from matplotlib import pyplot as plt
-from pgmpy.readwrite import XMLBIFReader
 
-import utils
-from orchestration.SloEstimator import SloEstimator
-
-plt.rcParams.update({'font.size': 12})
+plt.rcParams.update({'font.size': 19})
 
 color_service_dict = {"QR-1": 'red', "CV-2": 'green', "LI-3": 'blue', "CV-4": 'orange'}
 
@@ -38,7 +34,7 @@ for (file, device) in [("./slo_f_192.168.31.183.csv", "AGX"), ("./slo_f_192.168.
     df_slo_f = pd.read_csv(f"{device}.csv")
     df_slo_f['timestamp'] = pd.to_datetime(df_slo_f['timestamp'])
 
-    plt.figure(figsize=(6, 3.5))
+    plt.figure(figsize=(6, 3.2))
 
     grouped = df_slo_f.groupby('service')
     subsets = {category: group for category, group in grouped}
@@ -61,10 +57,10 @@ for (file, device) in [("./slo_f_192.168.31.183.csv", "AGX"), ("./slo_f_192.168.
     plt.xticks(ticks=[start_date, pd.to_datetime('2024-07-05 23:15:52'), pd.to_datetime('2024-07-05 23:17:32'),
                       pd.to_datetime('2024-07-05 23:18:33')], labels=['0s', '30s', '90s', '120s'])
     plt.ylim(0.0, 1.05)
-    plt.legend()
+    plt.legend(loc="lower right")
 
-    # plt.savefig(f"./slo_f_{device}.eps", dpi=300, bbox_inches="tight", format="eps")  # default dpi is 100
-    # plt.show()
+    plt.savefig(f"./slo_f_{device}.eps", dpi=300, bbox_inches="tight", format="eps")  # default dpi is 100
+    plt.show()
 
 # plt.figure(figsize=(6, 3.5))
 # start_date = pd.to_datetime('2024-07-05 23:15:00')
