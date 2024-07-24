@@ -1,3 +1,5 @@
+This README explains the steps requires to install the framework on an NVIDIA Jetson NX and start one of the services 
+
 1.) Clone project
 --------------------
     
@@ -14,6 +16,8 @@
 
 X.) Install Python3.10
 --------------------
+Might not be necessary or possible depending on the environment
+
     XX sudo add-apt-repository ppa:deadsnakes/ppa
     XX sudo apt install python3.10
     XX sudo apt install python3.10-distutils
@@ -47,7 +51,7 @@ X.) Install Python3.10
 
     python3 /HttpServer.py
 
-Start services through HTTP, e.g., POST to 
+Start services through HTTP
 
-    localhost:8080/start_service?service_description={'id': {{ServiceID}}, "type": '1', 'slo_vars': ['in_time','energy_saved'], 'constraints': {'pixel': '480', 'fps': '10'}}
+    curl -X POST "localhost:8080/start_service?service_description={\"id\": 1, \"type\": \"CV\", \"slo_vars\": [\"in_time\", \"energy_saved\"], \"constraints\": {\"pixel\": \"480\", \"fps\": \"5\"}}"
 
