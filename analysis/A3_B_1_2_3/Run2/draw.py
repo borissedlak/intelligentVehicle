@@ -3,9 +3,9 @@ from matplotlib import pyplot as plt
 
 plt.rcParams.update({'font.size': 19})
 
-color_service_dict = {"QR-1": 'red', "CV-2": 'green', "LI-3": 'blue', "CV-4": 'orange'}
+color_service_dict = {"QR-1": 'chocolate', "CV-2": 'dimgray', "LI-3": 'firebrick', "CV-4": 'steelblue'}
 
-marker_service_dict = {"QR-1": '.', "CV-2": '|', "LI-3": '+', "CV-4": '.'}
+# marker_service_dict = {"QR-1": '.', "CV-2": '|', "LI-3": '+', "CV-4": '.'}
 
 for (file, device) in [("./slo_f_192.168.31.183.csv", "AGX"), ("./slo_f_192.168.31.21.csv", "NX_1"),
                        ("./slo_f_192.168.31.205.csv", "NX_2"), ("./slo_f_192.168.31.198.csv", "NX_3")]:
@@ -39,7 +39,7 @@ for (file, device) in [("./slo_f_192.168.31.183.csv", "AGX"), ("./slo_f_192.168.
     grouped = df_slo_f.groupby('service')
     subsets = {category: group for category, group in grouped}
     for service_id, subset in subsets.items():
-        plt.plot(subset['timestamp'], subset['reality'], marker=marker_service_dict[service_id], linestyle='--',
+        plt.plot(subset['timestamp'], subset['reality'], marker='x', linestyle='--',
                  label=service_id, color=color_service_dict[service_id])
 
     # plt.vlines([pd.to_datetime('2024-07-05 23:15:52'),

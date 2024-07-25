@@ -5,7 +5,7 @@ plt.rcParams.update({'font.size': 12})
 
 color_service_dict = {"QR-1": 'chocolate', "CV-2": 'dimgray', "CV-3": 'firebrick', "CV-4": 'steelblue'}
 
-for (file, device) in [("./slo_f_192.168.31.21_raw.csv", "Laptop"), ("./slo_f_192.168.31.183_raw.csv", "AGX")]:
+for (file, device) in [("./slo_f_192.168.31.21_raw.csv", "NX_1"), ("./slo_f_192.168.31.183_raw.csv", "AGX")]:
     df = pd.read_csv(file)
 
     df_slo_f = df[(df['v1'].isna()) & (df['v2'].isna())]
@@ -49,7 +49,7 @@ for (file, device) in [("./slo_f_192.168.31.21_raw.csv", "Laptop"), ("./slo_f_19
     end_date = pd.to_datetime('2024-07-06 14:59:10')
     plt.xlim(start_date, end_date)
 
-    plt.xlabel('Cycle Iteration')
+    # plt.xlabel('Cycle Iteration')
     # plt.ylabel('Time consumed (ms)')
     plt.xticks([])
     # plt.xticks(rotation=90)
@@ -58,5 +58,5 @@ for (file, device) in [("./slo_f_192.168.31.21_raw.csv", "Laptop"), ("./slo_f_19
     plt.legend()
     # plt.tight_layout()
 
-    plt.savefig(f"./slo_f_{device}.eps", dpi=300, bbox_inches="tight", format="eps")  # default dpi is 100
+    plt.savefig(f"./slo_f_{device}.eps", dpi=300, format="eps")  # default dpi is 100
     plt.show()
