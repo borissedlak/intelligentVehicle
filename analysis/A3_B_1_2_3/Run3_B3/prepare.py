@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 
 plt.rcParams.update({'font.size': 12})
 
-color_service_dict = {"QR-1": 'red', "CV-2": 'green', "CV-3": 'blue', "CV-4": 'orange'}
+color_service_dict = {"QR-1": 'chocolate', "CV-2": 'dimgray', "CV-3": 'firebrick', "CV-4": 'steelblue'}
 
 for (file, device) in [("./slo_f_192.168.31.21_raw.csv", "Laptop"), ("./slo_f_192.168.31.183_raw.csv", "AGX")]:
     df = pd.read_csv(file)
