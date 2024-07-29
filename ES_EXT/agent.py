@@ -56,12 +56,10 @@ else:
     print(f"Didn't find ENV value for SHOW_IMG, default to: {SHOW_IMG}")
 
 model_name = None if CLEAN_RESTART else utils.create_model_name("CV", DEVICE_NAME)
-aci = ACI(description={'type': 'CV', 'slo_vars': ['in_time', 'energy_saved']}, distance_slo=100,
-          network_slo=(420 * 30 * 10), load_model='models/' + model_name, show_img=SHOW_IMG)
+aci = ACI(description={'type': 'CV', 'slo_vars': ['in_time', 'rate_60']}, load_model='models/' + model_name, show_img=SHOW_IMG)
 
 c_pixel = ACI.pixel_list[1]
 c_fps = ACI.fps_list[2]
-c_mode = None
 
 logger = logging.getLogger("vehicle")
 override_next_config = None
@@ -85,8 +83,7 @@ def processing_loop():
             pass
 
 
-background_thread = threading.Thread(target=processing_loop)
-background_thread.daemon = True  # Set the thread as a daemon, so it exits when the main program exits
+background_thread = threading.Thread(target=processing_loop, daemon=True)
 background_thread.start()
 
 
@@ -103,8 +100,9 @@ class ACIBackgroundThread(threading.Thread):
                 if metrics_buffer.is_empty():
                     continue
                 else:
-                    (new_pixel, new_fps, pv, real, surprise) = aci.iterate(metrics_buffer)
+                    input_metrics = metrics_buffer.get()
                     metrics_buffer.clear()
+                    (new_pixel, new_fps, pv, real, surprise) = aci.iterate(input_metrics)
                     # past_pixel, past_fps, past_pv = real
 
                     inferred_config_hist.append((new_pixel, new_fps))
