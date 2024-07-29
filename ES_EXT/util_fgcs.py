@@ -16,6 +16,8 @@ from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 from scipy.interpolate import griddata
 
+import utils
+
 header_csv = 'execution_time,timestamp,cpu_utilization,memory_usage,pixel,fps,success,distance,consumption,stream_count\n'
 
 store = {}
@@ -132,34 +134,33 @@ def print_in_red(text):
 
 
 # @print_execution_time
-def get_surprise_for_data(model: BayesianNetwork, data):
-    # Create an inference object
-    inference = VariableElimination(get_mbs_as_bn(model, ["success", "in_time", "network", "distance"]))
+def get_surprise_for_data(model: BayesianNetwork, data, slo_vars):
+    inference = VariableElimination(get_mbs_as_bn(model, slo_vars))
 
     bic_sum = 0.0
-    try:
-        for variable in ["success", "in_time", "network", "distance"]:
-            cpd = get_mbs_as_bn(model, [variable]).get_cpds(variable)
-            log_likelihood = 0.0
-            evidence_variables = model.get_markov_blanket(variable)
+    # try:
+    for variable in slo_vars:
+        cpd = get_mbs_as_bn(model, [variable]).get_cpds(variable)
+        log_likelihood = 0.0
+        evidence_variables = model.get_markov_blanket(variable)
 
-            # if 'consumption' in evidence_variables:
-            #     evidence_variables.remove('consumption')
+        # if 'consumption' in evidence_variables:
+        #     evidence_variables.remove('consumption')
 
-            for _, row in data.iterrows():
-                evidence = {col: row[col] for col in evidence_variables}
-                query_result = inference.query(variables=[variable], evidence=evidence)
-                state_index = cpd.__getattribute__("state_names")[variable].index(row[variable])
-                p = query_result.values[state_index]
-                log_likelihood += np.log(p if p > 0 else 1e-10)
+        for _, row in data.iterrows():
+            evidence = {col: row[col] for col in evidence_variables}
+            query_result = inference.query(variables=[variable], evidence=evidence)
+            state_index = cpd.__getattribute__("state_names")[variable].index(row[variable])
+            p = query_result.values[state_index]
+            log_likelihood += np.log(p if p > 0 else 1e-10)
 
-            k = len(cpd.get_values().flatten()) - len(cpd.variables)
+        k = len(cpd.get_values().flatten()) - len(cpd.variables)
 
-            n = len(data)
-            bic = -2 * log_likelihood + k * np.log(n)
-            bic_sum += bic
-    except ValueError or KeyError as e:
-        print_in_red(f"Should not happen after safeguard function!!!!" + str(e))
+        n = len(data)
+        bic = -2 * log_likelihood + k * np.log(n)
+        bic_sum += bic
+    # except ValueError or KeyError as e:
+    #     print_in_red(f"Should not happen after safeguard function!!!!" + str(e))
 
     return bic_sum
 
@@ -177,21 +178,6 @@ def get_mbs_as_bn(model: DAG or BayesianNetwork, center: [str]):
             mb.remove_node(n)
 
     return mb
-
-
-# @print_execution_time # took ~13ms
-def verify_all_slo_parameters_known(model: BayesianNetwork, data):
-    for variable in ["success", "in_time", "fps", "pixel", "stream_count", "bitrate", "network", "distance"]:
-        for _, row in data.iterrows():
-            if row[variable] not in model.__getattribute__("states")[variable]:
-                return False
-
-        for v in model.get_markov_blanket(variable):
-            for _, row in data.iterrows():
-                if row[v] not in model.__getattribute__("states")[v]:
-                    return False
-
-    return True
 
 
 def interpolate_values(matrix):
@@ -217,31 +203,51 @@ def interpolate_values(matrix):
     interpolated_data[mask] = griddata((x_valid, y_valid), data_valid, (xx[mask], yy[mask]), method='nearest')
     return interpolated_data
 
+def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None, conversion=True):
+    if conversion:
+        samples["delta"] = samples["delta"].apply(np.floor).astype(int)
+        samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
+        samples["memory"] = samples["memory"].apply(np.floor).astype(int)
+        samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
+        samples['energy_saved'] = samples['consumption'] <= 25
 
-def prepare_samples(samples, t_distance, t_total_bitrate):
-    samples['bitrate'] = samples['fps'] * samples['pixel']
-    samples['network'] = samples['bitrate'] <= t_total_bitrate
-    samples['in_time'] = samples['execution_time'] <= (1000 / samples['fps'])
+        samples['cpu'] = pd.cut(samples['cpu'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
+                                labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
+        samples['memory'] = pd.cut(samples['memory'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
+                                   labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
+        samples['gpu'] = pd.cut(samples['gpu'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
+                                labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
+        if hasattr(samples, 'rate'):
+            samples["rate"] = samples["rate"].astype(float)
+            samples['rate_60'] = samples['rate'] >= 0.60
 
-    samples['bitrate'] = samples['bitrate'].astype(str)
-    samples['network'] = samples['network'].astype(str)
+    samples['cpu'] = samples['cpu'].astype(str)
+    samples['memory'] = samples['memory'].astype(str)
+    samples['gpu'] = samples['gpu'].astype(str)
     samples['fps'] = samples['fps'].astype(str)
-    samples['pixel'] = samples['pixel'].astype(str)
-    samples['stream_count'] = samples['stream_count'].astype(str)
-    samples['consumption'] = samples['consumption'].astype(str)
-
-    samples['distance'] = samples['distance'] <= t_distance
-    samples['cpu_utilization'] = pd.cut(samples['cpu_utilization'], bins=[0, 50, 70, 90, 100],
-                                        labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
-    samples['memory_usage'] = pd.cut(samples['memory_usage'], bins=[0, 50, 70, 90, 100],
-                                     labels=['Low', 'Mid', 'High', 'Very_High'], include_lowest=True)
-
-    samples['success'] = samples['success'].astype(str)
-    samples['distance'] = samples['distance'].astype(str)
     samples['in_time'] = samples['in_time'].astype(str)
+    samples['energy_saved'] = samples['energy_saved'].astype(str)
 
-    del samples['timestamp']
-    del samples['execution_time']
+    if hasattr(samples, 'rate_60'):
+        samples['rate_60'] = samples['rate_60'].astype(str)
+    if hasattr(samples, 'pixel'):
+        samples['pixel'] = samples['pixel'].astype(str)
+
+    if hasattr(samples, '_id'):
+        del samples['_id']
+    if hasattr(samples, 'timestamp'):
+        del samples['timestamp']
+    if hasattr(samples, 'delta'):
+        del samples['delta']
+    if hasattr(samples, 'consumption'):
+        del samples['consumption']
+    if hasattr(samples, 'rate'):
+        del samples['rate']
+
+    if export_path is not None:
+        samples.to_csv(export_path, index=False)
+        print(f"Exported sample file to: {export_path}")
+
     return samples
 
 

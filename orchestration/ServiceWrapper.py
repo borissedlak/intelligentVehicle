@@ -21,9 +21,6 @@ from services.LI.LidarProcessor import LidarProcessor
 from services.QR.QrDetector import QrDetector
 from services.VehicleService import VehicleService
 
-# LEADER_HOST = utils.get_ENV_PARAM('LEADER_HOST', "127.0.0.1")
-DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
-
 http_client = HttpClient()
 
 MODEL_DIRECTORY = "./"

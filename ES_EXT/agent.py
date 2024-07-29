@@ -56,7 +56,8 @@ else:
     print(f"Didn't find ENV value for SHOW_IMG, default to: {SHOW_IMG}")
 
 model_name = None if CLEAN_RESTART else utils.create_model_name("CV", DEVICE_NAME)
-aci = ACI(distance_slo=100, network_slo=(420 * 30 * 10), load_model='models/' + model_name, device_name=DEVICE_NAME, show_img=SHOW_IMG)
+aci = ACI(description={'type': 'CV', 'slo_vars': ['in_time', 'energy_saved']}, distance_slo=100,
+          network_slo=(420 * 30 * 10), load_model='models/' + model_name, show_img=SHOW_IMG)
 
 c_pixel = ACI.pixel_list[1]
 c_fps = ACI.fps_list[2]
@@ -102,14 +103,17 @@ class ACIBackgroundThread(threading.Thread):
                 if metrics_buffer.is_empty():
                     continue
                 else:
-                    (new_pixel, new_fps, pv, ra, real, surprise) = aci.iterate(metrics_buffer)
-                    past_pixel, past_fps, past_pv, past_ra = real
+                    (new_pixel, new_fps, pv, real, surprise) = aci.iterate(metrics_buffer)
+                    # past_pixel, past_fps, past_pv = real
 
                     inferred_config_hist.append((new_pixel, new_fps))
                     if override_next_config:
                         c_pixel, c_fps = override_next_config
                         override_next_config = None
                     else:
+                        if (c_pixel, c_fps) != (new_pixel, new_fps):
+                            print(f"Changing configuration to {(new_pixel, new_fps)}")
+
                         c_pixel, c_fps = new_pixel, new_fps
             except Exception as e:
                 error_traceback = traceback.format_exc()
@@ -134,9 +138,9 @@ while True:
         elif user_input == "-":
             http_client.override_stream_config(1 if threads == 1 else (threads - 1))
         elif user_input == "i":
-            aci.initialize_bn()
+            aci.bnl(aci.entire_training_data)
         elif user_input == "e":
-            aci.export_model(DEVICE_NAME)
+            aci.export_model()
         # elif user_input == "q":
         #     aci.export_model()
         #     sys.exit()
