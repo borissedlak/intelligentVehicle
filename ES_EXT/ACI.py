@@ -26,7 +26,7 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
 class ACI:
     pixel_list = [480, 720, 1080]
-    fps_list = [10, 15, 20, 25, 30]
+    fps_list = [5, 10, 15, 20, 25]
     bitrate_dict = {}
 
     for pair in itertools.product(pixel_list, fps_list):
@@ -59,19 +59,17 @@ class ACI:
         self.slo_hist = CyclicArray(75)
         self.s_desc = description
 
-        self.valid_stream_values_ra = []
         self.valid_stream_values_pv = []
-        self.stream_regression_model_ra = LinearRegression()
         self.stream_regression_model_pv = LinearRegression()
         self.poly_features = PolynomialFeatures(degree=4)
 
-        self.pv_matrix = np.full((6, 5), -1.0)
-        self.ig_matrix = np.full((6, 5), -1.0)
-        self.ig_matrix[0][0], self.ig_matrix[5][4], self.ig_matrix[5][0], self.ig_matrix[0][4], \
-            self.ig_matrix[3][2] = 0.0, 0.05, 0.05, 0.05, 0.05
+        self.pv_matrix = np.full((3, 5), -1.0)
+        self.ig_matrix = np.full((3, 5), -1.0)
+        self.ig_matrix[0][0], self.ig_matrix[2][4], self.ig_matrix[2][0], self.ig_matrix[0][4], \
+            self.ig_matrix[1][2] = 0.0, 0.05, 0.05, 0.05, 0.05
         self.ig_matrix = util_fgcs.interpolate_values(self.ig_matrix)
-        self.ig_matrix[0][0], self.ig_matrix[5][4], self.ig_matrix[5][0], self.ig_matrix[0][4], \
-            self.ig_matrix[2][2] = 0.0, 0.3, 0.3, 0.3, 0.3
+        self.ig_matrix[0][0], self.ig_matrix[2][4], self.ig_matrix[2][0], self.ig_matrix[0][4], \
+            self.ig_matrix[1][2] = 0.0, 0.3, 0.3, 0.3, 0.3
 
     def iterate(self, samples, c_stream_count=1):
         self.load_last_batch(samples)
@@ -92,7 +90,7 @@ class ACI:
         #
         #     # self.bnl(self.entire_training_data)
         #     self.retrain_parameter()
-        if s > (1 * mean_surprise_last_10_values):
+        if s >= (1 * mean_surprise_last_10_values):
             self.retrain_parameter()
 
         pv = self.SLOs_fulfilled(self.current_batch)
@@ -122,8 +120,7 @@ class ACI:
     def calculate_factors(self, c_pixel, c_fps):
 
         self.ig_matrix[ACI.pixel_list.index(c_pixel)][ACI.fps_list.index(c_fps)] = 0.0
-
-        inference = VariableElimination(self.model) #util_fgcs.get_mbs_as_bn(self.model, self.s_desc['slo_vars']))
+        inference = VariableElimination(self.model)  # util_fgcs.get_mbs_as_bn(self.model, self.s_desc['slo_vars']))
 
         # Ensure that the current one is processed first to train the regression
         bitrate_list = list(itertools.product([str(i) for i in ACI.pixel_list], [str(i) for i in ACI.fps_list]))
@@ -133,34 +130,31 @@ class ACI:
         unknown_combinations = []
 
         for (pixel, fps) in bitrate_list:
-            # pixel = ACI.bitrate_dict[int(br)][0]
-            # fps = ACI.bitrate_dict[int(br)][1]
 
-            try:
-                evidence = {'pixel': str(c_pixel), 'fps': str(c_fps)}
-                pv = util_fgcs.get_true(inference.query(variables=self.s_desc['slo_vars'], evidence=evidence))
+            # try:
+            evidence = {'pixel': pixel, 'fps': fps}
+            pv = util_fgcs.get_true(inference.query(variables=self.s_desc['slo_vars'], evidence=evidence))
 
-                self.valid_stream_values_pv.append((pixel, fps, pv))
+            if 0.2 < pv < 0.3:  # Default value indicating empty
+                unknown_combinations.append((int(pixel), int(fps)))
+            else:
+                self.valid_stream_values_pv.append((int(pixel), int(fps), pv))
                 self.pv_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] = pv
-            except Exception as ex:
-                unknown_combinations.append((pixel, fps))
-                if str(ex) != "_nan":
-                    print(ex)
+            # except Exception as ex:
+            #     unknown_combinations.append((pixel, fps))
+            #     if str(ex) != "_nan":
+            #         print(ex)
 
         if len(unknown_combinations) > 0:
-            input_data = np.array([(x1, x2) for x1, x2, y in self.valid_stream_values_pv])
+            input_data = np.array([(x1, x2) for (x1, x2, y) in self.valid_stream_values_pv])
             input_data = self.poly_features.fit_transform(input_data)
-            target_data = np.array([y for x1, x2, y in self.valid_stream_values_pv])
+            target_data = np.array([y for (x1, x2, y) in self.valid_stream_values_pv])
             self.stream_regression_model_pv.fit(input_data, target_data)
 
-            for p, f, s in unknown_combinations:
-                input_vector = self.poly_features.fit_transform(np.array([[p, f, s]]))
+            for p, f in unknown_combinations:
+                input_vector = self.poly_features.fit_transform(np.array([[p, f]]))
                 pv_predict = util_fgcs.cap_0_1(self.stream_regression_model_pv.predict(input_vector)[0])
                 self.pv_matrix[ACI.pixel_list.index(p)][ACI.fps_list.index(f)] = pv_predict
-                ra_predict = util_fgcs.cap_0_1(self.stream_regression_model_ra.predict(input_vector)[0])
-                self.ra_matrix[ACI.pixel_list.index(p)][ACI.fps_list.index(f)] = ra_predict
-
-            # print(f"{int(br / fps)}p_{fps} returns {time} and {success}")
 
     @print_execution_time
     def retrain_parameter(self, full_retrain=False):
@@ -172,10 +166,10 @@ class ACI:
             #     self.load_model = False
             # self.model.fit(self.entire_training_data)
         else:
-            past_data_length = len(self.past_training_data)
-            if hasattr(self, 'backup_data'):
-                past_data_length += len(self.backup_data)
-            self.model.fit_update(self.current_batch, n_prev_samples=(past_data_length / 3))
+            # past_data_length = len(self.past_training_data)
+            # if hasattr(self, 'backup_data'):
+            #     past_data_length += len(self.backup_data)
+            self.model.fit_update(self.current_batch) #, n_prev_samples=(past_data_length / 3))
             # except ValueError as ve:
             #     print(f"Caught a ValueError: {ve}")
             #     self.retrain_parameter(full_retrain=True)

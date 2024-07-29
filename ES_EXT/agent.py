@@ -98,12 +98,13 @@ class ACIBackgroundThread(threading.Thread):
     def run(self):
         global c_pixel, c_fps, override_next_config, inferred_config_hist
         while True:
-            time.sleep(0.5)
+            time.sleep(1.0)
             try:
                 if metrics_buffer.is_empty():
                     continue
                 else:
                     (new_pixel, new_fps, pv, real, surprise) = aci.iterate(metrics_buffer)
+                    metrics_buffer.clear()
                     # past_pixel, past_fps, past_pv = real
 
                     inferred_config_hist.append((new_pixel, new_fps))

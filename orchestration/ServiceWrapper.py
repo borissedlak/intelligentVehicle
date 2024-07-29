@@ -34,6 +34,7 @@ SLO_HISTORY_BUFFER_SIZE = 75  # Idea: This is a hyperparameter
 registry = CollectorRegistry()
 prom_slo_fulfillment = Gauge('slo_f', 'Current SLO fulfillment', ['id', 'host', 'device_name'], registry=registry)
 
+DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
 class ServiceWrapper(threading.Thread):
     def __init__(self, inf_service: VehicleService, description, model, platoon_members, evaluate, isolated=False):

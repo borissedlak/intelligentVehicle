@@ -20,8 +20,6 @@ import utils
 
 header_csv = 'execution_time,timestamp,cpu_utilization,memory_usage,pixel,fps,success,distance,consumption,stream_count\n'
 
-store = {}
-
 
 def print_execution_time(func):
     def wrapper(*args, **kwargs):
@@ -203,7 +201,8 @@ def interpolate_values(matrix):
     interpolated_data[mask] = griddata((x_valid, y_valid), data_valid, (xx[mask], yy[mask]), method='nearest')
     return interpolated_data
 
-def prepare_samples(samples: pd.DataFrame, remove_device_metrics=False, export_path=None, conversion=True):
+
+def prepare_samples(samples: pd.DataFrame, export_path=None, conversion=True):
     if conversion:
         samples["delta"] = samples["delta"].apply(np.floor).astype(int)
         samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
