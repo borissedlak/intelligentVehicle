@@ -38,6 +38,9 @@ class CyclicArray:
     def get_number_items(self):
         return len(self.buffer)
 
+    def is_empty(self):
+        return len(self.buffer) == 0
+
     def get(self):
         return self.buffer
 
@@ -73,6 +76,7 @@ class DeviceMetricReporter:
             self.jetson_metrics.start()
         else:
             self.consumption_regression = ConsRegression(DEVICE_NAME)
+
     def create_metrics(self):
         mem_buffer = psutil.virtual_memory()
         mem = (mem_buffer.total - mem_buffer.available) / mem_buffer.total * 100
