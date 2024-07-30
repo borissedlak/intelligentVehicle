@@ -54,10 +54,11 @@ class ACI:
         self.stream_regression_model_pv = LinearRegression()
         self.poly_features = PolynomialFeatures(degree=4)
 
+        self.ig_matrix = np.full((3, 5), -1.0)
         self.pv_matrix = np.full((3, 5), -1.0)
-        self.ig_matrix = np.full((3, 5), 0.05)
-        self.ig_matrix[0][0], self.ig_matrix[2][4], self.ig_matrix[2][0], self.ig_matrix[0][4], \
-            self.ig_matrix[1][2] = 1.0, 1.0, 1.0, 1.0, 1.0
+        self.visit_matrix = np.full((3, 5), 0.1)
+        self.visit_matrix[0][0], self.visit_matrix[2][4], self.visit_matrix[2][0], self.visit_matrix[0][4], \
+            self.visit_matrix[1][2] = 1.0, 1.0, 1.0, 1.0, 1.0
 
     def iterate(self, samples):
         current_batch = self.prepare_last_batch(samples)
@@ -65,9 +66,9 @@ class ACI:
         c_fps = int(current_batch.iloc[0]['fps'])
 
         s = util_fgcs.get_surprise_for_data(self.model, current_batch, self.s_desc['slo_vars'])
-        self.surprise_history.append(s)
+        self.surprise_history.append(((c_pixel, c_fps), s))
 
-        mean_surprise_last_10_values = np.median(self.surprise_history[-10:])
+        mean_surprise_last_10_values = np.median([t[1] for t in self.surprise_history][-10:])
         self.backup_data = pd.concat([self.backup_data, current_batch], ignore_index=True)
 
         if s >= (1.5 * mean_surprise_last_10_values):
@@ -85,7 +86,7 @@ class ACI:
     # @print_execution_time # takes around 10-15ms
     def calculate_factors(self, c_pixel, c_fps):
 
-        self.ig_matrix[ACI.pixel_list.index(c_pixel)][ACI.fps_list.index(c_fps)] = 0.0
+        self.visit_matrix[ACI.pixel_list.index(c_pixel)][ACI.fps_list.index(c_fps)] = 0.0
         inference = VariableElimination(self.model)
 
         # Ensure that the current one is processed first to train the regression
@@ -96,24 +97,27 @@ class ACI:
         for (pixel, fps) in bitrate_list:
             evidence = {'pixel': pixel, 'fps': fps}
 
-            if self.ig_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] == 0:  # 0.0 indicates that was visited
+            if self.visit_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] == 0:  # 0.0 indicates that was visited
                 pv = util_fgcs.get_true(inference.query(variables=self.s_desc['slo_vars'], evidence=evidence))
+                ig = (util_fgcs.get_median_surprise_one_config(self.surprise_history, (int(pixel), int(fps))) /
+                      np.median(np.median([t[1] for t in self.surprise_history])))
                 self.valid_stream_values_pv.append((int(pixel), int(fps), pv))
             else:
-                pv = -1.0
+                pv, ig = -1.0, -1.0
                 unknown_combinations.append((int(pixel), int(fps)))
 
             self.pv_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] = pv
+            self.ig_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] = ig
 
     def get_best_configuration(self):
         pv_interpolated = util_fgcs.interpolate_values(self.pv_matrix)
-        ig_interpolated = util_fgcs.interpolate_values(self.ig_matrix)
+        ig_interpolated = util_fgcs.interpolate_values(self.visit_matrix)
 
         max_sum = -float('inf')
         best_index = 0, 0
         for i in range(len(ACI.pixel_list)):
             for j in range(len(ACI.fps_list)):
-                element_sum = (pv_interpolated[i, j] + ig_interpolated[i, j])
+                element_sum = (pv_interpolated[i, j] + ig_interpolated[i, j] + self.visit_matrix[i, j])
                 if element_sum > max_sum:
                     max_sum = element_sum
                     best_index = i, j

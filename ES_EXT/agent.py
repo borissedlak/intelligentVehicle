@@ -18,9 +18,9 @@ CLEAN_RESTART = utils.get_ENV_PARAM("CLEAN_RESTART", False)
 DISABLE_ACI = utils.get_ENV_PARAM("DISABLE_ACI", False)
 SEND_SYSTEM_STATS = utils.get_ENV_PARAM("SEND_SYSTEM_STATS", False)
 SHOW_IMG = utils.str_to_bool(utils.get_ENV_PARAM("SHOW_IMG", "True"))
-SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "LI")
+SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "CV")
 INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 5))
-EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 30))
+EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 300))
 
 c_pixel = ACI.pixel_list[1]
 c_fps = ACI.fps_list[2]
@@ -101,5 +101,5 @@ print(f"Starting service '{SERVICE_NAME}' with SLO vars {aci.s_desc['slo_vars']}
 time.sleep(EXPERIMENT_DURATION)
 aci.export_model()
 util_fgcs.log_performance(SERVICE_NAME, DEVICE_NAME, slo_f_hist)
-print("Finished Experiment")
+util_fgcs.print_in_red("Finished Experiment")
 sys.exit()
