@@ -522,7 +522,7 @@ def train_to_BN(samples, service_name, export_file=None, samples_path=None, dag=
             scoring_method="bicscore", max_indegree=4, epsilon=10,
         )
 
-    export_BN_to_graph(dag, vis_ls=['circo'], save=False, name="raw_model", show=True)
+    export_BN_to_graph(dag, vis_ls=['circo'], save=False, name="raw_model", show=get_ENV_PARAM("SHOW_IMG", True))
     model = BayesianNetwork(ebunch=dag)
     model.name = service_name
     model.fit(data=samples, estimator=MaximumLikelihoodEstimator)
