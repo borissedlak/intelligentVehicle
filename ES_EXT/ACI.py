@@ -33,30 +33,28 @@ class ACI:
         bitrate = pair[0] * pair[1]
         bitrate_dict.update({bitrate: [pair[0], pair[1]]})
 
-    def __init__(self, description, show_img=False, load_model=None):  # , distance_slo=40, network_slo=(420 * 30 * 10)):
-        # self.c_distance_bar = distance_slo
-        # self.c_network_bar = network_slo
+    def __init__(self, description, show_img=False, load_model=None):
+
         self.show_img = show_img
         if load_model:
             print("Loading pretained model")
             self.model = XMLBIFReader(load_model).get_model()
             util_fgcs.export_BN_to_graph(self.model, vis_ls=['circo'], save=True, name="raw_model", show=self.show_img)
             self.foster_bn_retrain = 0.2
-            self.backup_data = pd.read_csv(f"models/backup/backup_CV_{DEVICE_NAME}.csv")
         else:
             self.model = None
             self.foster_bn_retrain = 0.5
 
         self.load_model = True if self.model is not None else False
         self.distance = 0
-        self.entire_training_data = pd.DataFrame()
-        self.past_training_data = pd.DataFrame()
         self.surprise_history = []
         self.function_time = []
 
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(75)
         self.s_desc = description
+        self.backup_data = util_fgcs.prepare_samples(pd.read_csv(f"models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv"),
+                                                     conversion=False)
 
         self.valid_stream_values_pv = []
         self.stream_regression_model_pv = LinearRegression()
@@ -64,9 +62,6 @@ class ACI:
 
         self.pv_matrix = np.full((3, 5), -1.0)
         self.ig_matrix = np.full((3, 5), 0.05)
-        # self.ig_matrix[0][0], self.ig_matrix[2][4], self.ig_matrix[2][0], self.ig_matrix[0][4], \
-        #     self.ig_matrix[1][2] = 0.05, 0.05, 0.05, 0.05, 0.05
-        # self.ig_matrix = util_fgcs.interpolate_values(self.ig_matrix)
         self.ig_matrix[0][0], self.ig_matrix[2][4], self.ig_matrix[2][0], self.ig_matrix[0][4], \
             self.ig_matrix[1][2] = 1.0, 1.0, 1.0, 1.0, 1.0
 
@@ -79,14 +74,10 @@ class ACI:
         self.surprise_history.append(s)
 
         mean_surprise_last_10_values = np.median(self.surprise_history[-10:])
-        # if s > ((2 - self.foster_bn_retrain) * mean_surprise_last_10_values):
-        #     if self.foster_bn_retrain == 0.5:
-        #         self.foster_bn_retrain = 0.2
-        #     elif self.foster_bn_retrain == 0.2:
-        #         self.foster_bn_retrain = 0.0
-        #
-        #     # self.bnl(self.entire_training_data)
-        #     self.retrain_parameter()
+        self.backup_data = pd.concat([self.backup_data, current_batch], ignore_index=True)
+
+        if s >= (1.5 * mean_surprise_last_10_values):
+            self.bnl(self.backup_data)
         if s >= (1 * mean_surprise_last_10_values):
             self.retrain_parameter(current_batch)
 
@@ -157,9 +148,11 @@ class ACI:
         self.model.fit_update(current_batch)  # , n_prev_samples=(past_data_length / 3))
 
     def export_model(self):
+        self.backup_data.to_csv(f"models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv", index=False)
+
         writer = XMLBIFWriter(self.model)
         file_name = utils.create_model_name("CV", DEVICE_NAME)
-        writer.write_xmlbif(filename=file_name)
+        writer.write_xmlbif(filename="models/" + file_name)
         print(f"Model exported as '{file_name}'")
 
     @print_execution_time

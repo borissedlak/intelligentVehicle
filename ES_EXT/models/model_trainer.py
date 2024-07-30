@@ -6,7 +6,6 @@ import pandas as pd
 import pymongo
 from pgmpy.base import DAG
 from pgmpy.inference import VariableElimination
-from pgmpy.readwrite import XMLBIFReader
 from prometheus_api_client import PrometheusConnect
 
 import utils
@@ -60,23 +59,13 @@ def prepare_models(fill_cpt_all_values=True):
                            ("cpu", "energy_saved"), ("gpu", "energy_saved")])
     dag_services = {'CV': dag_cv, 'QR': dag_qr, 'LI': dag_li}
 
-    # try:
-    #     df = pd.read_csv(sample_file)
-    #     df = utils.prepare_samples(df)
-    # except FileNotFoundError as e:  # Cannot place both in a line, that's weird ...
-    #     logger.error(e)
-    #     df = pd.DataFrame()
-    # except EmptyDataError as e:
-    #     logger.error(e)
-    #     df = pd.DataFrame()
-
     if fill_cpt_all_values:
         line_param = []
         bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
-        for (source_pixel, source_fps, service, device, cpu, gpu, memory, delta, energy, mode, rate) in (
-                itertools.product([480, 720, 1080], [5, 10, 15, 20, 25], ['CV', 'QR', 'LI'], ['Laptop', 'AGX', 'NX'], bin_values, bin_values,
-                                  bin_values, [1, 999], [1, 999], ['single', 'double'], [0.0, 1.0])):
-            line_param.append({'pixel': source_pixel, 'fps': source_fps, 'cpu': cpu, 'memory': memory, 'gpu': gpu, 'delta': delta,
+        for (source_pixel, source_fps, service, device, delta, energy, mode, rate) in (
+                itertools.product([480, 720, 1080], [5, 10, 15, 20, 25], ['CV', 'QR', 'LI'], ['Laptop', 'AGX', 'NX'],
+                                  [1, 999], [1, 999], ['single', 'double'], [0.0, 1.0])):
+            line_param.append({'pixel': source_pixel, 'fps': source_fps, 'delta': delta,
                                'consumption': energy, 'service': service, 'device_type': device, 'mode': mode, 'rate': rate})
         df_param_fill = util_fgcs.prepare_samples(pd.DataFrame(line_param))
         df = pd.concat([df_param_fill], ignore_index=True)
@@ -97,12 +86,11 @@ def prepare_models(fill_cpt_all_values=True):
         del filtered['service']
 
         model_name = f"{service}_{device_type}_model.xml"
-        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=model_name, dag=dag_services[service])
+        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=model_name)  # , dag=dag_services[service])
         filtered.to_csv(f"backup/backup_{service}_{device_type}.csv", index=False)
 
         true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))
         print(f"In_time fulfilled for {int(true * 100)} %")
-
 
     return len(unique_pairs)
 

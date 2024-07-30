@@ -204,25 +204,25 @@ def interpolate_values(matrix):
 
 def prepare_samples(samples: pd.DataFrame, export_path=None, conversion=True):
     if conversion:
-        samples["delta"] = samples["delta"].apply(np.floor).astype(int)
-        samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
-        samples["memory"] = samples["memory"].apply(np.floor).astype(int)
+        # samples["delta"] = samples["delta"].apply(np.floor).astype(int)
+        # samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
+        # samples["memory"] = samples["memory"].apply(np.floor).astype(int)
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
         samples['energy_saved'] = samples['consumption'] <= 25
 
-        samples['cpu'] = pd.cut(samples['cpu'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
-                                labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
-        samples['memory'] = pd.cut(samples['memory'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
-                                   labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
-        samples['gpu'] = pd.cut(samples['gpu'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
-                                labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
+        # samples['cpu'] = pd.cut(samples['cpu'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
+        #                         labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
+        # samples['memory'] = pd.cut(samples['memory'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
+        #                            labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
+        # samples['gpu'] = pd.cut(samples['gpu'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
+        #                         labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
         if hasattr(samples, 'rate'):
             samples["rate"] = samples["rate"].astype(float)
             samples['rate_60'] = samples['rate'] >= 0.60
 
-    samples['cpu'] = samples['cpu'].astype(str)
-    samples['memory'] = samples['memory'].astype(str)
-    samples['gpu'] = samples['gpu'].astype(str)
+    # samples['cpu'] = samples['cpu'].astype(str)
+    # samples['memory'] = samples['memory'].astype(str)
+    # samples['gpu'] = samples['gpu'].astype(str)
     samples['fps'] = samples['fps'].astype(str)
     samples['in_time'] = samples['in_time'].astype(str)
     samples['energy_saved'] = samples['energy_saved'].astype(str)
@@ -242,6 +242,13 @@ def prepare_samples(samples: pd.DataFrame, export_path=None, conversion=True):
         del samples['consumption']
     if hasattr(samples, 'rate'):
         del samples['rate']
+
+    if hasattr(samples, 'memory'):
+        del samples['memory']
+    if hasattr(samples, 'cpu'):
+        del samples['cpu']
+    if hasattr(samples, 'gpu'):
+        del samples['gpu']
 
     if export_path is not None:
         samples.to_csv(export_path, index=False)

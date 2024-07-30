@@ -52,7 +52,7 @@ SHOW_IMG = os.environ.get('SHOW_IMG')
 if SHOW_IMG:
     print(f'Found ENV value for SHOW_IMG: {SHOW_IMG}')
 else:
-    SHOW_IMG = False
+    SHOW_IMG = True
     print(f"Didn't find ENV value for SHOW_IMG, default to: {SHOW_IMG}")
 
 model_name = None if CLEAN_RESTART else utils.create_model_name("CV", DEVICE_NAME)
@@ -66,7 +66,7 @@ override_next_config = None
 metrics_buffer = CyclicArray(500)
 
 inferred_config_hist = []
-util_fgcs.clear_performance_history('../data/Performance_History.csv')
+# util_fgcs.clear_performance_history('../data/Performance_History.csv')
 
 http_client = HttpClient(HOST=HTTP_SERVER)
 
