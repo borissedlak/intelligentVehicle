@@ -1,10 +1,9 @@
 import logging
+import sys
 import threading
 import time
 import traceback
 
-# import ModelParser
-# import Models
 import utils
 from ACI import ACI
 from monitor.DeviceMetricReporter import CyclicArray
@@ -18,6 +17,8 @@ DISABLE_ACI = utils.get_ENV_PARAM("DISABLE_ACI", False)
 SEND_SYSTEM_STATS = utils.get_ENV_PARAM("SEND_SYSTEM_STATS", False)
 SHOW_IMG = utils.get_ENV_PARAM("SHOW_IMG", True)
 SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "CV")
+INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 3))
+EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 3000))
 
 if SERVICE_NAME == "CV":
     service = YoloDetector("localhost", show_results=False)
@@ -32,24 +33,19 @@ else:
     raise RuntimeError("Why?")
 
 model_name = None if CLEAN_RESTART else utils.create_model_name(SERVICE_NAME, DEVICE_NAME)
-aci = ACI(desc, load_model='models/' + model_name, show_img=SHOW_IMG)
+aci = ACI(desc, load_model='ES_EXT/models/' + model_name, show_img=SHOW_IMG)
 
 c_pixel = ACI.pixel_list[1]
 c_fps = ACI.fps_list[2]
 
 logger = logging.getLogger("vehicle")
-override_next_config = None
 metrics_buffer = CyclicArray(5000)
 
 inferred_config_hist = []
 
 
-# http_client = HttpClient(HOST=HTTP_SERVER)
-
-
 def processing_loop():
     global c_pixel, c_fps
-    print(f"Starting service '{SERVICE_NAME}' with SLO vars {aci.s_desc['slo_vars']}")
     while True:
         reality_metrics = service.process_one_iteration({'pixel': c_pixel, 'fps': c_fps})
         metrics_buffer.append(reality_metrics)
@@ -57,8 +53,8 @@ def processing_loop():
             pass
 
 
-background_thread = threading.Thread(target=processing_loop, daemon=True)
-background_thread.start()
+processing_thread = threading.Thread(target=processing_loop, daemon=True)
+processing_thread.start()
 
 
 class ACIBackgroundThread(threading.Thread):
@@ -67,9 +63,9 @@ class ACIBackgroundThread(threading.Thread):
         self.daemon = True  # Set the thread as a daemon, so it will exit when the main program exits
 
     def run(self):
-        global c_pixel, c_fps, override_next_config, inferred_config_hist
+        global c_pixel, c_fps, inferred_config_hist
         while True:
-            time.sleep(10.0 if len(inferred_config_hist) <= 4 else 2.0)
+            time.sleep(INITIAL_TRAINING if len(inferred_config_hist) <= 4 else 2.0)
             try:
                 if metrics_buffer.is_empty():
                     continue
@@ -77,17 +73,11 @@ class ACIBackgroundThread(threading.Thread):
                     input_metrics = metrics_buffer.get()
                     metrics_buffer.clear()
                     (new_pixel, new_fps, pv, real, surprise) = aci.iterate(input_metrics)
-                    # past_pixel, past_fps, past_pv = real
-
                     inferred_config_hist.append((new_pixel, new_fps))
-                    if override_next_config:
-                        c_pixel, c_fps = override_next_config
-                        override_next_config = None
-                    else:
-                        if (c_pixel, c_fps) != (new_pixel, new_fps):
-                            print(f"Changing configuration to {(new_pixel, new_fps)}")
 
-                        c_pixel, c_fps = new_pixel, new_fps
+                    if (c_pixel, c_fps) != (new_pixel, new_fps):
+                        print(f"Changing configuration to {(new_pixel, new_fps)}")
+                    c_pixel, c_fps = new_pixel, new_fps
             except Exception as e:
                 error_traceback = traceback.format_exc()
                 print("Error Traceback:")
@@ -96,24 +86,11 @@ class ACIBackgroundThread(threading.Thread):
 
 
 if not DISABLE_ACI:
-    background_thread = ACIBackgroundThread()
-    background_thread.start()
+    aci_thread = ACIBackgroundThread()
+    aci_thread.start()
 
-# Main loop to read commands from the CLI
-while True:
-    user_input = input()
-
-    # Check if the user entered a command
-    if user_input:
-        # threads = http_client.get_latest_stream_config()[0]
-        # if user_input == "+":
-        #     http_client.override_stream_config(threads + 1)
-        # elif user_input == "-":
-        #     http_client.override_stream_config(1 if threads == 1 else (threads - 1))
-        if user_input == "i":
-            aci.bnl(aci.backup_data)
-        elif user_input == "e":
-            aci.export_model()
-        # elif user_input == "q":
-        #     aci.export_model()
-        #     sys.exit()
+print(f"Starting service '{SERVICE_NAME}' with SLO vars {aci.s_desc['slo_vars']} at {DEVICE_NAME}")
+time.sleep(EXPERIMENT_DURATION)
+aci.export_model()
+print("Finished Experiment")
+sys.exit()

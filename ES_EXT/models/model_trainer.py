@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pymongo
 from pgmpy.base import DAG
-from pgmpy.inference import VariableElimination
 from prometheus_api_client import PrometheusConnect
 
 import utils
@@ -16,16 +15,6 @@ logger = logging.getLogger("vehicle")
 sample_file = "samples.csv"
 
 DEVICE_NAME = utils.get_ENV_PARAM("DEVICE_NAME", "Unknown")
-
-# PREV_SAMPLES_LENGTH = 300  # Idea: This is also a hyperparameter, initially I should be small and then larger later
-PREV_SAMPLES_LENGTH = {utils.create_model_name(service, device): 100 for service in ['CV', 'QR', 'LI'] for device in
-                       ['Laptop', 'NX', 'AGX']}
-
-
-def reset_trained_hist():
-    global PREV_SAMPLES_LENGTH
-    PREV_SAMPLES_LENGTH = {utils.create_model_name(service, device): 100 for service in ['CV', 'QR', 'LI'] for device in
-                           ['Laptop', 'NX', 'AGX']}
 
 
 # @utils.print_execution_time
@@ -60,7 +49,7 @@ def prepare_models(fill_cpt_all_values=True):
         line_param = []
         bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
         for (source_pixel, source_fps, service, device, delta, energy, mode, rate) in (
-                itertools.product([480, 720, 1080], [5, 10, 15, 20, 25], ['CV', 'QR', 'LI'], ['Laptop', 'AGX', 'NX'],
+                itertools.product([480, 720, 1080], [5, 10, 15, 20, 25], ['CV', 'QR', 'LI'], [DEVICE_NAME],
                                   [1, 999], [1, 999], ['single', 'double'], [0.0, 1.0])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'delta': delta,
                                'consumption': energy, 'service': service, 'device_type': device, 'mode': mode, 'rate': rate})
@@ -82,12 +71,12 @@ def prepare_models(fill_cpt_all_values=True):
         del filtered['device_type']
         del filtered['service']
 
-        model_name = f"{service}_{device_type}_model.xml"
-        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=model_name, dag=dag_services[service])
-        filtered.to_csv(f"backup/backup_{service}_{device_type}.csv", index=False)
+        model_name = f"ES_EXT/models/{service}_{device_type}_model.xml"
+        utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=model_name, dag=dag_services[service])
+        filtered.to_csv(f"ES_EXT/models/backup/backup_{service}_{device_type}.csv", index=False)
 
-        true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))
-        print(f"In_time fulfilled for {int(true * 100)} %")
+        # true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))
+        # print(f"In_time fulfilled for {int(true * 100)} %")
 
     return len(unique_pairs)
 

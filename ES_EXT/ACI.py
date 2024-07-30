@@ -27,11 +27,7 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 class ACI:
     pixel_list = [480, 720, 1080]
     fps_list = [5, 10, 15, 20, 25]
-    bitrate_dict = {}
-
-    for pair in itertools.product(pixel_list, fps_list):
-        bitrate = pair[0] * pair[1]
-        bitrate_dict.update({bitrate: [pair[0], pair[1]]})
+    mode_list = ['single', 'double']
 
     def __init__(self, description, show_img=False, load_model=None):
 
@@ -40,10 +36,8 @@ class ACI:
             print("Loading pretained model")
             self.model = XMLBIFReader(load_model).get_model()
             util_fgcs.export_BN_to_graph(self.model, vis_ls=['circo'], save=True, name="raw_model", show=self.show_img)
-            self.foster_bn_retrain = 0.2
         else:
             self.model = None
-            self.foster_bn_retrain = 0.5
 
         self.load_model = True if self.model is not None else False
         self.distance = 0
@@ -53,7 +47,7 @@ class ACI:
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(75)
         self.s_desc = description
-        self.backup_data = util_fgcs.prepare_samples(pd.read_csv(f"models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv"),
+        self.backup_data = util_fgcs.prepare_samples(pd.read_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv"),
                                                      conversion=False)
 
         self.valid_stream_values_pv = []
@@ -100,7 +94,6 @@ class ACI:
         unknown_combinations = []
 
         for (pixel, fps) in bitrate_list:
-
             evidence = {'pixel': pixel, 'fps': fps}
 
             if self.ig_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] == 0:  # 0.0 indicates that was visited
@@ -136,11 +129,11 @@ class ACI:
         self.model.fit_update(current_batch)  # , n_prev_samples=(past_data_length / 3))
 
     def export_model(self):
-        self.backup_data.to_csv(f"models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv", index=False)
+        self.backup_data.to_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv", index=False)
 
         writer = XMLBIFWriter(self.model)
         file_name = utils.create_model_name("CV", DEVICE_NAME)
-        writer.write_xmlbif(filename="models/" + file_name)
+        writer.write_xmlbif(filename="ES_EXT/models/" + file_name)
         print(f"Model exported as '{file_name}'")
 
     @print_execution_time
