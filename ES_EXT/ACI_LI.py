@@ -54,10 +54,10 @@ class ACI_LI:
         self.stream_regression_model_pv = LinearRegression()
         self.poly_features = PolynomialFeatures(degree=4)
 
-        self.ig_matrix = np.full((3, 5), -1.0)
-        self.pv_matrix = np.full((3, 5), -1.0)
-        self.visit_matrix = np.full((3, 5), 0.1)
-        self.visit_matrix[0][0], self.visit_matrix[2][4], self.visit_matrix[2][0], self.visit_matrix[0][4], \
+        self.ig_matrix = np.full((2, 5), -1.0)
+        self.pv_matrix = np.full((2, 5), -1.0)
+        self.visit_matrix = np.full((2, 5), 0.1)
+        self.visit_matrix[0][0], self.visit_matrix[1][4], self.visit_matrix[1][0], self.visit_matrix[0][4], \
             self.visit_matrix[1][2] = 1.0, 1.0, 1.0, 1.0, 1.0
 
     def iterate(self, samples):
@@ -132,9 +132,10 @@ class ACI_LI:
         #     past_data_length += len(self.backup_data)
         self.model.fit_update(current_batch)  # , n_prev_samples=(past_data_length / 3))
 
-    def export_model(self):
+    def export_model(self, mode):
         self.backup_data.to_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv", index=False)
-        np.savetxt(f"ES_EXT/results/pv/pv_{self.s_desc['type']}_{DEVICE_NAME}.csv", self.pv_matrix, delimiter=',', fmt='%.3f')
+        np.savetxt(f"ES_EXT/results/pv/pv_{self.s_desc['type']}_{DEVICE_NAME}_{mode}.csv", self.pv_matrix, delimiter=',', fmt='%.3f')
+        np.savetxt(f"ES_EXT/results/pv/ig_{self.s_desc['type']}_{DEVICE_NAME}_{mode}.csv", self.ig_matrix, delimiter=',', fmt='%.3f')
 
         writer = XMLBIFWriter(self.model)
         file_name = utils.create_model_name("CV", DEVICE_NAME)

@@ -15,6 +15,7 @@ python3 ~/development/intelligentVehicle/ES_EXT/models/model_trainer.py
 
 if [ "$DEVICE_NAME" = "NX" ] || [ "$DEVICE_NAME" = "AGX" ]; then
     sudo nvpmodel -m 0
+    export POWER_MODE="MAX"
 fi
 
 SERVICE_NAME="CV" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
@@ -23,6 +24,7 @@ SERVICE_NAME="LI" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
 
 if [ "$DEVICE_NAME" = "NX" ] || [ "$DEVICE_NAME" = "AGX" ]; then
     sudo nvpmodel -m 3
+    export POWER_MODE="LIM"
 fi
 
 SERVICE_NAME="CV" python3 ~/development/intelligentVehicle/ES_EXT/agent.py

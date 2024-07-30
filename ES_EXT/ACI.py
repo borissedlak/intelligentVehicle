@@ -132,9 +132,10 @@ class ACI:
         #     past_data_length += len(self.backup_data)
         self.model.fit_update(current_batch)  # , n_prev_samples=(past_data_length / 3))
 
-    def export_model(self):
+    def export_model(self, mode):
         self.backup_data.to_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv", index=False)
-        np.savetxt(f"ES_EXT/results/pv/pv_{self.s_desc['type']}_{DEVICE_NAME}.csv", self.pv_matrix, delimiter=',', fmt='%.3f')
+        np.savetxt(f"ES_EXT/results/pv/pv_{self.s_desc['type']}_{DEVICE_NAME}_{mode}.csv", self.pv_matrix, delimiter=',', fmt='%.3f')
+        np.savetxt(f"ES_EXT/results/pv/ig_{self.s_desc['type']}_{DEVICE_NAME}_{mode}.csv", self.ig_matrix, delimiter=',', fmt='%.3f')
 
         writer = XMLBIFWriter(self.model)
         file_name = utils.create_model_name("CV", DEVICE_NAME)
