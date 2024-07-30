@@ -16,8 +16,6 @@ from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 from scipy.interpolate import griddata
 
-import utils
-
 header_csv = 'execution_time,timestamp,cpu_utilization,memory_usage,pixel,fps,success,distance,consumption,stream_count\n'
 
 
@@ -284,45 +282,10 @@ def export_BN_to_graph(bn: BayesianNetwork or pgmpy.base.DAG, root=None, try_vis
             plt.show()
 
 
-def cap_0_1(num: float):
-    if num < 0.0:
-        return 0.0
-    elif num > 1.0:
-        return 1.0
-    return num
-
-
 def get_true(param):
-    if len(param.variables) > 2:
-        raise Exception("How come?")
-    if len(param.variables) == 2:
-        if param.values.shape == (1, 1):
-            if (param.__getattribute__("state_names")[param.variables[0]][0] == 'True' and
-                    param.__getattribute__("state_names")[param.variables[1]][0] == 'True'):
-                return 1
-            else:
-                return 0
-        elif param.values.shape == (2, 1):
-            if (param.__getattribute__("state_names")[param.variables[0]][0] == 'True' or
-                    param.__getattribute__("state_names")[param.variables[1]][0] == 'True'):
-                return param.values[1][0]
-            else:
-                return 0
-        elif param.values.shape == (1, 2):
-            if (param.__getattribute__("state_names")[param.variables[0]][0] == 'True' or
-                    param.__getattribute__("state_names")[param.variables[1]][0] == 'True'):
-                return param.values[0][1]
-            else:
-                return 0
-        elif param.values.shape == (2, 2):
-            return param.values[1][1]
-        else:
-            return param.values[1]
-    elif len(param.variables) == 1:
-        if param.values.shape == (2, 1):
-            return param.values[1]
-        elif param.__getattribute__("state_names")[param.variables[0]][0] == True:
-            return 1
-        else:
-            return 0
-        # else param.values[0]
+    n_var = len(param.variables)
+    result = param.values
+    for _ in range(n_var):
+        result = result[1]
+
+    return result
