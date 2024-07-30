@@ -111,7 +111,7 @@ class ACI:
 
     def get_best_configuration(self):
         pv_interpolated = util_fgcs.interpolate_values(self.pv_matrix)
-        ig_interpolated = util_fgcs.interpolate_values(self.visit_matrix)
+        ig_interpolated = util_fgcs.interpolate_values(self.ig_matrix)
 
         max_sum = -float('inf')
         best_index = 0, 0
