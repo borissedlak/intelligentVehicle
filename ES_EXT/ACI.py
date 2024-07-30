@@ -77,7 +77,8 @@ class ACI:
         self.backup_data = pd.concat([self.backup_data, current_batch], ignore_index=True)
 
         if s >= (1.5 * mean_surprise_last_10_values):
-            self.bnl(self.backup_data)
+            # self.bnl(self.backup_data)
+            self.retrain_parameter(current_batch)
         if s >= (1 * mean_surprise_last_10_values):
             self.retrain_parameter(current_batch)
 
@@ -110,17 +111,6 @@ class ACI:
                 unknown_combinations.append((int(pixel), int(fps)))
 
             self.pv_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] = pv
-
-        # if len(unknown_combinations) > 0:
-        #     input_data = np.array([(x1, x2) for (x1, x2, y) in self.valid_stream_values_pv])
-        #     input_data = self.poly_features.fit_transform(input_data)
-        #     target_data = np.array([y for (x1, x2, y) in self.valid_stream_values_pv])
-        #     self.stream_regression_model_pv.fit(input_data, target_data)
-        #
-        #     for p, f in unknown_combinations:
-        #         input_vector = self.poly_features.fit_transform(np.array([[p, f]]))
-        #         pv_predict = util_fgcs.cap_0_1(self.stream_regression_model_pv.predict(input_vector)[0])
-        #         self.pv_matrix[ACI.pixel_list.index(p)][ACI.fps_list.index(f)] = pv_predict
 
     def get_best_configuration(self):
         pv_interpolated = util_fgcs.interpolate_values(self.pv_matrix)

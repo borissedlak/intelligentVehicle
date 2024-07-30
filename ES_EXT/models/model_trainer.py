@@ -45,18 +45,15 @@ def retrieve_full_data(mongo_host):
 
 def prepare_models(fill_cpt_all_values=True):
     dag_cv = DAG()
-    dag_cv.add_nodes_from(["pixel", "fps", "cpu", "in_time", "gpu", "memory", "energy_saved", "rate_60"])
-    dag_cv.add_edges_from([("pixel", "cpu"), ("pixel", "in_time"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"),
-                           ("cpu", "energy_saved"), ("gpu", "energy_saved"), ("pixel", "rate_60"),
-                           ("pixel", "gpu")])
+    dag_cv.add_nodes_from(["pixel", "fps", "in_time", "energy_saved", "rate_60"])
+    dag_cv.add_edges_from([("pixel", "in_time"), ("fps", "in_time"), ("pixel", "energy_saved"), ("pixel", "energy_saved"),
+                           ("fps", "energy_saved"), ("pixel", "rate_60")])
     dag_qr = DAG()
-    dag_qr.add_nodes_from(["pixel", "fps", "cpu", "in_time", "gpu", "memory", "energy_saved"])
-    dag_qr.add_edges_from([("pixel", "cpu"), ("pixel", "in_time"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"),
-                           ("cpu", "energy_saved"), ("gpu", "energy_saved")])
+    dag_qr.add_nodes_from(["pixel", "fps", "in_time", "energy_saved"])
+    dag_qr.add_edges_from([("pixel", "in_time"), ("fps", "in_time"), ("pixel", "energy_saved"), ("fps", "energy_saved")])
     dag_li = DAG()
-    dag_li.add_nodes_from(["mode", "fps", "cpu", "in_time", "gpu", "memory", "energy_saved"])
-    dag_li.add_edges_from([("mode", "cpu"), ("mode", "gpu"), ("fps", "cpu"), ("fps", "in_time"), ("fps", "gpu"),
-                           ("cpu", "energy_saved"), ("gpu", "energy_saved")])
+    dag_li.add_nodes_from(["mode", "fps", "in_time", "energy_saved"])
+    dag_li.add_edges_from([("mode", "energy_saved"), ("fps", "in_time"), ("fps", "energy_saved")])
     dag_services = {'CV': dag_cv, 'QR': dag_qr, 'LI': dag_li}
 
     if fill_cpt_all_values:
@@ -86,7 +83,7 @@ def prepare_models(fill_cpt_all_values=True):
         del filtered['service']
 
         model_name = f"{service}_{device_type}_model.xml"
-        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=model_name)  # , dag=dag_services[service])
+        model = utils.train_to_BN(filtered, service_name=f"{service}_{device_type}", export_file=model_name, dag=dag_services[service])
         filtered.to_csv(f"backup/backup_{service}_{device_type}.csv", index=False)
 
         true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))

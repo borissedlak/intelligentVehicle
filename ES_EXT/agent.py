@@ -6,7 +6,6 @@ import traceback
 
 # import ModelParser
 # import Models
-import util_fgcs
 import utils
 from ACI import ACI
 from http_client import HttpClient
@@ -95,7 +94,7 @@ class ACIBackgroundThread(threading.Thread):
     def run(self):
         global c_pixel, c_fps, override_next_config, inferred_config_hist
         while True:
-            time.sleep(1.0)
+            time.sleep(35.0 if len(inferred_config_hist) <= 4 else 2.0)
             try:
                 if metrics_buffer.is_empty():
                     continue
@@ -137,7 +136,7 @@ while True:
         elif user_input == "-":
             http_client.override_stream_config(1 if threads == 1 else (threads - 1))
         elif user_input == "i":
-            aci.bnl(aci.entire_training_data)
+            aci.bnl(aci.backup_data)
         elif user_input == "e":
             aci.export_model()
         # elif user_input == "q":

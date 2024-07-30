@@ -515,7 +515,7 @@ def train_to_BN(samples, service_name, export_file=None, samples_path=None, dag=
         samples = pd.read_csv(samples_path)
 
     if dag is None:
-        scoring_method = BDeuScore(data=samples)  # BDeuScore | AICScore
+        # scoring_method = BDeuScore(data=samples)  # BDeuScore | AICScore
         estimator = HillClimbSearch(data=samples)
 
         dag: pgmpy.base.DAG = estimator.estimate(
