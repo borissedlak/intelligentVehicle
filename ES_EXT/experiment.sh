@@ -5,6 +5,11 @@ export PYTHONPATH=~/development/intelligentVehicle
 export INITIAL_TRAINING=30
 export EXPERIMENT_DURATION=300 # 600 = 10 min
 
+mkdir mkdir ~/development/intelligentVehicle/ES_EXT/models/backup
+mkdir mkdir ~/development/intelligentVehicle/ES_EXT/results/
+mkdir mkdir ~/development/intelligentVehicle/ES_EXT/results/pv
+mkdir mkdir ~/development/intelligentVehicle/ES_EXT/results/slo_f
+
 python3 ~/development/intelligentVehicle/ES_EXT/models/model_trainer.py
 
 if [ "$DEVICE_NAME" = "NX" ] || [ "$DEVICE_NAME" = "AGX" ]; then
