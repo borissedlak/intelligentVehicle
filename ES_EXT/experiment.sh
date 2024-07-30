@@ -25,6 +25,6 @@ if [ "$DEVICE_NAME" = "NX" ] || [ "$DEVICE_NAME" = "AGX" ]; then
     sudo nvpmodel -m 3
 fi
 
-#SERVICE_NAME="CV" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
-#SERVICE_NAME="QR" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
-#SERVICE_NAME="LI" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
+SERVICE_NAME="CV" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
+SERVICE_NAME="QR" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
+SERVICE_NAME="LI" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
