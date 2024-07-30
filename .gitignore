@@ -7,3 +7,4 @@ venv/
 samples.csv
 dataset/
 output.avi
+backup_*.csv
