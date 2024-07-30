@@ -95,8 +95,6 @@ class ACI:
 
         # Ensure that the current one is processed first to train the regression
         bitrate_list = list(itertools.product([str(i) for i in ACI.pixel_list], [str(i) for i in ACI.fps_list]))
-        # bitrate_list.remove((str(c_pixel), str(c_fps)))
-        # bitrate_list.insert(0, (str(c_pixel), str(c_fps)))
 
         unknown_combinations = []
 
