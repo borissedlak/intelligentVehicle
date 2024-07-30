@@ -1,4 +1,5 @@
 import copy
+import csv
 import time
 from datetime import datetime
 
@@ -289,3 +290,11 @@ def get_true(param):
         result = result[1]
 
     return result
+
+
+def log_performance(service, device, metrics):
+
+    with open(f"ES_EXT/results/slo_f/slo_f_{service}_{device}.csv", 'a', newline='') as csv_file:
+        for real, surprise in metrics:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow([service, device] + [datetime.now()] + list(real) + [surprise])

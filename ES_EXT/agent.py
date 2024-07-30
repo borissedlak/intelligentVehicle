@@ -6,6 +6,7 @@ import traceback
 
 import utils
 from ACI import ACI
+from ES_EXT import util_fgcs
 from monitor.DeviceMetricReporter import CyclicArray
 from services.CV.YoloDetector import YoloDetector
 from services.LI.LidarProcessor import LidarProcessor
@@ -16,41 +17,46 @@ CLEAN_RESTART = utils.get_ENV_PARAM("CLEAN_RESTART", False)
 DISABLE_ACI = utils.get_ENV_PARAM("DISABLE_ACI", False)
 SEND_SYSTEM_STATS = utils.get_ENV_PARAM("SEND_SYSTEM_STATS", False)
 SHOW_IMG = utils.get_ENV_PARAM("SHOW_IMG", True)
-SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "CV")
-INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 3))
-EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 3000))
-
-if SERVICE_NAME == "CV":
-    service = YoloDetector("localhost", show_results=False)
-    desc = {'type': SERVICE_NAME, 'slo_vars': ['in_time', 'rate_60', 'energy_saved']}
-elif SERVICE_NAME == "QR":
-    service = QrDetector("localhost", show_results=False)
-    desc = {'type': SERVICE_NAME, 'slo_vars': ['in_time', 'energy_saved']}
-elif SERVICE_NAME == "LI":
-    service = LidarProcessor("localhost", show_results=False)
-    desc = {'type': SERVICE_NAME, 'slo_vars': ['in_time', 'energy_saved']}
-else:
-    raise RuntimeError("Why?")
-
-model_name = None if CLEAN_RESTART else utils.create_model_name(SERVICE_NAME, DEVICE_NAME)
-aci = ACI(desc, load_model='ES_EXT/models/' + model_name, show_img=SHOW_IMG)
+SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "LI")
+INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 10))
+EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 100))
 
 c_pixel = ACI.pixel_list[1]
 c_fps = ACI.fps_list[2]
+
+model_name = None if CLEAN_RESTART else utils.create_model_name(SERVICE_NAME, DEVICE_NAME)
+if SERVICE_NAME == "CV":
+    service = YoloDetector("localhost", show_results=False)
+    desc = {'type': SERVICE_NAME, 'slo_vars': ['in_time', 'rate_60', 'energy_saved']}
+    aci = ACI(desc, load_model='ES_EXT/models/' + model_name, show_img=SHOW_IMG)
+elif SERVICE_NAME == "QR":
+    service = QrDetector("localhost", show_results=False)
+    desc = {'type': SERVICE_NAME, 'slo_vars': ['in_time', 'energy_saved']}
+    aci = ACI(desc, load_model='ES_EXT/models/' + model_name, show_img=SHOW_IMG)
+elif SERVICE_NAME == "LI":
+    service = LidarProcessor("localhost", show_results=False)
+    desc = {'type': SERVICE_NAME, 'slo_vars': ['in_time', 'energy_saved']}
+    aci = ACI(desc, load_model='ES_EXT/models/' + model_name, show_img=SHOW_IMG)
+    c_pixel = ACI.mode_list[1]
+else:
+    raise RuntimeError("Why?")
 
 logger = logging.getLogger("vehicle")
 metrics_buffer = CyclicArray(5000)
 
 inferred_config_hist = []
+slo_f_hist = []
 
 
 def processing_loop():
     global c_pixel, c_fps
     while True:
-        reality_metrics = service.process_one_iteration({'pixel': c_pixel, 'fps': c_fps})
+        if SERVICE_NAME == "LI":
+            params = {'mode': c_pixel, 'fps': c_fps}
+        else:
+            params = {'pixel': c_pixel, 'fps': c_fps}
+        reality_metrics = service.process_one_iteration(params)
         metrics_buffer.append(reality_metrics)
-        if SEND_SYSTEM_STATS:
-            pass
 
 
 processing_thread = threading.Thread(target=processing_loop, daemon=True)
@@ -74,6 +80,7 @@ class ACIBackgroundThread(threading.Thread):
                     metrics_buffer.clear()
                     (new_pixel, new_fps, pv, real, surprise) = aci.iterate(input_metrics)
                     inferred_config_hist.append((new_pixel, new_fps))
+                    slo_f_hist.append([real, surprise])
 
                     if (c_pixel, c_fps) != (new_pixel, new_fps):
                         print(f"Changing configuration to {(new_pixel, new_fps)}")
@@ -92,5 +99,6 @@ if not DISABLE_ACI:
 print(f"Starting service '{SERVICE_NAME}' with SLO vars {aci.s_desc['slo_vars']} at {DEVICE_NAME}")
 time.sleep(EXPERIMENT_DURATION)
 aci.export_model()
+util_fgcs.log_performance(SERVICE_NAME, DEVICE_NAME, slo_f_hist)
 print("Finished Experiment")
 sys.exit()
