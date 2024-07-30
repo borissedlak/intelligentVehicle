@@ -25,7 +25,7 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 
 
 class ACI_LI:
-    pixel_list = [480, 720, 1080]
+    mode_list = [480, 720, 1080]
     fps_list = [5, 10, 15, 20, 25]
     mode_list = ['single', 'double']
 
@@ -62,7 +62,7 @@ class ACI_LI:
 
     def iterate(self, samples):
         current_batch = self.prepare_last_batch(samples)
-        c_mode = int(current_batch.iloc[0]['pixel'])
+        c_mode = current_batch.iloc[0]['mode']
         c_fps = int(current_batch.iloc[0]['fps'])
 
         s = util_fgcs.get_surprise_for_data(self.model, current_batch, self.s_desc['slo_vars'])
@@ -78,36 +78,36 @@ class ACI_LI:
             self.retrain_parameter(current_batch)
 
         pv = self.SLOs_fulfilled(current_batch)
-        self.calculate_factors(c_pixel, c_fps)
-        p_next, f_next, pv_est = self.get_best_configuration()
+        self.calculate_factors(c_mode, c_fps)
+        m_next, f_next, pv_est = self.get_best_configuration()
 
-        return int(p_next), int(f_next), pv_est, (c_pixel, c_fps, pv), s
+        return m_next, int(f_next), pv_est, (c_mode, c_fps, pv), s
 
     # @print_execution_time # takes around 10-15ms
-    def calculate_factors(self, c_pixel, c_fps):
+    def calculate_factors(self, c_mode, c_fps):
 
-        self.visit_matrix[ACI.pixel_list.index(c_pixel)][ACI.fps_list.index(c_fps)] = 0.0
+        self.visit_matrix[ACI_LI.mode_list.index(c_mode)][ACI_LI.fps_list.index(c_fps)] = 0.0
         inference = VariableElimination(self.model)
 
         # Ensure that the current one is processed first to train the regression
-        bitrate_list = list(itertools.product([str(i) for i in ACI.pixel_list], [str(i) for i in ACI.fps_list]))
+        bitrate_list = list(itertools.product([str(i) for i in ACI_LI.mode_list], [str(i) for i in ACI_LI.fps_list]))
 
         unknown_combinations = []
 
-        for (pixel, fps) in bitrate_list:
-            evidence = {'pixel': pixel, 'fps': fps}
+        for (mode, fps) in bitrate_list:
+            evidence = {'mode': mode, 'fps': fps}
 
-            if self.visit_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] == 0:  # 0.0 indicates that was visited
+            if self.visit_matrix[ACI_LI.mode_list.index(mode)][ACI_LI.fps_list.index(int(fps))] == 0:  # 0.0 indicates that was visited
                 pv = util_fgcs.get_true(inference.query(variables=self.s_desc['slo_vars'], evidence=evidence))
-                ig = (util_fgcs.get_median_surprise_one_config(self.surprise_history, (int(pixel), int(fps))) /
+                ig = (util_fgcs.get_median_surprise_one_config(self.surprise_history, (mode, int(fps))) /
                       np.median(np.median([t[1] for t in self.surprise_history])))
-                self.valid_stream_values_pv.append((int(pixel), int(fps), pv))
+                self.valid_stream_values_pv.append((mode, int(fps), pv))
             else:
                 pv, ig = -1.0, -1.0
-                unknown_combinations.append((int(pixel), int(fps)))
+                unknown_combinations.append((mode, int(fps)))
 
-            self.pv_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] = pv
-            self.ig_matrix[ACI.pixel_list.index(int(pixel))][ACI.fps_list.index(int(fps))] = ig
+            self.pv_matrix[ACI_LI.mode_list.index(mode)][ACI_LI.fps_list.index(int(fps))] = pv
+            self.ig_matrix[ACI_LI.mode_list.index(mode)][ACI_LI.fps_list.index(int(fps))] = ig
 
     def get_best_configuration(self):
         pv_interpolated = util_fgcs.interpolate_values(self.pv_matrix)
@@ -115,15 +115,15 @@ class ACI_LI:
 
         max_sum = -float('inf')
         best_index = 0, 0
-        for i in range(len(ACI.pixel_list)):
-            for j in range(len(ACI.fps_list)):
+        for i in range(len(ACI_LI.mode_list)):
+            for j in range(len(ACI_LI.fps_list)):
                 element_sum = (pv_interpolated[i, j] + ig_interpolated[i, j] + self.visit_matrix[i, j])
                 if element_sum > max_sum:
                     max_sum = element_sum
                     best_index = i, j
 
         p, f = best_index
-        return ACI.pixel_list[p], ACI.fps_list[f], pv_interpolated[p, f]
+        return ACI_LI.mode_list[p], ACI_LI.fps_list[f], pv_interpolated[p, f]
 
     @print_execution_time
     def retrain_parameter(self, current_batch):
