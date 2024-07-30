@@ -6,6 +6,7 @@ import traceback
 
 import utils
 from ACI import ACI
+from ACI_LI import ACI_LI
 from ES_EXT import util_fgcs
 from monitor.DeviceMetricReporter import CyclicArray
 from services.CV.YoloDetector import YoloDetector
@@ -18,8 +19,8 @@ DISABLE_ACI = utils.get_ENV_PARAM("DISABLE_ACI", False)
 SEND_SYSTEM_STATS = utils.get_ENV_PARAM("SEND_SYSTEM_STATS", False)
 SHOW_IMG = utils.get_ENV_PARAM("SHOW_IMG", True)
 SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "LI")
-INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 10))
-EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 100))
+INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 5))
+EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 30))
 
 c_pixel = ACI.pixel_list[1]
 c_fps = ACI.fps_list[2]
@@ -36,7 +37,7 @@ elif SERVICE_NAME == "QR":
 elif SERVICE_NAME == "LI":
     service = LidarProcessor("localhost", show_results=False)
     desc = {'type': SERVICE_NAME, 'slo_vars': ['in_time', 'energy_saved']}
-    aci = ACI(desc, load_model='ES_EXT/models/' + model_name, show_img=SHOW_IMG)
+    aci = ACI_LI(desc, load_model='ES_EXT/models/' + model_name, show_img=SHOW_IMG)
     c_pixel = ACI.mode_list[1]
 else:
     raise RuntimeError("Why?")
