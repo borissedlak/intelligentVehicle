@@ -9,6 +9,7 @@ df_LI = {"name": "LI", "data": [pd.read_csv('./slo_f_LI_AGX_MAX.csv'), pd.read_c
                                 pd.read_csv('./slo_f_LI_NX_MAX.csv'), pd.read_csv('./slo_f_LI_NX_LIM.csv')]}
 
 device_color_dict = [(r'$AGX_+$', 'chocolate'), (r'$AGX_-$', 'dimgray'), (r'$NX_+$', 'firebrick'), (r'$NX_-$', 'steelblue')]
+plt.rcParams.update({'font.size': 12})
 
 for service in [df_CV, df_QR, df_LI]:
     fig, ax = plt.subplots()
@@ -16,16 +17,16 @@ for service in [df_CV, df_QR, df_LI]:
     for index, device in enumerate(service["data"]):
         plt.plot(device.index, device['pv'], color=device_color_dict[index][1], label=device_color_dict[index][0])
 
-    fig.set_size_inches(5.5, 3.1)
+    fig.set_size_inches(3.0, 3.2)
     ax.set_ylim(0.0, 1.045)
     ax.set_xlabel('AIF Cycle Iteration')
     ax.set_ylabel('SLO Fulfillment Rate')
     # ax.set_xticks(range(0, 50, 4))
-    ax.set_xlim(0, 50)
+    ax.set_xlim(0, 30)
     ax.legend()
 
     # Show the plot
-    plt.savefig(f"figures/{service['name']}.eps", dpi=600, bbox_inches="tight", format="eps")  # default dpi is 100
+    plt.savefig(f"figures/slo_f_{service['name']}.eps", dpi=600, bbox_inches="tight", format="eps")  # default dpi is 100
     plt.show()
 
 # plt.plot(x, df_slo_change['ra'], color='red', label="RA SLOs")

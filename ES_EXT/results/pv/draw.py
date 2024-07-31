@@ -6,12 +6,12 @@ from ES_EXT import util_fgcs
 
 row_labels_pixel = ["480p", "720p", "1080p"]
 row_labels_mode = ['single', 'double']
-column_labels = ["25", "20", "15", "10", "5 fps"]
+column_labels = ["5", "10", "15", "20", "25 fps"]
 
-for file, mini, maxi, row_labels in [('ig_CV_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel), ('ig_QR_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel),
-                                     ('ig_LI_AGX_MAX.csv', 0.0, 1.0, row_labels_mode),
-                                     ('pv_CV_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel), ('pv_QR_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel),
-                                     ('pv_LI_AGX_MAX.csv', 0.0, 1.0, row_labels_mode)]:
+for file, mini, maxi, row_labels in [('ig_CV_NX_MAX.csv', 0.0, 1.0, row_labels_pixel), ('ig_QR_NX_MAX.csv', 0.0, 1.0, row_labels_pixel),
+                                     ('ig_LI_NX_MAX.csv', 0.0, 1.0, row_labels_mode),
+                                     ('pv_CV_NX_MAX.csv', 0.0, 1.0, row_labels_pixel), ('pv_QR_NX_MAX.csv', 0.0, 1.0, row_labels_pixel),
+                                     ('pv_LI_NX_MAX.csv', 0.0, 1.0, row_labels_mode)]:
     data = pd.read_csv(file, header=None)
     matrix = data.values
     interpolated = util_fgcs.interpolate_values(matrix)
