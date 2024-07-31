@@ -9,3 +9,4 @@ dataset/
 output.avi
 backup_*.csv
 raw_model.png
+*_REG.csv

@@ -60,10 +60,10 @@ class ACI_LI:
         self.visit_matrix[0][0], self.visit_matrix[1][4], self.visit_matrix[1][0], self.visit_matrix[0][4], \
             self.visit_matrix[1][2] = 1.0, 1.0, 1.0, 1.0, 1.0
 
-    def iterate(self, samples):
+    def iterate(self, samples, c_mode, c_fps):
         current_batch = self.prepare_last_batch(samples)
-        c_mode = current_batch.iloc[0]['mode']
-        c_fps = int(current_batch.iloc[0]['fps'])
+        # c_mode = current_batch.iloc[0]['mode']
+        # c_fps = int(current_batch.iloc[0]['fps'])
 
         s = util_fgcs.get_surprise_for_data(self.model, current_batch, self.s_desc['slo_vars'])
         self.surprise_history.append(((c_mode, c_fps), s))

@@ -19,9 +19,9 @@ CLEAN_RESTART = utils.get_ENV_PARAM("CLEAN_RESTART", False)
 DISABLE_ACI = utils.get_ENV_PARAM("DISABLE_ACI", False)
 SEND_SYSTEM_STATS = utils.get_ENV_PARAM("SEND_SYSTEM_STATS", False)
 SHOW_IMG = utils.str_to_bool(utils.get_ENV_PARAM("SHOW_IMG", "True"))
-SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "LI")
-INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 5))
-EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 20))
+SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "QR")
+INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 10))
+EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 9999))
 POWER_MODE = utils.get_ENV_PARAM("POWER_MODE", "REG")
 
 c_pixel = ACI.pixel_list[1]
@@ -81,7 +81,7 @@ class ACIBackgroundThread(threading.Thread):
                 else:
                     input_metrics = metrics_buffer.get()
                     metrics_buffer.clear()
-                    (new_pixel, new_fps, pv, real, surprise) = aci.iterate(input_metrics)
+                    (new_pixel, new_fps, pv, real, surprise) = aci.iterate(input_metrics, c_pixel, c_fps)
                     inferred_config_hist.append((new_pixel, new_fps))
                     slo_f_hist.append([real, surprise, datetime.now()])
 
