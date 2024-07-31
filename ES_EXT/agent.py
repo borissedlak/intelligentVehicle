@@ -3,6 +3,7 @@ import sys
 import threading
 import time
 import traceback
+from datetime import datetime
 
 import utils
 from ACI import ACI
@@ -82,7 +83,7 @@ class ACIBackgroundThread(threading.Thread):
                     metrics_buffer.clear()
                     (new_pixel, new_fps, pv, real, surprise) = aci.iterate(input_metrics)
                     inferred_config_hist.append((new_pixel, new_fps))
-                    slo_f_hist.append([real, surprise])
+                    slo_f_hist.append([real, surprise, datetime.now()])
 
                     if (c_pixel, c_fps) != (new_pixel, new_fps):
                         print(f"Changing configuration to {(new_pixel, new_fps)}")

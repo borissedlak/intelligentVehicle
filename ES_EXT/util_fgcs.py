@@ -207,7 +207,7 @@ def prepare_samples(samples: pd.DataFrame, export_path=None, conversion=True):
         # samples["cpu"] = samples["cpu"].apply(np.floor).astype(int)
         # samples["memory"] = samples["memory"].apply(np.floor).astype(int)
         samples['in_time'] = samples['delta'] <= (1000 / samples['fps'])
-        samples['energy_saved'] = samples['consumption'] <= 25
+        samples['energy_saved'] = samples['consumption'] <= 100
 
         # samples['cpu'] = pd.cut(samples['cpu'], bins=utils.split_into_bins(utils.NUMBER_OF_BINS),
         #                         labels=list(range(utils.NUMBER_OF_BINS)), include_lowest=True)
@@ -296,8 +296,8 @@ def log_performance(service, device, metrics, mode):
     with open(f"ES_EXT/results/slo_f/slo_f_{service}_{device}_{mode}.csv", 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file)
         csv_writer.writerow(["service", "device_type", "timestamp", "pixel", "fps", "pv", "surprise"])
-        for real, surprise in metrics:
-            csv_writer.writerow([service, device] + [datetime.now()] + list(real) + [surprise])
+        for real, surprise, t in metrics:
+            csv_writer.writerow([service, device] + [t] + list(real) + [surprise])
 
 
 def get_median_surprise_one_config(tuples, conf):
