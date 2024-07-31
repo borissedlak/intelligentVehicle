@@ -79,9 +79,9 @@ def prepare_models(fill_cpt_all_values=True):
         # true = utils.get_true(utils.infer_slo_fulfillment(VariableElimination(model), ['in_time']))
         # print(f"In_time fulfilled for {int(true * 100)} %")
 
-        with open(f"ES_EXT/results/slo_f/slo_f_{service}_{device_type}.csv", 'w', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow(["service", "device_type", "timestamp", "pixel", "fps", "pv", "surprise"])
+        # with open(f"ES_EXT/results/slo_f/slo_f_{service}_{device_type}.csv", 'w', newline='') as csv_file:
+        #     csv_writer = csv.writer(csv_file)
+        #     csv_writer.writerow(["service", "device_type", "timestamp", "pixel", "fps", "pv", "surprise"])
     return len(unique_pairs)
 
 

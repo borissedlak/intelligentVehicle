@@ -294,8 +294,9 @@ def get_true(param):
 
 def log_performance(service, device, metrics, mode):
     with open(f"ES_EXT/results/slo_f/slo_f_{service}_{device}_{mode}.csv", 'a', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(["service", "device_type", "timestamp", "pixel", "fps", "pv", "surprise"])
         for real, surprise in metrics:
-            csv_writer = csv.writer(csv_file)
             csv_writer.writerow([service, device] + [datetime.now()] + list(real) + [surprise])
 
 
