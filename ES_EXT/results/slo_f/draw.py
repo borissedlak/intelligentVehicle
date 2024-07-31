@@ -21,8 +21,8 @@ for service in [df_CV, df_QR, df_LI]:
     ax.set_ylim(0.0, 1.045)
     ax.set_xlabel('AIF Cycle Iteration')
     ax.set_ylabel('SLO Fulfillment Rate')
-    # ax.set_xticks(range(0, 50, 4))
-    ax.set_xlim(0, 30)
+    ax.set_xticks([0,10,20,30,40,50])
+    ax.set_xlim(0, 30 if service['name'] == 'CV' else 50)
     ax.legend()
 
     # Show the plot
