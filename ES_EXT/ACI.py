@@ -27,7 +27,6 @@ DEVICE_NAME = utils.get_ENV_PARAM('DEVICE_NAME', "Unknown")
 class ACI:
     pixel_list = [480, 720, 1080]
     fps_list = [5, 10, 15, 20, 25]
-    mode_list = ['single', 'double']
 
     def __init__(self, description, show_img=False, load_model=None):
 
@@ -47,9 +46,9 @@ class ACI:
         self.model_VE = VariableElimination(self.model)
         self.slo_hist = CyclicArray(75)
         self.s_desc = description
-        self.backup_data = util_fgcs.prepare_samples(pd.read_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv"),
-                                                     conversion=False)
-        self.past_data_length = 100  # len(self.backup_data)
+        self.initial_data = util_fgcs.prepare_samples(pd.read_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv"),
+                                                      conversion=False)
+        self.past_data = None
 
         self.valid_stream_values_pv = []
         self.stream_regression_model_pv = LinearRegression()
@@ -63,14 +62,12 @@ class ACI:
 
     def iterate(self, samples, c_pixel, c_fps):
         current_batch = self.prepare_last_batch(samples)
-        # c_pixel = int(current_batch.iloc[0]['pixel'])
-        # c_fps = int(current_batch.iloc[0]['fps'])
 
         s = util_fgcs.get_surprise_for_data(self.model, current_batch, self.s_desc['slo_vars'])
         self.surprise_history.append(((c_pixel, c_fps), s))
 
         mean_surprise_last_10_values = np.median([t[1] for t in self.surprise_history][-10:])
-        self.backup_data = pd.concat([self.backup_data, current_batch], ignore_index=True)
+        # self.backup_data = pd.concat([self.backup_data, current_batch], ignore_index=True)
 
         if s >= (1.5 * mean_surprise_last_10_values):
             # self.bnl(self.backup_data)
@@ -118,7 +115,7 @@ class ACI:
         best_index = 0, 0
         for i in range(len(ACI.pixel_list)):
             for j in range(len(ACI.fps_list)):
-                element_sum = (pv_interpolated[i, j] + (ig_interpolated[i, j] / 6) + self.visit_matrix[i, j])
+                element_sum = (pv_interpolated[i, j] + min(ig_interpolated[i, j], 0.15) + self.visit_matrix[i, j])
                 if element_sum > max_sum:
                     max_sum = element_sum
                     best_index = i, j
@@ -128,14 +125,17 @@ class ACI:
 
     @print_execution_time
     def retrain_parameter(self, current_batch):
-        # past_data_length = len(self.past_training_data)
-        # if hasattr(self, 'backup_data'):
-        #     past_data_length += len(self.backup_data)
-        self.model.fit_update(current_batch, n_prev_samples=self.past_data_length * len(current_batch) / 10)
-        self.past_data_length += len(current_batch)
+        if self.past_data is None:
+            self.past_data = current_batch
+        else:
+            self.past_data = util_fgcs.prepare_samples(pd.concat([self.past_data, current_batch], ignore_index=True), conversion=False)
+
+        # self.model.fit(self.initial_data)
+        self.model.fit_update(self.past_data, n_prev_samples=1)
+        # self.past_data_length += len(current_batch)
 
     def export_model(self, mode):
-        self.backup_data.to_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv", index=False)
+        self.initial_data.to_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv", index=False)
         np.savetxt(f"ES_EXT/results/pv/pv_{self.s_desc['type']}_{DEVICE_NAME}_{mode}.csv", self.pv_matrix, delimiter=',', fmt='%.3f')
         np.savetxt(f"ES_EXT/results/pv/ig_{self.s_desc['type']}_{DEVICE_NAME}_{mode}.csv", self.ig_matrix, delimiter=',', fmt='%.3f')
 

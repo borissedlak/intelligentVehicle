@@ -22,7 +22,7 @@ SHOW_IMG = utils.str_to_bool(utils.get_ENV_PARAM("SHOW_IMG", "True"))
 SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "CV")
 INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 5))
 EVALUATION_FREQUENCY = float(utils.get_ENV_PARAM("EVALUATION_FREQUENCY", 5))
-EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 50))
+EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 600))
 POWER_MODE = utils.get_ENV_PARAM("POWER_MODE", "REG")
 
 c_pixel = ACI.pixel_list[1]
@@ -41,7 +41,7 @@ elif SERVICE_NAME == "LI":
     service = LidarProcessor("localhost", show_results=False)
     desc = {'type': SERVICE_NAME, 'slo_vars': ['in_time', 'energy_saved']}
     aci = ACI_LI(desc, load_model='ES_EXT/models/' + model_name, show_img=SHOW_IMG)
-    c_pixel = ACI.mode_list[1]
+    c_pixel = ACI_LI.mode_list[1]
 else:
     raise RuntimeError("Why?")
 
@@ -75,13 +75,13 @@ class ACIBackgroundThread(threading.Thread):
     def run(self):
         global c_pixel, c_fps, inferred_config_hist
         while True:
-            time.sleep(INITIAL_TRAINING if len(inferred_config_hist) <= 4 else 5.0)
+            time.sleep(INITIAL_TRAINING if len(inferred_config_hist) <= 4 else EVALUATION_FREQUENCY)
             try:
                 if metrics_buffer.is_empty():
                     continue
                 else:
                     input_metrics = metrics_buffer.get()
-                    (new_pixel, new_fps, pv, real, surprise) = aci.iterate(input_metrics, c_pixel, c_fps)
+                    (new_pixel, new_fps, pv_est, real, surprise) = aci.iterate(input_metrics, c_pixel, c_fps)
                     inferred_config_hist.append((new_pixel, new_fps))
                     slo_f_hist.append([real, surprise, datetime.now()])
 
