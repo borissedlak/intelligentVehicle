@@ -118,7 +118,7 @@ class ACI_LI:
         best_index = 0, 0
         for i in range(len(ACI_LI.mode_list)):
             for j in range(len(ACI_LI.fps_list)):
-                element_sum = (pv_interpolated[i, j] + ig_interpolated[i, j] + self.visit_matrix[i, j])
+                element_sum = (pv_interpolated[i, j] + (ig_interpolated[i, j] / 2) + self.visit_matrix[i, j])
                 if element_sum > max_sum:
                     max_sum = element_sum
                     best_index = i, j

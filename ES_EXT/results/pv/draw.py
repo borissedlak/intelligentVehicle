@@ -4,10 +4,14 @@ import seaborn as sns
 
 from ES_EXT import util_fgcs
 
-row_labels = [120, 180, 240, 300, 360, 420]
-column_labels = [14, 18, 22, 26, 30]
+row_labels_pixel = ["480p", "720p", "1080p"]
+row_labels_mode = ['single', 'double']
+column_labels = ["5", "10", "15", "20", "25 fps"]
 
-for file, mini, maxi in [('ig_CV_NX_MAX.csv', 0.0, 1.0), ('ig_QR_NX_MAX.csv', 0.0, 1.0), ('ig_LI_NX_MAX.csv', 0.0, 1.0)]:
+for file, mini, maxi, row_labels in [('ig_CV_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel), ('ig_QR_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel),
+                                     ('ig_LI_AGX_MAX.csv', 0.0, 1.0, row_labels_mode),
+                                     ('pv_CV_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel), ('pv_QR_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel),
+                                     ('pv_LI_AGX_MAX.csv', 0.0, 1.0, row_labels_mode)]:
     data = pd.read_csv(file, header=None)
     matrix = data.values
     interpolated = util_fgcs.interpolate_values(matrix)
@@ -16,8 +20,8 @@ for file, mini, maxi in [('ig_CV_NX_MAX.csv', 0.0, 1.0), ('ig_QR_NX_MAX.csv', 0.
     plt.figure(figsize=(3.8, 3.5))  # Adjust the figure size as needed
 
     # Customize the heatmap, including the colormap, annot, and other parameters
-    heatmap = sns.heatmap(interpolated, annot=False, fmt='.2f', cmap="crest", vmin=mini, vmax=maxi)
-    # xticklabels=column_labels, yticklabels=row_labels)
+    heatmap = sns.heatmap(interpolated, annot=False, fmt='.2f', cmap="crest", vmin=mini, vmax=maxi,
+                          xticklabels=column_labels, yticklabels=row_labels)
 
     path = file.split('/')
     plt.savefig('figures/' + file.split(".")[0] + '.eps', format="eps")
