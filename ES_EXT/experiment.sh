@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #chmod +x run_python_script.sh
+#orinagx ALL=(ALL) NOPASSWD: /home/orinagx/development/intelligentVehicle/ES_EXT/experiment.sh
 export PYTHONPATH=~/development/intelligentVehicle
 export INITIAL_TRAINING=40
 export EXPERIMENT_DURATION=600 # 600 = 10 min
