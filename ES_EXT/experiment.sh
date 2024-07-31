@@ -3,8 +3,8 @@
 #chmod +x run_python_script.sh
 #orinagx ALL=(ALL) NOPASSWD: /home/orinagx/development/intelligentVehicle/ES_EXT/experiment.sh
 export PYTHONPATH=~/development/intelligentVehicle
-#export INITIAL_TRAINING=30
-export EVALUATION_FREQUENCY=3 # 600 = 10 min
+export INITIAL_TRAINING=10
+export EVALUATION_FREQUENCY=5 # 600 = 10 min
 export EXPERIMENT_DURATION=300 # 600 = 10 min
 export SHOW_IMG="False" # 600 = 10 min
 
@@ -27,7 +27,7 @@ SERVICE_NAME="LI" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
 python3 ~/development/intelligentVehicle/ES_EXT/models/model_trainer.py
 
 if [ "$DEVICE_NAME" = "NX" ] || [ "$DEVICE_NAME" = "AGX" ]; then
-    echo "abcd1234" | sudo -S sudo nvpmodel -m 3
+    echo "abcd1234" | sudo -S sudo nvpmodel -m 2
     export POWER_MODE="LIM"
 fi
 
