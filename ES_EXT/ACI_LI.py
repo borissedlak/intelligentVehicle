@@ -118,7 +118,7 @@ class ACI_LI:
         best_index = 0, 0
         for i in range(len(ACI_LI.mode_list)):
             for j in range(len(ACI_LI.fps_list)):
-                element_sum = (pv_interpolated[i, j] + (ig_interpolated[i, j] / 2) + self.visit_matrix[i, j])
+                element_sum = (pv_interpolated[i, j] + (ig_interpolated[i, j] / 3) + self.visit_matrix[i, j])
                 if element_sum > max_sum:
                     max_sum = element_sum
                     best_index = i, j
@@ -131,7 +131,7 @@ class ACI_LI:
         # past_data_length = len(self.past_training_data)
         # if hasattr(self, 'backup_data'):
         #     past_data_length += len(self.backup_data)
-        self.model.fit_update(current_batch, n_prev_samples=self.past_data_length)
+        self.model.fit_update(current_batch, n_prev_samples=self.past_data_length * len(current_batch) / 10)
         self.past_data_length += len(current_batch)
 
     def export_model(self, mode):

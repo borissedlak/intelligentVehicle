@@ -24,5 +24,5 @@ for file, mini, maxi, row_labels in [('ig_CV_AGX_MAX.csv', 0.0, 1.0, row_labels_
                           xticklabels=column_labels, yticklabels=row_labels)
 
     path = file.split('/')
-    plt.savefig('figures/' + file.split(".")[0] + '.eps', format="eps")
+    plt.savefig('figures/matrices/' + file.split(".")[0] + '.eps', format="eps")
     plt.show()

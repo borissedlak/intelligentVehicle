@@ -49,7 +49,7 @@ class ACI:
         self.s_desc = description
         self.backup_data = util_fgcs.prepare_samples(pd.read_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv"),
                                                      conversion=False)
-        self.past_data_length = 100 #len(self.backup_data)
+        self.past_data_length = 100  # len(self.backup_data)
 
         self.valid_stream_values_pv = []
         self.stream_regression_model_pv = LinearRegression()
@@ -118,7 +118,7 @@ class ACI:
         best_index = 0, 0
         for i in range(len(ACI.pixel_list)):
             for j in range(len(ACI.fps_list)):
-                element_sum = (pv_interpolated[i, j] + (ig_interpolated[i, j] / 2) + self.visit_matrix[i, j])
+                element_sum = (pv_interpolated[i, j] + (ig_interpolated[i, j] / 3) + self.visit_matrix[i, j])
                 if element_sum > max_sum:
                     max_sum = element_sum
                     best_index = i, j
@@ -131,7 +131,7 @@ class ACI:
         # past_data_length = len(self.past_training_data)
         # if hasattr(self, 'backup_data'):
         #     past_data_length += len(self.backup_data)
-        self.model.fit_update(current_batch, n_prev_samples=self.past_data_length)
+        self.model.fit_update(current_batch, n_prev_samples=self.past_data_length * len(current_batch) / 10)
         self.past_data_length += len(current_batch)
 
     def export_model(self, mode):
