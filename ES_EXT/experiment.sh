@@ -3,8 +3,8 @@
 #chmod +x run_python_script.sh
 #orinagx ALL=(ALL) NOPASSWD: /home/orinagx/development/intelligentVehicle/ES_EXT/experiment.sh
 export PYTHONPATH=~/development/intelligentVehicle
-export INITIAL_TRAINING=40
-export EXPERIMENT_DURATION=600 # 600 = 10 min
+export INITIAL_TRAINING=30
+export EXPERIMENT_DURATION=300 # 600 = 10 min
 export SHOW_IMG="False" # 600 = 10 min
 
 mkdir mkdir ~/development/intelligentVehicle/ES_EXT/models/backup
