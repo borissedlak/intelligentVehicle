@@ -19,9 +19,9 @@ CLEAN_RESTART = utils.get_ENV_PARAM("CLEAN_RESTART", False)
 DISABLE_ACI = utils.get_ENV_PARAM("DISABLE_ACI", False)
 SEND_SYSTEM_STATS = utils.get_ENV_PARAM("SEND_SYSTEM_STATS", False)
 SHOW_IMG = utils.str_to_bool(utils.get_ENV_PARAM("SHOW_IMG", "True"))
-SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "QR")
-INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 10))
-EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 9999))
+SERVICE_NAME = utils.get_ENV_PARAM("SERVICE_NAME", "CV")
+INITIAL_TRAINING = float(utils.get_ENV_PARAM("INITIAL_TRAINING", 5))
+EXPERIMENT_DURATION = float(utils.get_ENV_PARAM("EXPERIMENT_DURATION", 300))
 POWER_MODE = utils.get_ENV_PARAM("POWER_MODE", "REG")
 
 c_pixel = ACI.pixel_list[1]
@@ -74,13 +74,12 @@ class ACIBackgroundThread(threading.Thread):
     def run(self):
         global c_pixel, c_fps, inferred_config_hist
         while True:
-            time.sleep(INITIAL_TRAINING if len(inferred_config_hist) <= 4 else 2.0)
+            time.sleep(INITIAL_TRAINING if len(inferred_config_hist) <= 4 else 5.0)
             try:
                 if metrics_buffer.is_empty():
                     continue
                 else:
                     input_metrics = metrics_buffer.get()
-                    metrics_buffer.clear()
                     (new_pixel, new_fps, pv, real, surprise) = aci.iterate(input_metrics, c_pixel, c_fps)
                     inferred_config_hist.append((new_pixel, new_fps))
                     slo_f_hist.append([real, surprise, datetime.now()])
@@ -88,6 +87,7 @@ class ACIBackgroundThread(threading.Thread):
                     if (c_pixel, c_fps) != (new_pixel, new_fps):
                         print(f"Changing configuration to {(new_pixel, new_fps)}")
                     c_pixel, c_fps = new_pixel, new_fps
+                    metrics_buffer.clear()
             except Exception as e:
                 error_traceback = traceback.format_exc()
                 print("Error Traceback:")

@@ -51,7 +51,7 @@ def prepare_models(fill_cpt_all_values=True):
         bin_values = [x * 0.95 for x in utils.split_into_bins(utils.NUMBER_OF_BINS)][1:utils.NUMBER_OF_BINS + 1]
         for (source_pixel, source_fps, service, device, delta, energy, mode, rate) in (
                 itertools.product([480, 720, 1080], [5, 10, 15, 20, 25], ['CV', 'QR', 'LI'], [DEVICE_NAME],
-                                  [1, 999], [1, 999], ['single', 'double'], [0.0, 1.0])):
+                                  [1, 1, 1, 1, 1, 999], [1, 1, 1, 1, 1, 999], ['single', 'double'], [0.0, 1.0, 1.0, 1.0, 1.0, 1.0])):
             line_param.append({'pixel': source_pixel, 'fps': source_fps, 'delta': delta,
                                'consumption': energy, 'service': service, 'device_type': device, 'mode': mode, 'rate': rate})
         df_param_fill = util_fgcs.prepare_samples(pd.DataFrame(line_param))

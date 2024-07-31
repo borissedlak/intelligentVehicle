@@ -49,6 +49,7 @@ class ACI:
         self.s_desc = description
         self.backup_data = util_fgcs.prepare_samples(pd.read_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv"),
                                                      conversion=False)
+        self.past_data_length = 100 #len(self.backup_data)
 
         self.valid_stream_values_pv = []
         self.stream_regression_model_pv = LinearRegression()
@@ -56,7 +57,7 @@ class ACI:
 
         self.ig_matrix = np.full((3, 5), -1.0)
         self.pv_matrix = np.full((3, 5), -1.0)
-        self.visit_matrix = np.full((3, 5), 0.1)
+        self.visit_matrix = np.full((3, 5), 0.05)
         self.visit_matrix[0][0], self.visit_matrix[2][4], self.visit_matrix[2][0], self.visit_matrix[0][4], \
             self.visit_matrix[1][2] = 1.0, 1.0, 1.0, 1.0, 1.0
 
@@ -74,7 +75,7 @@ class ACI:
         if s >= (1.5 * mean_surprise_last_10_values):
             # self.bnl(self.backup_data)
             self.retrain_parameter(current_batch)
-        if s >= (1 * mean_surprise_last_10_values):
+        else:  # s >= (1 * mean_surprise_last_10_values):
             self.retrain_parameter(current_batch)
 
         pv = self.SLOs_fulfilled(current_batch)
@@ -130,7 +131,8 @@ class ACI:
         # past_data_length = len(self.past_training_data)
         # if hasattr(self, 'backup_data'):
         #     past_data_length += len(self.backup_data)
-        self.model.fit_update(current_batch)  # , n_prev_samples=(past_data_length / 3))
+        self.model.fit_update(current_batch, n_prev_samples=self.past_data_length)
+        self.past_data_length += len(current_batch)
 
     def export_model(self, mode):
         self.backup_data.to_csv(f"ES_EXT/models/backup/backup_{self.s_desc['type']}_{DEVICE_NAME}.csv", index=False)
