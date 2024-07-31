@@ -6,7 +6,7 @@ from ES_EXT import util_fgcs
 
 row_labels_pixel = ["480p", "720p", "1080p"]
 row_labels_mode = ['single', 'double']
-column_labels = ["5", "10", "15", "20", "25 fps"]
+column_labels = ["25", "20", "15", "10", "5 fps"]
 
 for file, mini, maxi, row_labels in [('ig_CV_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel), ('ig_QR_AGX_MAX.csv', 0.0, 1.0, row_labels_pixel),
                                      ('ig_LI_AGX_MAX.csv', 0.0, 1.0, row_labels_mode),
