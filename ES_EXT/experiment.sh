@@ -13,16 +13,16 @@ mkdir mkdir ~/development/intelligentVehicle/ES_EXT/results/
 mkdir mkdir ~/development/intelligentVehicle/ES_EXT/results/pv
 mkdir mkdir ~/development/intelligentVehicle/ES_EXT/results/slo_f
 
-python3 ~/development/intelligentVehicle/ES_EXT/models/model_trainer.py
+#python3 ~/development/intelligentVehicle/ES_EXT/models/model_trainer.py
 
-if [ "$DEVICE_NAME" = "NX" ] || [ "$DEVICE_NAME" = "AGX" ]; then
-    echo "abcd1234" | sudo -S nvpmodel -m 0
-    export POWER_MODE="MAX"
-fi
+#if [ "$DEVICE_NAME" = "NX" ] || [ "$DEVICE_NAME" = "AGX" ]; then
+#    echo "abcd1234" | sudo -S nvpmodel -m 0
+#    export POWER_MODE="MAX"
+#fi
 	
-SERVICE_NAME="CV" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
-SERVICE_NAME="QR" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
-SERVICE_NAME="LI" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
+#SERVICE_NAME="CV" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
+#SERVICE_NAME="QR" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
+#SERVICE_NAME="LI" python3 ~/development/intelligentVehicle/ES_EXT/agent.py
 
 python3 ~/development/intelligentVehicle/ES_EXT/models/model_trainer.py
 
