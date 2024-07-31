@@ -5,7 +5,7 @@
 export PYTHONPATH=~/development/intelligentVehicle
 #export INITIAL_TRAINING=30
 export EVALUATION_FREQUENCY=3 # 600 = 10 min
-export EXPERIMENT_DURATION=100 # 600 = 10 min
+export EXPERIMENT_DURATION=300 # 600 = 10 min
 export SHOW_IMG="False" # 600 = 10 min
 
 mkdir mkdir ~/development/intelligentVehicle/ES_EXT/models/backup
