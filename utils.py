@@ -185,7 +185,7 @@ def highlight_qr_codes(frame, decoded_objects):
         if len(points) == 4:
             pts = np.array(points, dtype=np.int32)
             pts = pts.reshape((-1, 1, 2))
-            cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
+            cv2.polylines(frame, [pts], True, (0, 255, 0), 4)
 
         qr_data = obj.data.decode('utf-8')
         qr_type = obj.type
